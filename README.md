@@ -21,7 +21,7 @@ The library consists of the following modules:
 * `SymbolPack` to help you draw symbols like arrows, etc.
 * `IronPython` to allow you use IronPython in AutoCAD
 
-You may write this with the code pack:
+You may write this elegant code with the code pack:
 
 ```csharp
 /// <summary>
