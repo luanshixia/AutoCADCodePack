@@ -8,6 +8,8 @@ We temporarily provide sources and binaries for AutoCAD R18 (2010, 2011, 2012) a
 
 View [Test.cs](https://github.com/luanshixia/AutoCADCodePack/blob/master/AutoCADCommands/Test.cs) for API usage examples.
 
+## Modules
+
 The library consists of the following modules:
 
 * `Draw` to directly draw entities (with AutoCAD-command-like functions)
@@ -22,6 +24,8 @@ The library consists of the following modules:
 * `CustomDictionary` to help you attach data to entities
 * `SymbolPack` to help you draw symbols like arrows, etc.
 * `IronPython` to allow you use IronPython in AutoCAD
+
+## A Quick Look
 
 You may write this elegant code with the code pack:
 
@@ -82,5 +86,7 @@ public static void PolyClean0_Old()
     ed.WriteMessage("{0} eliminated.", n);
 }
 ```
+
+## Examples
 
 View [Test.cs](https://github.com/luanshixia/AutoCADCodePack/blob/master/AutoCADCommands/Test.cs) for detailed API usage examples.
