@@ -6,6 +6,8 @@ Previously hosted on [CodePlex](https://acadcodepack.codeplex.com/).
 
 We temporarily provide sources and binaries for AutoCAD R18 (2010, 2011, 2012) and .NET 3.5. You can target R17 or R19 with the source files and build yourself, but there should be some problems due to API difference. We will officially publish ports for R19 soon.
 
+View [Test.cs](https://github.com/luanshixia/AutoCADCodePack/blob/master/AutoCADCommands/Test.cs) for API usage examples.
+
 The library consists of the following modules:
 
 * `Draw` to directly draw entities (with AutoCAD-command-like functions)
@@ -80,3 +82,5 @@ public static void PolyClean0_Old()
     ed.WriteMessage("{0} eliminated.", n);
 }
 ```
+
+View [Test.cs](https://github.com/luanshixia/AutoCADCodePack/blob/master/AutoCADCommands/Test.cs) for detailed API usage examples.
