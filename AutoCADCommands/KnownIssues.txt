@@ -1,0 +1,1 @@
+﻿1. Algorithm.GetExtents()方法依赖Entity.GeometryExtents，后者对空块实体抛出异常。

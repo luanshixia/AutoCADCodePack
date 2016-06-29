@@ -1,0 +1,9 @@
+﻿<Window x:Class="AutoCADCommands.TaskProgressWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="正在处理..." Height="120" Width="400" ResizeMode="NoResize" WindowStartupLocation="CenterScreen">
+    <StackPanel>
+        <ProgressBar x:Name="ProgressBar" Height="30" Margin="10" />
+        <Button x:Name="CancelButton" Height="25" Width="80" Content="取消任务" />
+    </StackPanel>
+</Window>

@@ -1,0 +1,12 @@
+﻿<Window x:Class="AutoCADCommands.InputBox"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             Background="Silver"
+             Height="239" Width="336" Title="输入值" WindowStartupLocation="CenterScreen" ResizeMode="NoResize" ShowInTaskbar="False">
+    <Grid>
+        <TextBox Margin="10,10,10,38" Name="txtValue" BorderThickness="1" BorderBrush="Black" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" />
+        <Button Content="确定" Height="23" HorizontalAlignment="Right" Margin="0,0,90,10" Name="btnOk" VerticalAlignment="Bottom" Width="75" Click="btnOk_Click" />
+        <Button Content="取消" Height="23" HorizontalAlignment="Right" Margin="0,0,10,10" Name="btnCancel" VerticalAlignment="Bottom" Width="75" Click="btnCancel_Click" />
+    </Grid>
+</Window>
