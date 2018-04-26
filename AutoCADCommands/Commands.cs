@@ -746,6 +746,82 @@ namespace AutoCADCommands
         }
 
         /// <summary>
+        /// Creates a block given entities. 
+        /// </summary>
+        /// <param name="enities"></param>
+        /// <param name="blockName"></param>
+        /// <param name="basePoint"></param>
+        /// <param name="overWrite"></param>
+        /// <returns></returns>
+        public static ObjectId Block(IEnumerable<Entity> enities, string blockName, Point3d basePoint, bool overWrite = true)
+        {
+            Database db = HostApplicationServices.WorkingDatabase;
+            Editor ed = Application.DocumentManager.MdiActiveDocument.Editor;
+            ObjectId result = ObjectId.Null;
+            using (Transaction trans = db.TransactionManager.StartTransaction())
+            {
+                BlockTable bt = trans.GetObject(db.BlockTableId, OpenMode.ForWrite) as BlockTable;
+                if (bt.Has(blockName))
+                {
+                    BlockTableRecord old = trans.GetObject(bt[blockName], OpenMode.ForWrite) as BlockTableRecord;
+
+                    if (!overWrite)
+                    {
+                        Interaction.Write($"{blockName} already exists and was not overwritten.");
+                        return old.Id;
+                    }
+                    old.Erase();
+                }
+
+                BlockTableRecord block = new BlockTableRecord();
+                block.Name = blockName;
+                foreach (var ent in enities)
+                {
+                    if (!ent.IsWriteEnabled)
+                    {
+                        ent.UpgradeOpen();
+                    }
+                    var entObj = ent.Clone() as Entity;
+                    entObj.TransformBy(Matrix3d.Displacement(-basePoint.GetAsVector()));
+                    block.AppendEntity(entObj);
+                }
+                result = bt.Add(block);
+                trans.AddNewlyCreatedDBObject(block, true);
+                trans.Commit();
+            }
+            return result;
+        }
+        /// <summary>
+        /// Inserts a block reference by ObjectId.
+        /// </summary>
+        /// <param name="blockTableRecordId"></param>
+        /// <param name="pos"></param>
+        /// <param name="rotation"></param>
+        /// <param name="scale"></param>
+        /// <returns></returns>
+        public static BlockReference InsertBlockReference(ObjectId blockTableRecordId, Point3d pos, double rotation = 0, double scale = 1)
+        {
+            return new BlockReference(pos, blockTableRecordId) { Rotation = rotation, ScaleFactors = new Scale3d(scale) };
+        }
+        /// <summary>
+        /// Creates a block and then inserts a reference.
+        /// </summary>
+        /// <param name="entities"></param>
+        /// <param name="blockName"></param>
+        /// <param name="blockBasePoint"></param>
+        /// <param name="blockReferencePoint"></param>
+        /// <param name="rotation"></param>
+        /// <param name="scale"></param>
+        /// <param name="overWrite"></param>
+        /// <returns></returns>
+        public static BlockReference CreateBlockAndInsertReference(IEnumerable<Entity> entities, string blockName, Point3d blockBasePoint, Point3d blockReferencePoint, double rotation = 0, double scale = 1, bool overWrite = true)
+        {
+            ObjectId blockId = Block(entities, blockName, blockBasePoint, overWrite);
+            BlockReference blockreference = InsertBlockReference(blockId, blockReferencePoint, rotation, scale);
+            return blockreference;
+        }
+
+        /// <summary>
         /// 定义块：从另一DWG中获取
         /// </summary>
         /// <param name="blockName"></param>
