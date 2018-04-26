@@ -707,8 +707,9 @@ namespace AutoCADCommands
         /// <param name="entIds"></param>
         /// <param name="blockName"></param>
         /// <param name="basePoint"></param>
+        /// <param name="overWrite"></param>
         /// <returns></returns>
-        public static ObjectId Block(IEnumerable<ObjectId> entIds, string blockName, Point3d basePoint)
+        public static ObjectId Block(IEnumerable<ObjectId> entIds, string blockName, Point3d basePoint, bool overWrite = true)
         {
             Database db = HostApplicationServices.WorkingDatabase;
             Editor ed = Application.DocumentManager.MdiActiveDocument.Editor;
@@ -719,8 +720,15 @@ namespace AutoCADCommands
                 if (bt.Has(blockName))
                 {
                     BlockTableRecord old = trans.GetObject(bt[blockName], OpenMode.ForWrite) as BlockTableRecord;
+
+                    if (!overWrite)
+                    {
+                        Interaction.Write($"{blockName} already exists and was not overwritten.");
+                        return old.Id;
+                    }
                     old.Erase();
                 }
+
                 BlockTableRecord block = new BlockTableRecord();
                 block.Name = blockName;
                 foreach (var ent in entIds)
