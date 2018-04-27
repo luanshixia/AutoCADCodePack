@@ -707,8 +707,9 @@ namespace AutoCADCommands
         /// <param name="entIds"></param>
         /// <param name="blockName"></param>
         /// <param name="basePoint"></param>
+        /// <param name="overwrite"></param>
         /// <returns></returns>
-        public static ObjectId Block(IEnumerable<ObjectId> entIds, string blockName, Point3d basePoint)
+        public static ObjectId Block(IEnumerable<ObjectId> entIds, string blockName, Point3d basePoint, bool overwrite = true)
         {
             Database db = HostApplicationServices.WorkingDatabase;
             Editor ed = Application.DocumentManager.MdiActiveDocument.Editor;
@@ -719,8 +720,15 @@ namespace AutoCADCommands
                 if (bt.Has(blockName))
                 {
                     BlockTableRecord old = trans.GetObject(bt[blockName], OpenMode.ForWrite) as BlockTableRecord;
+
+                    if (!overwrite)
+                    {
+                        Interaction.Write($"{blockName} already exists and was not overwritten.");
+                        return old.Id;
+                    }
                     old.Erase();
                 }
+
                 BlockTableRecord block = new BlockTableRecord();
                 block.Name = blockName;
                 foreach (var ent in entIds)
@@ -735,6 +743,72 @@ namespace AutoCADCommands
                 trans.Commit();
             }
             return result;
+        }
+
+        /// <summary>
+        /// Creates a block given entities. 
+        /// </summary>
+        /// <param name="entities"></param>
+        /// <param name="blockName"></param>
+        /// <param name="basePoint"></param>
+        /// <param name="overwrite"></param>
+        /// <returns></returns>
+        public static ObjectId Block(IEnumerable<Entity> entities, string blockName, Point3d basePoint, bool overwrite = true)
+        {
+            Database db = HostApplicationServices.WorkingDatabase;
+            Editor ed = Application.DocumentManager.MdiActiveDocument.Editor;
+            ObjectId result = ObjectId.Null;
+            using (Transaction trans = db.TransactionManager.StartTransaction())
+            {
+                BlockTable bt = trans.GetObject(db.BlockTableId, OpenMode.ForWrite) as BlockTable;
+                if (bt.Has(blockName))
+                {
+                    BlockTableRecord old = trans.GetObject(bt[blockName], OpenMode.ForWrite) as BlockTableRecord;
+
+                    if (!overwrite)
+                    {
+                        Interaction.Write($"{blockName} already exists and was not overwritten.");
+                        return old.Id;
+                    }
+                    old.Erase();
+                }
+
+                BlockTableRecord block = new BlockTableRecord();
+                block.Name = blockName;
+                foreach (var ent in entities)
+                {
+                    if (!ent.IsWriteEnabled)
+                    {
+                        ent.UpgradeOpen();
+                    }
+                    var entObj = ent.Clone() as Entity;
+                    entObj.TransformBy(Matrix3d.Displacement(-basePoint.GetAsVector()));
+                    block.AppendEntity(entObj);
+                }
+                result = bt.Add(block);
+                trans.AddNewlyCreatedDBObject(block, true);
+                trans.Commit();
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// Creates a block and then inserts a reference to the model space.
+        /// </summary>
+        /// <param name="entities"></param>
+        /// <param name="blockName"></param>
+        /// <param name="blockBasePoint"></param>
+        /// <param name="blockReferencePoint"></param>
+        /// <param name="rotation"></param>
+        /// <param name="scale"></param>
+        /// <param name="overwrite"></param>
+        /// <returns></returns>
+        public static ObjectId CreateBlockAndInsertReference(IEnumerable<Entity> entities, string blockName, Point3d blockBasePoint, Point3d blockReferencePoint, double rotation = 0, double scale = 1, bool overwrite = true)
+        {
+            var blockId = Block(entities, blockName, blockBasePoint, overwrite);
+            var blockReference = NoDraw.Insert(blockId, blockReferencePoint, rotation, scale);
+
+            return AddToModelSpace(blockReference);
         }
 
         /// <summary>
