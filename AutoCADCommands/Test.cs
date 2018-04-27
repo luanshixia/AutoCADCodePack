@@ -985,7 +985,7 @@ namespace AutoCADCommands
         public void TestKeywords()
         {
             string[] keys = { "A", "B", "C", "D" };
-            var key = Interaction.GetKewords("\nChoose an option", keys, 3);
+            var key = Interaction.GetKeywords("\nChoose an option", keys, 3);
             Interaction.WriteLine("You chose {0}.", key);
         }
 

@@ -118,7 +118,7 @@ namespace AutoCADCommands
         /// <param name="keys">关键字数组</param>
         /// <param name="defaultIndex">默认选项</param>
         /// <returns>用户选择的关键字</returns>
-        public static string GetKewords(string message, string[] keys, int defaultIndex = 0)
+        public static string GetKeywords(string message, string[] keys, int defaultIndex = 0)
         {
             Editor ed = Application.DocumentManager.MdiActiveDocument.Editor;
             PromptKeywordOptions opt = new PromptKeywordOptions(message); // mod 20140527
