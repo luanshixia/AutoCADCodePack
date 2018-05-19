@@ -14,16 +14,16 @@ namespace AutoCADCommands
     using IniData = Dictionary<string, Dictionary<string, string>>;
 
     /// <summary>
-    /// 封装常量
+    /// 封装常量 / Package constants
     /// </summary>
     public static class Consts
     {
         /// <summary>
-        /// 通用容差
+        /// 通用容差 / Universal tolerance
         /// </summary>
         public const double Epsilon = 0.001;
         /// <summary>
-        /// 默认文字样式
+        /// 默认文字样式 / Default text style
         /// </summary>
         public const string TextStyleName = "AutoCADCodePackTextStyle";
         /// <summary>
@@ -46,10 +46,10 @@ namespace AutoCADCommands
 
     public static class Utils
     {
-        #region 文件算法
+        #region 文件算法 / File algorithm
 
         /// <summary>
-        /// 获取路径2相对于路径1的相对路径
+        /// 获取路径2相对于路径1的相对路径 / Get the relative path of path 2 relative to path 1
         /// </summary>
         /// <param name="baseFolder">路径1</param>
         /// <param name="path">路径2</param>
@@ -89,7 +89,7 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 解析INI文件
+        /// 解析INI文件 / Parsing INI files
         /// </summary>
         /// <param name="fileName">文件名</param>
         /// <param name="result">结果</param>
@@ -182,14 +182,14 @@ namespace AutoCADCommands
     }
 
     /// <summary>
-    /// 各种算法
+    /// 各种算法 / Various algorithms
     /// </summary>
     public static class Algorithms
     {
-        #region 曲线算法
+        #region 曲线算法 / Curve algorithm
 
         /// <summary>
-        /// 点到曲线的距离
+        /// 点到曲线的距离 / Point to curve distance
         /// </summary>
         /// <param name="cv">曲线</param>
         /// <param name="point">点</param>
@@ -200,7 +200,7 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 获取指定距离处的参数
+        /// 获取指定距离处的参数 / Get parameters at a specified distance
         /// </summary>
         /// <param name="cv">曲线</param>
         /// <param name="dist">距离</param>
@@ -219,7 +219,7 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 获取指定参数处的距离
+        /// 获取指定参数处的距离 / Get the distance at the specified parameter
         /// </summary>
         /// <param name="cv">曲线</param>
         /// <param name="param">参数</param>
@@ -238,7 +238,7 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 获取指定参数处的点
+        /// 获取指定参数处的点 / Get the point at the specified parameter
         /// </summary>
         /// <param name="cv">曲线</param>
         /// <param name="param">参数</param>
@@ -257,7 +257,7 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 获取指定距离处的点
+        /// 获取指定距离处的点 / Get points at a specified distance
         /// </summary>
         /// <param name="cv">曲线</param>
         /// <param name="dist">距离</param>
@@ -276,7 +276,7 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 获取指定点处的距离
+        /// 获取指定点处的距离 / Get the distance at the specified point
         /// </summary>
         /// <param name="cv">曲线</param>
         /// <param name="point">点</param>
@@ -305,7 +305,7 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 获取指定点处的参数
+        /// 获取指定点处的参数 / Get the parameters at the specified point
         /// </summary>
         /// <param name="cv">曲线</param>
         /// <param name="point">点</param>
@@ -334,7 +334,7 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 获取曲线子集
+        /// 获取曲线子集 / Get a subset of curves
         /// </summary>
         /// <param name="curve">曲线</param>
         /// <param name="interval">曲线子集的长度区间</param>
@@ -355,7 +355,7 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 获取曲线子集
+        /// 获取曲线子集 / Get a subset of curves
         /// </summary>
         /// <param name="curve">曲线</param>
         /// <param name="interval">曲线子集的参数区间</param>
@@ -432,7 +432,7 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 获取曲线的整数参数点
+        /// 获取曲线的整数参数点 / Get the integer parameter point of the curve
         /// </summary>
         /// <param name="cv">曲线</param>
         /// <returns>点集</returns>
@@ -445,7 +445,7 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 获取多段线的顶点。与GetPoints的区别在于IsClosed=true的情况
+        /// 获取多段线的顶点。与GetPoints的区别在于IsClosed=true的情况 / Get the vertex of the polyline. The difference with GetPoints is the condition of IsClosed=true
         /// </summary>
         /// <param name="poly">多段线</param>
         /// <returns>点集</returns>
@@ -458,12 +458,12 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 获取曲线的参数等分点
+        /// 获取曲线的参数等分点 / Get the parameters of the curve
         /// </summary>
         /// <param name="cv">曲线</param>
         /// <param name="divs">等分数</param>
         /// <returns>点集</returns>
-        public static IEnumerable<Point3d> GetPoints(this Curve cv, int divs) // todo: 获取曲线的距离等分点
+        public static IEnumerable<Point3d> GetPoints(this Curve cv, int divs) // todo: 获取曲线的距离等分点 / Get the curve's distance equal points
         {
             double div = cv.EndParam / divs;
             for (double i = 0; i < cv.EndParam + div; i += div)
@@ -502,7 +502,7 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 获取多段线的拟合点集
+        /// 获取多段线的拟合点集 / Get polyline fitting point set
         /// </summary>
         /// <param name="cv">多段线</param>
         /// <param name="divsWhenArc">弧段的分段数，默认为0，表示智能选取</param>
@@ -520,7 +520,7 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 获取曲线上以整数参数点为界的曲线段
+        /// 获取曲线上以整数参数点为界的曲线段 / Get curve segments on the curve bounded by integer parameter points
         /// </summary>
         /// <param name="cv">曲线</param>
         /// <returns>曲线段集</returns>
@@ -533,7 +533,7 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 计算两曲线的最小距离
+        /// 计算两曲线的最小距离 / Calculate the minimum distance between two curves
         /// </summary>
         /// <param name="cv1">曲线1</param>
         /// <param name="cv2">曲线2</param>
@@ -548,10 +548,10 @@ namespace AutoCADCommands
 
         #endregion
 
-        #region 范围算法
+        #region 范围算法 / Range algorithm
 
         /// <summary>
-        /// 获取实体范围
+        /// 获取实体范围 / Get entity scope
         /// </summary>
         /// <param name="entIds">实体ID集</param>
         /// <returns>范围</returns>
@@ -566,7 +566,7 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 获取实体范围
+        /// 获取实体范围 / Get entity scope
         /// </summary>
         /// <param name="ents">实体集</param>
         /// <returns>范围</returns>
@@ -581,7 +581,7 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 获取范围中心
+        /// 获取范围中心 / Get scope center
         /// </summary>
         /// <param name="extents">范围</param>
         /// <returns>中心点</returns>
@@ -591,7 +591,7 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 获取范围中心
+        /// 获取范围中心 / Get scope center
         /// </summary>
         /// <param name="extents">范围</param>
         /// <returns>中心点</returns>
@@ -601,7 +601,7 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 范围缩放
+        /// 范围缩放 / Range scaling
         /// </summary>
         /// <param name="extents">范围</param>
         /// <param name="factor">比例因子</param>
@@ -613,7 +613,7 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 指定中心长出范围
+        /// 指定中心长出范围 / Specify center outreach
         /// </summary>
         /// <param name="center">中心</param>
         /// <param name="size">大小</param>
@@ -625,7 +625,7 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 点在范围内判定
+        /// 点在范围内判定 / Point within range
         /// </summary>
         /// <param name="extents">范围</param>
         /// <param name="point">点</param>
@@ -638,7 +638,7 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 获取实体范围中心
+        /// 获取实体范围中心 / Get entity scope center
         /// </summary>
         /// <param name="entIds">实体</param>
         /// <returns>中心点</returns>
@@ -648,7 +648,7 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 获取实体范围中心
+        /// 获取实体范围中心 / Get entity scope center
         /// </summary>
         /// <param name="ents">实体</param>
         /// <returns>中心点</returns>
@@ -658,7 +658,7 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 获取实体范围中心
+        /// 获取实体范围中心 / Get entity scope center
         /// </summary>
         /// <param name="entId">实体</param>
         /// <returns>中心点</returns>
@@ -669,7 +669,7 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 获取实体范围中心
+        /// 获取实体范围中心 / Get entity scope center
         /// </summary>
         /// <param name="ent">实体</param>
         /// <returns>中心点</returns>
@@ -680,7 +680,7 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 获取范围面积
+        /// 获取范围面积 / Get area
         /// </summary>
         /// <param name="extents">范围</param>
         /// <returns>面积</returns>
@@ -690,7 +690,7 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 获取范围面积
+        /// 获取范围面积 / Get area
         /// </summary>
         /// <param name="extents">范围</param>
         /// <returns>面积</returns>
@@ -701,11 +701,11 @@ namespace AutoCADCommands
 
         #endregion
 
-        #region 点算法
+        #region 点算法 / Point Algorithm
 
         private static Point3d _nullPoint3d = new Point3d(double.NaN, double.NaN, double.NaN);
         /// <summary>
-        /// 获取一个空的Point3d
+        /// 获取一个空的Point3d / Get an empty Point3d
         /// </summary>
         public static Point3d NullPoint3d
         {
@@ -716,7 +716,7 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// Point3d为空判别
+        /// Point3d为空判别 / Point3d is empty
         /// </summary>
         /// <param name="p">点</param>
         /// <returns>结果</returns>
@@ -726,7 +726,7 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// Point3d转Point2d
+        /// Point3d转Point2d / Point3d to Point2d
         /// </summary>
         /// <param name="point">点</param>
         /// <returns>结果</returns>
@@ -736,7 +736,7 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// Point2d转Point3d
+        /// Point2d转Point3d / Point2d to Point3d
         /// </summary>
         /// <param name="point">点</param>
         /// <returns>结果</returns>
@@ -746,7 +746,7 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// Vector2d转Vector3d
+        /// Vector2d转Vector3d / Vector2d to Vector3d
         /// </summary>
         /// <param name="point">点</param>
         /// <returns>结果</returns>
@@ -756,7 +756,7 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// Vector3d转Vector2d
+        /// Vector3d转Vector2d / Vector3d to Vector2d
         /// </summary>
         /// <param name="point">点</param>
         /// <returns>结果</returns>
@@ -766,7 +766,7 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 计算凸包
+        /// 计算凸包 / Calculate convex hull
         /// </summary>
         /// <param name="source">点集</param>
         /// <returns>结果</returns>
@@ -812,10 +812,10 @@ namespace AutoCADCommands
 
         #endregion
 
-        #region 多段线算法
+        #region 多段线算法 / Polyline algorithm
 
         /// <summary>
-        /// 判断多段线是否自相交
+        /// 判断多段线是否自相交 / Determine if the polyline is self-
         /// </summary>
         /// <param name="poly">多段线</param>
         /// <returns>结果</returns>
@@ -848,7 +848,7 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 二维向量的伪外积
+        /// 二维向量的伪外积 / Pseudo-external product of two-dimensional vectors
         /// </summary>
         /// <param name="v1">向量1</param>
         /// <param name="v2">向量2</param>
@@ -859,7 +859,7 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 线段相交判定
+        /// 线段相交判定 / Segment intersection decision
         /// </summary>
         /// <param name="a1">线段a点1</param>
         /// <param name="a2">线段a点2</param>
@@ -918,7 +918,7 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 用直线把闭合多段线切成两个闭合的部分
+        /// 用直线把闭合多段线切成两个闭合的部分 / Cut a closed polyline into two closed sections with a straight line
         /// </summary>
         /// <param name="loop">闭合多段线</param>
         /// <param name="cut">切割线</param>
@@ -982,7 +982,7 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 获取多段线一个弧段的一个子集对应的凸度
+        /// 获取多段线一个弧段的一个子集对应的凸度 / Get the convexity corresponding to a subset of one arc segment of a polyline
         /// </summary>
         /// <param name="poly">多段线</param>
         /// <param name="startParam">起始参数</param>
@@ -995,7 +995,7 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 对Closed为True的多段线，改为False，并通过增加一个点来真正闭合。
+        /// 对Closed为True的多段线，改为False，并通过增加一个点来真正闭合。/ For polylines with Closed True, change to False and close by adding a point.
         /// </summary>
         /// <param name="poly">多段线</param>
         /// <returns>多段线</returns>
@@ -1015,7 +1015,7 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 偏移多段线
+        /// 偏移多段线 / Offset polyline
         /// </summary>
         /// <param name="poly">多段线</param>
         /// <param name="offsets">各段偏移量</param>
@@ -1084,7 +1084,7 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 计算圆弧凸度
+        /// 计算圆弧凸度 / Calculate arc bulge
         /// </summary>
         /// <param name="arc">圆弧</param>
         /// <param name="start">起点</param>
@@ -1113,7 +1113,7 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 直线转多段线
+        /// 直线转多段线 / Straight line to polyline
         /// </summary>
         /// <param name="line">直线</param>
         /// <returns>多段线</returns>
@@ -1126,7 +1126,7 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 圆弧转多段线
+        /// 圆弧转多段线 / Arc to Polyline
         /// </summary>
         /// <param name="arc">圆弧</param>
         /// <returns>多段线</returns>
@@ -1139,7 +1139,7 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 多段线清理：去除重复点
+        /// 多段线清理：去除重复点 / Polyline Cleanup: Remove duplicate points
         /// </summary>
         /// <param name="poly">多段线</param>
         public static int PolyClean_RemoveDuplicatedVertex(Polyline poly)
@@ -1158,7 +1158,7 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 多段线清理：去除过近点
+        /// 多段线清理：去除过近点 / Polyline Cleanup: Remove Near Points
         /// </summary>
         /// <param name="poly">多段线</param>
         /// <param name="epsilon">距离容差</param>
@@ -1184,7 +1184,7 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 多段线清理：去除多余共线点
+        /// 多段线清理：去除多余共线点 / Polyline Cleanup: Remove Excess Collinear 
         /// </summary>
         /// <param name="poly">多段线</param>
         public static void PolyClean_RemoveColinearPoints(Polyline poly)
@@ -1199,7 +1199,7 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 多段线清理：规整方向
+        /// 多段线清理：规整方向 / Polyline Cleanup: Regular 
         /// </summary>
         /// <param name="poly">多段线</param>
         /// <param name="dir">方向</param>
@@ -1248,7 +1248,7 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 方向
+        /// 方向 / direction
         /// </summary>
         public enum Direction
         {
@@ -1275,7 +1275,7 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 连接多段线
+        /// 连接多段线 / Connect polyline
         /// </summary>
         /// <param name="poly">多段线</param>
         /// <param name="poly1">多段线1</param>
@@ -1292,7 +1292,7 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 连接多段线
+        /// 连接多段线 / Connect polyline
         /// </summary>
         /// <param name="poly1">多段线1</param>
         /// <param name="poly2">多段线2</param>
@@ -1321,7 +1321,7 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 连接多段线
+        /// 连接多段线 / Connect polyline
         /// </summary>
         /// <param name="polys">多段线列表</param>
         /// <returns>连接结果</returns>
@@ -1331,7 +1331,7 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 连接多段线，忽略中间顶点
+        /// 连接多段线，忽略中间顶点 / Connect polylines, ignoring intermediate vertices
         /// </summary>
         /// <param name="polys">多段线列表</param>
         /// <returns>连接结果</returns>
@@ -1343,7 +1343,7 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 点在多段线内判断
+        /// 点在多段线内判断 / Points are joined within polylines
         /// </summary>
         /// <param name="poly">多段线</param>
         /// <param name="p">点</param>
@@ -1370,7 +1370,7 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 多段线形心
+        /// 多段线形心 / Polyline center
         /// </summary>
         /// <param name="poly">多段线</param>
         /// <returns>形心</returns>
@@ -1399,10 +1399,10 @@ namespace AutoCADCommands
 
         #endregion
 
-        #region 辅助算法
+        #region 辅助算法 / Auxiliary algorithm
 
         /// <summary>
-        /// 获取世界坐标到视口坐标的变换矩阵
+        /// 获取世界坐标到视口坐标的变换矩阵 / Get the transformation matrix of world coordinates to viewport coordinates
         /// </summary>
         /// <param name="viewCenter"></param>
         /// <param name="viewportCenter"></param>
@@ -1415,7 +1415,7 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 实体相交
+        /// 实体相交 / Physical intersection
         /// </summary>
         /// <param name="ent">实体</param>
         /// <param name="entOther">另一实体</param>
@@ -1435,7 +1435,7 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 实体相交求交点 newly 20140805
+        /// 实体相交求交点 / Entity intersect intersection newly 20140805
         /// </summary>
         /// <param name="ent">实体</param>
         /// <param name="entOther">另一实体</param>
@@ -1449,7 +1449,7 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 字符串转双精度浮点
+        /// 字符串转双精度浮点 / String to double-precision floating point
         /// </summary>
         /// <param name="s">字符串</param>
         /// <param name="defaultValue">默认值</param>
@@ -1467,7 +1467,7 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 字符串转双精度浮点，失败得到0
+        /// 字符串转双精度浮点，失败得到0 / String to double-precision floating point, failed to get 0
         /// </summary>
         /// <param name="s">字符串</param>
         /// <returns>结果</returns>
@@ -1477,7 +1477,7 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 取余运算
+        /// 取余运算 / Retrieval operation
         /// </summary>
         /// <param name="n">被除数</param>
         /// <param name="m">模</param>
@@ -1488,7 +1488,7 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 向量夹角：[0, Pi]
+        /// 向量夹角：[0, Pi] / Vector angle: [0, Pi]
         /// </summary>
         /// <param name="v0">向量0</param>
         /// <param name="v1">向量1</param>
@@ -1499,7 +1499,7 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 向量方位角：[0, 2Pi]
+        /// 向量方位角：[0, 2Pi] / Vector azimuth: [0, 2Pi]
         /// </summary>
         /// <param name="v0">向量0</param>
         /// <returns>结果</returns>
@@ -1603,7 +1603,7 @@ namespace AutoCADCommands
             List<Polyline> plines = new List<Polyline>();
             int loopCount = ht.NumberOfLoops;
             //System.Diagnostics.Debug.Write(loopCount);
-            for (int index = 0; index < loopCount; )
+            for (int index = 0; index < loopCount;)
             {
                 if (ht.GetLoopAt(index).IsPolyline)
                 {
@@ -1878,5 +1878,5 @@ namespace AutoCADCommands
         {
             return point >= Start && point <= End;
         }
-    }    
+    }
 }
