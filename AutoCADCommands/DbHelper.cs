@@ -396,7 +396,7 @@ namespace AutoCADCommands
         /// <returns></returns>
         public static string GetFirstXData(this ObjectId dboId, string appName)
         {
-            return dboId.QOpenForRead().GetFirstXData(appName);     
+            return dboId.QOpenForRead().GetFirstXData(appName);
         }
 
         /// <summary>
@@ -632,13 +632,23 @@ namespace AutoCADCommands
         /// <param name="pos">pos</param>
         public static void SetBlockAttribute(this BlockReference br, string tag, string value, Point3d pos)
         {
-            foreach (AttributeReference attr in br.AttributeCollection)
+
+            void Action(DBObject dbObject)
             {
+                var attr = (AttributeReference)dbObject;
+                if (!attr.IsWriteEnabled)
+                {
+                    attr.UpgradeOpen();
+                }
                 if (attr.Tag == tag)
                 {
                     attr.TextString = value;
                     return;
                 }
+            }
+            foreach (ObjectId id in br.AttributeCollection)
+            {
+                id.QOpenForWrite(Action);
             }
             AttributeReference ar = new AttributeReference();
             ar.Tag = tag;
@@ -646,6 +656,7 @@ namespace AutoCADCommands
             ar.Position = pos;
             br.AttributeCollection.AppendAttribute(ar);
         }
+
 
         #endregion
 
@@ -719,7 +730,7 @@ namespace AutoCADCommands
         public static void RemoveTag(this DBObject dbo, string tag)
         {
             var buffer = dbo.GetXDataForApplication(Consts.AppNameForTags);
-            var data = buffer.AsArray().Where(x => x.TypeCode == (int)DxfCode.ExtendedDataAsciiString 
+            var data = buffer.AsArray().Where(x => x.TypeCode == (int)DxfCode.ExtendedDataAsciiString
                 && x.Value != tag).ToArray();
             dbo.XData = new ResultBuffer(data);
         }
