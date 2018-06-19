@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-
 using Autodesk.AutoCAD.ApplicationServices;
 using Autodesk.AutoCAD.DatabaseServices;
 using Autodesk.AutoCAD.EditorInput;
@@ -14,70 +13,70 @@ namespace AutoCADCommands
     using IniData = Dictionary<string, Dictionary<string, string>>;
 
     /// <summary>
-    /// 封装常量 / Package constants
+    /// Constants.
     /// </summary>
     public static class Consts
     {
         /// <summary>
-        /// 通用容差 / Universal tolerance
+        /// Universal tolerance.
         /// </summary>
         public const double Epsilon = 0.001;
         /// <summary>
-        /// 默认文字样式 / Default text style
+        /// Default text style.
         /// </summary>
         public const string TextStyleName = "AutoCADCodePackTextStyle";
         /// <summary>
-        /// 编码的FXD AppName
+        /// FXD AppName for code.
         /// </summary>
         public const string AppNameForCode = "TongJiCode"; // like HTML tag name
         /// <summary>
-        /// ID的FXD AppName
+        /// FXD AppName for ID.
         /// </summary>
         public const string AppNameForID = "TongJiID"; // like HTML id
         /// <summary>
-        /// 名称的FXD AppName
+        /// FXD AppName for name.
         /// </summary>
         public const string AppNameForName = "TongJiName"; // like HTML id or name
         /// <summary>
-        /// 标签的FXD AppName
+        /// FXD AppName for tags.
         /// </summary>
         public const string AppNameForTags = "TongJiTags"; // like HTML class
     }
 
     public static class Utils
     {
-        #region 文件算法 / File algorithm
+        #region File algorithms
 
         /// <summary>
-        /// 获取路径2相对于路径1的相对路径 / Get the relative path of path 2 relative to path 1
+        /// Gets the path relative to a base path.
         /// </summary>
-        /// <param name="baseFolder">路径1</param>
-        /// <param name="path">路径2</param>
-        /// <returns>返回路径2相对于路径1的路径</returns>
+        /// <param name="basePath">The base path.</param>
+        /// <param name="path">The other path.</param>
+        /// <returns>The relative path.</returns>
         /// <example>
         /// string strPath = GetRelativePath(@"C:\WINDOWS\system32", @"C:\WINDOWS\system\*.*" );
         /// //strPath == @"..\system\*.*"
         /// </example>
-        public static string GetRelativePath(string baseFolder, string path)
+        public static string GetRelativePath(string basePath, string path)
         {
-            if (!baseFolder.EndsWith("\\")) baseFolder += "\\";
-            int intIndex = -1, intPos = baseFolder.IndexOf('\\');
+            if (!basePath.EndsWith("\\")) basePath += "\\";
+            int intIndex = -1, intPos = basePath.IndexOf('\\');
             while (intPos >= 0)
             {
                 intPos++;
-                if (string.Compare(baseFolder, 0, path, 0, intPos, true) != 0) break;
+                if (string.Compare(basePath, 0, path, 0, intPos, true) != 0) break;
                 intIndex = intPos;
-                intPos = baseFolder.IndexOf('\\', intPos);
+                intPos = basePath.IndexOf('\\', intPos);
             }
 
             if (intIndex >= 0)
             {
                 path = path.Substring(intIndex);
-                intPos = baseFolder.IndexOf("\\", intIndex);
+                intPos = basePath.IndexOf("\\", intIndex);
                 while (intPos >= 0)
                 {
                     path = "..\\" + path;
-                    intPos = baseFolder.IndexOf("\\", intPos + 1);
+                    intPos = basePath.IndexOf("\\", intPos + 1);
                 }
             }
             return path;
@@ -89,11 +88,11 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 解析INI文件 / Parsing INI files
+        /// Parses INI files
         /// </summary>
-        /// <param name="fileName">文件名</param>
-        /// <param name="result">结果</param>
-        /// <returns>是否成功</returns>
+        /// <param name="fileName">The file name.</param>
+        /// <param name="result">The result.</param>
+        /// <returns>A value indicating if suceeded.</returns>
         public static bool ParseIniFile(string fileName, IniData result)
         {
             string groupPattern = @"^\[[^\[\]]+\]$";
@@ -182,29 +181,30 @@ namespace AutoCADCommands
     }
 
     /// <summary>
-    /// 各种算法 / Various algorithms
+    /// Various algorithms.
     /// </summary>
     public static class Algorithms
     {
-        #region 曲线算法 / Curve algorithm
+        #region Curve algorithms
 
         /// <summary>
-        /// 点到曲线的距离 / Point to curve distance
+        /// Gets the distance between a point and a curve.
         /// </summary>
-        /// <param name="cv">曲线</param>
-        /// <param name="point">点</param>
-        /// <returns>距离</returns>
+        /// <param name="cv">The curve.</param>
+        /// <param name="point">The point.</param>
+        /// <param name="extend">Whether to extend curve if needed.</param>
+        /// <returns>The distance.</returns>
         public static double GetDistToPoint(this Curve cv, Point3d point, bool extend = false)
         {
             return cv.GetClosestPointTo(point, extend).DistanceTo(point);
         }
 
         /// <summary>
-        /// 获取指定距离处的参数 / Get parameters at a specified distance
+        /// Gets the parameter at a specified distance on curve.
         /// </summary>
-        /// <param name="cv">曲线</param>
-        /// <param name="dist">距离</param>
-        /// <returns>参数</returns>
+        /// <param name="cv">The curve.</param>
+        /// <param name="dist">The distance.</param>
+        /// <returns>The paramter.</returns>
         public static double GetParamAtDist(this Curve cv, double dist)
         {
             if (dist < 0)
@@ -219,11 +219,11 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 获取指定参数处的距离 / Get the distance at the specified parameter
+        /// Gets the distance at a specified parameter on curve.
         /// </summary>
-        /// <param name="cv">曲线</param>
-        /// <param name="param">参数</param>
-        /// <returns>距离</returns>
+        /// <param name="cv">The curve.</param>
+        /// <param name="param">The parameter.</param>
+        /// <returns>The distance.</returns>
         public static double GetDistAtParam(this Curve cv, double param)
         {
             if (param < 0)
@@ -238,11 +238,11 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 获取指定参数处的点 / Get the point at the specified parameter
+        /// Gets the point at a specified parameter on curve.
         /// </summary>
-        /// <param name="cv">曲线</param>
-        /// <param name="param">参数</param>
-        /// <returns>点</returns>
+        /// <param name="cv">The curve.</param>
+        /// <param name="param">The parameter.</param>
+        /// <returns>The point.</returns>
         public static Point3d GetPointAtParam(this Curve cv, double param)
         {
             if (param < 0)
@@ -257,11 +257,11 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 获取指定距离处的点 / Get points at a specified distance
+        /// Gets the point at a specified distance on curve.
         /// </summary>
-        /// <param name="cv">曲线</param>
-        /// <param name="dist">距离</param>
-        /// <returns>点</returns>
+        /// <param name="cv">The curve.</param>
+        /// <param name="dist">The distance.</param>
+        /// <returns>The point.</returns>
         public static Point3d GetPointAtDistX(this Curve cv, double dist)
         {
             if (dist < 0)
@@ -276,11 +276,11 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 获取指定点处的距离 / Get the distance at the specified point
+        /// Gets the distance at a specified point on curve.
         /// </summary>
-        /// <param name="cv">曲线</param>
-        /// <param name="point">点</param>
-        /// <returns>距离</returns>
+        /// <param name="cv">The curve.</param>
+        /// <param name="point">The point.</param>
+        /// <returns>The distance.</returns>
         public static double GetDistAtPointX(this Curve cv, Point3d point)
         {
             if (point.DistanceTo(cv.StartPoint) < Consts.Epsilon)
@@ -305,11 +305,11 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 获取指定点处的参数 / Get the parameters at the specified point
+        /// Gets the parameter at a specified point on curve.
         /// </summary>
-        /// <param name="cv">曲线</param>
-        /// <param name="point">点</param>
-        /// <returns>参数</returns>
+        /// <param name="cv">The curve.</param>
+        /// <param name="point">The point.</param>
+        /// <returns>The parameter.</returns>
         public static double GetParamAtPointX(this Curve cv, Point3d point)
         {
             if (point.DistanceTo(cv.StartPoint) < Consts.Epsilon)
@@ -334,12 +334,12 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 获取曲线子集 / Get a subset of curves
+        /// Gets subcurve from curve by distance interval.
         /// </summary>
-        /// <param name="curve">曲线</param>
-        /// <param name="interval">曲线子集的长度区间</param>
-        /// <returns>曲线子集</returns>
-        public static Curve GetSubCurve(this Curve curve, Interv interval) // todo: 在函数API中移除复杂类型
+        /// <param name="curve">The curve.</param>
+        /// <param name="interval">The subcurve interval in distance.</param>
+        /// <returns>The subcurve.</returns>
+        public static Curve GetSubCurve(this Curve curve, Interv interval) // todo: Remove complex type from API
         {
             if (curve is Line)
             {
@@ -355,11 +355,22 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 获取曲线子集 / Get a subset of curves
+        /// Gets subcurve from curve by distance interval.
         /// </summary>
-        /// <param name="curve">曲线</param>
-        /// <param name="interval">曲线子集的参数区间</param>
-        /// <returns>曲线子集</returns>
+        /// <param name="curve">The curve.</param>
+        /// <param name="interval">The subcurve interval in distance.</param>
+        /// <returns>The subcurve.</returns>
+        public static Curve GetSubCurve(this Curve curve, (double, double) interval)
+        {
+            return Algorithms.GetSubCurve(curve, new Interv(interval));
+        }
+
+        /// <summary>
+        /// Gets subcurve from curve by parameter interval.
+        /// </summary>
+        /// <param name="curve">The curve.</param>
+        /// <param name="interval">The subcurve interval in parameter.</param>
+        /// <returns>The subcurve.</returns>
         public static Curve GetSubCurveByParams(this Curve curve, Interv interval)
         {
             if (curve is Line)
@@ -432,10 +443,21 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 获取曲线的整数参数点 / Get the integer parameter point of the curve
+        /// Gets subcurve from curve by parameter interval.
         /// </summary>
-        /// <param name="cv">曲线</param>
-        /// <returns>点集</returns>
+        /// <param name="curve">The curve.</param>
+        /// <param name="interval">The subcurve interval in parameter.</param>
+        /// <returns>The subcurve.</returns>
+        public static Curve GetSubCurveByParams(this Curve curve, (double, double) interval)
+        {
+            return Algorithms.GetSubCurveByParams(curve, new Interv(interval));
+        }
+
+        /// <summary>
+        /// Gets all points on curve whose parameters are integers.
+        /// </summary>
+        /// <param name="cv">The curve.</param>
+        /// <returns>The points.</returns>
         public static IEnumerable<Point3d> GetPoints(this Curve cv)
         {
             for (int i = 0; i <= cv.EndParam; i++)
@@ -1808,38 +1830,47 @@ namespace AutoCADCommands
     }
 
     /// <summary>
-    /// 区间
+    /// Interval.
     /// </summary>
     public class Interv : Tuple<double, double>
     {
         /// <summary>
-        /// 指定上下限创建区间
+        /// Creates an interval by specifying start and end.
         /// </summary>
-        /// <param name="start">下限</param>
-        /// <param name="end">上限</param>
+        /// <param name="start">The lower limit.</param>
+        /// <param name="end">The uppper limit.</param>
         public Interv(double start, double end)
             : base(start, end)
         {
         }
 
         /// <summary>
-        /// 下限
+        /// Creates an interval from a C# 7.0 tuple.
         /// </summary>
-        public double Start { get { return Math.Min(base.Item1, base.Item2); } }
-        /// <summary>
-        /// 上限
-        /// </summary>
-        public double End { get { return Math.Max(base.Item1, base.Item2); } }
-        /// <summary>
-        /// 长度
-        /// </summary>
-        public double Length { get { return End - Start; } }
+        /// <param name="tuple">The tuple.</param>
+        public Interv((double, double) tuple)
+            : this(tuple.Item1, tuple.Item2)
+        {
+        }
 
         /// <summary>
-        /// 添加点
+        /// The lower limit.
         /// </summary>
-        /// <param name="point">点</param>
-        /// <returns>结果</returns>
+        public double Start => Math.Min(base.Item1, base.Item2);
+        /// <summary>
+        /// The upper limit.
+        /// </summary>
+        public double End => Math.Max(base.Item1, base.Item2);
+        /// <summary>
+        /// The length.
+        /// </summary>
+        public double Length => this.End - this.Start;
+
+        /// <summary>
+        /// Adds point to interval.
+        /// </summary>
+        /// <param name="point">The point.</param>
+        /// <returns>The result (new interval).</returns>
         public Interv AddPoint(double point)
         {
             if (IsPointIn(point))
@@ -1860,23 +1891,23 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 添加区间
+        /// Adds interval to interval.
         /// </summary>
-        /// <param name="interval">区间</param>
-        /// <returns>结果</returns>
+        /// <param name="interval">The added interval.</param>
+        /// <returns>The result (new interval).</returns>
         public Interv AddInterval(Interv interval)
         {
             return this.AddPoint(interval.Start).AddPoint(interval.End);
         }
 
         /// <summary>
-        /// 值在区间判断
+        /// Determines if a point is in the interval.
         /// </summary>
-        /// <param name="point">值</param>
-        /// <returns>结果</returns>
+        /// <param name="point">The value.</param>
+        /// <returns>A value indicating whether the point is in.</returns>
         public bool IsPointIn(double point)
         {
-            return point >= Start && point <= End;
+            return point >= this.Start && point <= this.End;
         }
     }
 }
