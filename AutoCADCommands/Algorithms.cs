@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using Autodesk.AutoCAD.ApplicationServices;
 using Autodesk.AutoCAD.DatabaseServices;
 using Autodesk.AutoCAD.EditorInput;
@@ -82,11 +84,6 @@ namespace AutoCADCommands
             return path;
         }
 
-        private static string ExpandRelativePath(string baseFolder, string relativePath)
-        {
-            return (relativePath.Contains(":") ? string.Empty : baseFolder) + relativePath;
-        }
-
         /// <summary>
         /// Parses INI files
         /// </summary>
@@ -95,86 +92,38 @@ namespace AutoCADCommands
         /// <returns>A value indicating if suceeded.</returns>
         public static bool ParseIniFile(string fileName, IniData result)
         {
-            string groupPattern = @"^\[[^\[\]]+\]$";
-            string dataPattern = @"^[^=]+=[^=]+$";
+            var groupPattern = @"^\[[^\[\]]+\]$";
+            var dataPattern = @"^[^=]+=[^=]+$";
 
-            string[] lines = System.IO.File.ReadAllLines(fileName).Select(x => x.Trim()).Where(x => !string.IsNullOrEmpty(x)).ToArray();
-            Dictionary<string, string> group = new Dictionary<string, string>();
+            var lines = File.ReadAllLines(fileName)
+                .Select(x => x.Trim())
+                .Where(x => !string.IsNullOrEmpty(x))
+                .ToArray();
+
+            var group = new Dictionary<string, string>();
             foreach (var line in lines)
             {
                 if (line.StartsWith("["))
                 {
-                    if (!System.Text.RegularExpressions.Regex.IsMatch(line, groupPattern))
+                    if (!Regex.IsMatch(line, groupPattern))
                     {
                         return false;
                     }
                     group = new Dictionary<string, string>();
-                    string groupName = line.Trim('[', ']');
+                    var groupName = line.Trim('[', ']');
                     result.Add(groupName, group);
                 }
                 else
                 {
-                    if (!System.Text.RegularExpressions.Regex.IsMatch(line, dataPattern))
+                    if (!Regex.IsMatch(line, dataPattern))
                     {
                         return false;
                     }
-                    string[] parts = line.Split('=').Select(x => x.Trim()).ToArray();
+                    var parts = line.Split('=').Select(x => x.Trim()).ToArray();
                     group.Add(parts[0], parts[1]);
                 }
             }
             return true;
-        }
-
-        private static bool CaseFreeContains(this IEnumerable<string> source, string value)
-        {
-            return source.Select(x => x.ToUpper()).Contains(value.ToUpper());
-        }
-
-        private static T CaseFreeDictValue<T>(this Dictionary<string, T> source, string key)
-        {
-            return source.First(x => x.Key.ToUpper() == key.ToUpper()).Value;
-        }
-
-        private static void SetCaseFreeDictValue<T>(this Dictionary<string, T> source, string key, T value)
-        {
-            string realKey = source.First(x => x.Key.ToUpper() == key.ToUpper()).Key;
-            source[realKey] = value;
-        }
-
-        private static bool Contains(this IEnumerable<string> source, string value, bool caseFree)
-        {
-            if (caseFree)
-            {
-                return source.CaseFreeContains(value);
-            }
-            else
-            {
-                return source.Contains(value);
-            }
-        }
-
-        private static T DictValue<T>(this Dictionary<string, T> source, string key, bool caseFree)
-        {
-            if (caseFree)
-            {
-                return source.CaseFreeDictValue(key);
-            }
-            else
-            {
-                return source[key];
-            }
-        }
-
-        private static void SetDictValue<T>(this Dictionary<string, T> source, string key, T value, bool caseFree)
-        {
-            if (caseFree)
-            {
-                source.SetCaseFreeDictValue(key, value);
-            }
-            else
-            {
-                source[key] = value;
-            }
         }
 
         #endregion
@@ -570,16 +519,16 @@ namespace AutoCADCommands
 
         #endregion
 
-        #region 范围算法 / Range algorithm
+        #region Range algorithms
 
         /// <summary>
-        /// 获取实体范围 / Get entity scope
+        /// Gets entity extents.
         /// </summary>
-        /// <param name="entIds">实体ID集</param>
-        /// <returns>范围</returns>
+        /// <param name="entIds">The entity IDs.</param>
+        /// <returns>The result extents.</returns>
         public static Extents3d GetExtents(this IEnumerable<ObjectId> entIds)
         {
-            Extents3d extent = entIds.First().QSelect(x => x.GeometricExtents);
+            var extent = entIds.First().QSelect(x => x.GeometricExtents);
             foreach (var id in entIds)
             {
                 extent.AddExtents(id.QSelect(x => x.GeometricExtents));
@@ -588,13 +537,13 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 获取实体范围 / Get entity scope
+        /// Gets entity extents.
         /// </summary>
-        /// <param name="ents">实体集</param>
-        /// <returns>范围</returns>
+        /// <param name="ents">The entities.</param>
+        /// <returns>The result extents.</returns>
         public static Extents3d GetExtents(this IEnumerable<Entity> ents)
         {
-            Extents3d extent = ents.First().GeometricExtents;
+            var extent = ents.First().GeometricExtents;
             foreach (var ent in ents)
             {
                 extent.AddExtents(ent.GeometricExtents);
@@ -603,31 +552,31 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 获取范围中心 / Get scope center
+        /// Gets the center of an Extents3d.
         /// </summary>
-        /// <param name="extents">范围</param>
-        /// <returns>中心点</returns>
+        /// <param name="extents">The extents.</param>
+        /// <returns>The center.</returns>
         public static Point3d GetCenter(this Extents3d extents)
         {
             return Point3d.Origin + 0.5 * (extents.MinPoint.GetAsVector() + extents.MaxPoint.GetAsVector());
         }
 
         /// <summary>
-        /// 获取范围中心 / Get scope center
+        /// Gets the center of an Extents2d.
         /// </summary>
-        /// <param name="extents">范围</param>
-        /// <returns>中心点</returns>
+        /// <param name="extents">The extents.</param>
+        /// <returns>The center.</returns>
         public static Point2d GetCenter(this Extents2d extents)
         {
             return Point2d.Origin + 0.5 * (extents.MinPoint.GetAsVector() + extents.MaxPoint.GetAsVector());
         }
 
         /// <summary>
-        /// 范围缩放 / Range scaling
+        /// Scales an Extents3d.
         /// </summary>
-        /// <param name="extents">范围</param>
-        /// <param name="factor">比例因子</param>
-        /// <returns>结果</returns>
+        /// <param name="extents">The extents.</param>
+        /// <param name="factor">The scale factor.</param>
+        /// <returns>The result.</returns>
         public static Extents3d Expand(this Extents3d extents, double factor)
         {
             var center = extents.GetCenter();
@@ -635,11 +584,11 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 指定中心长出范围 / Specify center outreach
+        /// Inflates an Point3d into an Extents3d.
         /// </summary>
-        /// <param name="center">中心</param>
-        /// <param name="size">大小</param>
-        /// <returns>结果</returns>
+        /// <param name="center">The point.</param>
+        /// <param name="size">The inflation size.</param>
+        /// <returns>The result.</returns>
         public static Extents3d Expand(this Point3d center, double size) // newly 20130201
         {
             Vector3d move = new Vector3d(size / 2, size / 2, size / 2);
@@ -647,43 +596,142 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 点在范围内判定 / Point within range
+        /// Scales an Extents2d.
         /// </summary>
-        /// <param name="extents">范围</param>
-        /// <param name="point">点</param>
-        /// <returns>结果</returns>
-        public static bool IsPointIn(this Extents3d extents, Point3d point)
+        /// <param name="extents">The extents.</param>
+        /// <param name="factor">The scale factor.</param>
+        /// <returns>The result.</returns>
+        public static Extents2d Expand(this Extents2d extents, double factor)
         {
-            return point.X >= extents.MinPoint.X && point.X <= extents.MaxPoint.X
-                && point.Y >= extents.MinPoint.Y && point.Y <= extents.MaxPoint.Y;
-            //&& point.Z >= extents.MinPoint.Z && point.Z <= extents.MaxPoint.Z;
+            var center = extents.GetCenter();
+            return new Extents2d(center + factor * (extents.MinPoint - center), center + factor * (extents.MaxPoint - center));
         }
 
         /// <summary>
-        /// 获取实体范围中心 / Get entity scope center
+        /// Inflates an Point2d into an Extents2d.
         /// </summary>
-        /// <param name="entIds">实体</param>
-        /// <returns>中心点</returns>
+        /// <param name="center">The point.</param>
+        /// <param name="size">The inflation size.</param>
+        /// <returns>The result.</returns>
+        public static Extents2d Expand(this Point2d center, double size)
+        {
+            var move = new Vector2d(size / 2, size / 2);
+            return new Extents2d(center - move, center + move);
+        }
+
+        /// <summary>
+        /// Determines if a point is in an extents.
+        /// </summary>
+        /// <param name="extents">The extents.</param>
+        /// <param name="point">The point.</param>
+        /// <returns>The result.</returns>
+        public static bool IsPointIn(this Extents3d extents, Point3d point)
+        {
+            return point.X >= extents.MinPoint.X && point.X <= extents.MaxPoint.X
+                && point.Y >= extents.MinPoint.Y && point.Y <= extents.MaxPoint.Y
+                && point.Z >= extents.MinPoint.Z && point.Z <= extents.MaxPoint.Z;
+        }
+
+        /// <summary>
+        /// Determines if a point is in an extents.
+        /// </summary>
+        /// <param name="extents">The extents.</param>
+        /// <param name="point">The point.</param>
+        /// <returns>The result.</returns>
+        public static bool IsPointIn(this Extents2d extents, Point2d point)
+        {
+            return point.X >= extents.MinPoint.X && point.X <= extents.MaxPoint.X
+                && point.Y >= extents.MinPoint.Y && point.Y <= extents.MaxPoint.Y;
+        }
+
+        /// <summary>
+        /// Converts Extents3d to Extents2d.
+        /// </summary>
+        /// <param name="extents">The Extents3d.</param>
+        /// <param name="x">The X value selector.</param>
+        /// <param name="y">The Y value selector.</param>
+        /// <returns>The result Extents2d.</returns>
+        public static Extents2d ToExtents2d(
+            this Extents3d extents,
+            Func<Point3d, double> x = null,
+            Func<Point3d, double> y = null)
+        {
+            if (x == null)
+            {
+                x = p => p.X;
+            }
+
+            if (y == null)
+            {
+                y = p => p.Y;
+            }
+
+            return new Extents2d(
+                x(extents.MinPoint),
+                y(extents.MinPoint),
+                x(extents.MaxPoint),
+                y(extents.MaxPoint));
+        }
+
+        /// <summary>
+        /// Converts Extents2d to Extents3d.
+        /// </summary>
+        /// <param name="extents">The Extents2d.</param>
+        /// <param name="x">The X value selector.</param>
+        /// <param name="y">The Y value selector.</param>
+        /// <param name="z">The Z value selector.</param>
+        /// <returns>The result Extents3d.</returns>
+        public static Extents3d ToExtents3d(
+            this Extents2d extents,
+            Func<Point2d, double> x = null,
+            Func<Point2d, double> y = null,
+            Func<Point2d, double> z = null)
+        {
+            if (x == null)
+            {
+                x = p => p.X;
+            }
+
+            if (y == null)
+            {
+                y = p => p.Y;
+            }
+
+            if (z == null)
+            {
+                z = p => 0;
+            }
+
+            var minPoint = new Point3d(x(extents.MinPoint), y(extents.MinPoint), z(extents.MinPoint));
+            var maxPoint = new Point3d(x(extents.MaxPoint), y(extents.MaxPoint), z(extents.MaxPoint));
+            return new Extents3d(minPoint, maxPoint);
+        }
+
+        /// <summary>
+        /// Gets the center of multiple entities.
+        /// </summary>
+        /// <param name="entIds">The entity IDs.</param>
+        /// <returns>The center.</returns>
         public static Point3d GetCenter(this IEnumerable<ObjectId> entIds)
         {
             return entIds.GetExtents().GetCenter();
         }
 
         /// <summary>
-        /// 获取实体范围中心 / Get entity scope center
+        /// Gets the center of multiple entities.
         /// </summary>
-        /// <param name="ents">实体</param>
-        /// <returns>中心点</returns>
+        /// <param name="ents">The entities.</param>
+        /// <returns>The center.</returns>
         public static Point3d GetCenter(this IEnumerable<Entity> ents)
         {
             return ents.GetExtents().GetCenter();
         }
 
         /// <summary>
-        /// 获取实体范围中心 / Get entity scope center
+        /// Gets the center of an entity.
         /// </summary>
-        /// <param name="entId">实体</param>
-        /// <returns>中心点</returns>
+        /// <param name="entId">The entity ID.</param>
+        /// <returns>The center.</returns>
         public static Point3d GetCenter(this ObjectId entId)
         {
             var extent = entId.QSelect(x => x.GeometricExtents);
@@ -691,10 +739,10 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 获取实体范围中心 / Get entity scope center
+        /// Gets the center of an entity.
         /// </summary>
-        /// <param name="ent">实体</param>
-        /// <returns>中心点</returns>
+        /// <param name="ent">The entity.</param>
+        /// <returns>The center.</returns>
         public static Point3d GetCenter(this Entity ent)
         {
             var extent = ent.GeometricExtents;
@@ -702,20 +750,31 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 获取范围面积 / Get area
+        /// Gets the volume of an Extents3d.
         /// </summary>
-        /// <param name="extents">范围</param>
-        /// <returns>面积</returns>
+        /// <param name="extents">The extents.</param>
+        /// <returns>The volume.</returns>
+        public static double GetVolume(this Extents3d extents)
+        {
+            return (extents.MaxPoint.X - extents.MinPoint.X) * (extents.MaxPoint.Y - extents.MinPoint.Y) * (extents.MaxPoint.Z - extents.MinPoint.Z);
+        }
+
+        /// <summary>
+        /// Gets the area of an Extents3d.
+        /// </summary>
+        /// <param name="extents">The extents.</param>
+        /// <returns>The area.</returns>
+        [Obsolete("Use `.ToExtents2d().GetArea()` instead.")]
         public static double GetArea(this Extents3d extents) // newly 20130514
         {
             return (extents.MaxPoint.X - extents.MinPoint.X) * (extents.MaxPoint.Y - extents.MinPoint.Y);
         }
 
         /// <summary>
-        /// 获取范围面积 / Get area
+        /// Gets the area of an Extents2d.
         /// </summary>
-        /// <param name="extents">范围</param>
-        /// <returns>面积</returns>
+        /// <param name="extents">The extents.</param>
+        /// <returns>The area.</returns>
         public static double GetArea(this Extents2d extents) // newly 20130514
         {
             return (extents.MaxPoint.X - extents.MinPoint.X) * (extents.MaxPoint.Y - extents.MinPoint.Y);
@@ -723,62 +782,55 @@ namespace AutoCADCommands
 
         #endregion
 
-        #region 点算法 / Point Algorithm
-
-        private static Point3d _nullPoint3d = new Point3d(double.NaN, double.NaN, double.NaN);
-        /// <summary>
-        /// 获取一个空的Point3d / Get an empty Point3d
-        /// </summary>
-        public static Point3d NullPoint3d
-        {
-            get
-            {
-                return _nullPoint3d;
-            }
-        }
+        #region Point algorithms
 
         /// <summary>
-        /// Point3d为空判别 / Point3d is empty
+        /// Gets an empty Point3d
         /// </summary>
-        /// <param name="p">点</param>
-        /// <returns>结果</returns>
+        public static Point3d NullPoint3d { get; } = new Point3d(double.NaN, double.NaN, double.NaN);
+
+        /// <summary>
+        /// Determines if a Point3d is empty.
+        /// </summary>
+        /// <param name="p">The point.</param>
+        /// <returns>The result.</returns>
         public static bool IsNull(this Point3d p)
         {
             return double.IsNaN(p.X);
         }
 
         /// <summary>
-        /// Point3d转Point2d / Point3d to Point2d
+        /// Converts Point3d to Point2d.
         /// </summary>
-        /// <param name="point">点</param>
-        /// <returns>结果</returns>
+        /// <param name="point">The Point3d.</param>
+        /// <returns>A Point2d.</returns>
         public static Point2d ToPoint2d(this Point3d point)
         {
             return new Point2d(point.X, point.Y);
         }
 
         /// <summary>
-        /// Point2d转Point3d / Point2d to Point3d
+        /// Converts Point2d to Point3d.
         /// </summary>
-        /// <param name="point">点</param>
-        /// <returns>结果</returns>
+        /// <param name="point">The Point2d.</param>
+        /// <returns>A Point3d.</returns>
         public static Point3d ToPoint3d(this Point2d point)
         {
             return new Point3d(point.X, point.Y, 0);
         }
 
         /// <summary>
-        /// Vector2d转Vector3d / Vector2d to Vector3d
+        /// Converts Vector2d to Vector3d.
         /// </summary>
-        /// <param name="point">点</param>
-        /// <returns>结果</returns>
+        /// <param name="point">The Vector2d.</param>
+        /// <returns>A Vector3d.</returns>
         public static Vector3d ToVector3d(this Vector2d point)
         {
             return new Vector3d(point.X, point.Y, 0);
         }
 
         /// <summary>
-        /// Vector3d转Vector2d / Vector3d to Vector2d
+        /// Converts Vector3d to Vector2d.
         /// </summary>
         /// <param name="point">点</param>
         /// <returns>结果</returns>
@@ -788,15 +840,15 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 计算凸包 / Calculate convex hull
+        /// Gets the convex hull of multiple points.
         /// </summary>
-        /// <param name="source">点集</param>
-        /// <returns>结果</returns>
+        /// <param name="source">The source collection.</param>
+        /// <returns>The convex hull.</returns>
         public static List<Point3d> GetConvexHull(List<Point3d> source)
         {
-            List<Point3d> points = new List<Point3d>();
-            List<Point3d> collection = new List<Point3d>();
-            int num = 0;
+            var points = new List<Point3d>();
+            var collection = new List<Point3d>();
+            var num = 0;
             source.Sort((p1, p2) => (p1.X - p2.X == 0) ? (int)(p1.Y - p2.Y) : (int)(p1.X - p2.X));
 
             points.Add(source[0]);
@@ -834,28 +886,29 @@ namespace AutoCADCommands
 
         #endregion
 
-        #region 多段线算法 / Polyline algorithm
+        #region Polyline algorithms
 
         /// <summary>
-        /// 判断多段线是否自相交 / Determine if the polyline is self-
+        /// Determines if the polyline is self-intersecting.
         /// </summary>
-        /// <param name="poly">多段线</param>
-        /// <returns>结果</returns>
+        /// <param name="poly">The polyline.</param>
+        /// <returns>The result.</returns>
         public static bool IsSelfIntersecting(this Polyline poly) // newly by WY 20130202
         {
             var points = poly.GetPolyPoints().ToList();
             for (int i = 0; i < points.Count - 3; i++)
             {
-                Point2d a1 = points[i].ToPoint2d();
-                Point2d a2 = points[i + 1].ToPoint2d();
-                for (int j = i + 2; j < points.Count - 1; j++)
+                var a1 = points[i].ToPoint2d();
+                var a2 = points[i + 1].ToPoint2d();
+                for (var j = i + 2; j < points.Count - 1; j++)
                 {
-                    Point2d b1 = points[j].ToPoint2d();
-                    Point2d b2 = points[j + 1].ToPoint2d();
+                    var b1 = points[j].ToPoint2d();
+                    var b2 = points[j + 1].ToPoint2d();
                     if (IsLineSegIntersect(a1, a2, b1, b2))
                     {
-                        if (i == 0 && j == points.Count - 2) // 正好是首尾两段，要看是否因闭合，闭合不算自相交。
+                        if (i == 0 && j == points.Count - 2)
                         {
+                            // NOTE: If they happen to be the first and the last, check if polyline is closed. A closed polyline is not considered self-intersecting.
                             if (points.First().DistanceTo(points.Last()) > Consts.Epsilon)
                             {
                                 return true;
@@ -870,24 +923,24 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 二维向量的伪外积 / Pseudo-external product of two-dimensional vectors
+        /// Gets the pseudo cross product (a.k.a. 'kross') of two Vector2ds.
         /// </summary>
-        /// <param name="v1">向量1</param>
-        /// <param name="v2">向量2</param>
-        /// <returns>伪外积</returns>
+        /// <param name="v1">The vector 1.</param>
+        /// <param name="v2">The vector 2.</param>
+        /// <returns>The pseudo cross product (a.k.a. 'kross').</returns>
         public static double Kross(this Vector2d v1, Vector2d v2)
         {
             return v1.X * v2.Y - v1.Y * v2.X;
         }
 
         /// <summary>
-        /// 线段相交判定 / Segment intersection decision
+        /// Determines if two line segments intersect.
         /// </summary>
-        /// <param name="a1">线段a点1</param>
-        /// <param name="a2">线段a点2</param>
-        /// <param name="b1">线段b点1</param>
-        /// <param name="b2">线段b点2</param>
-        /// <returns>结果</returns>
+        /// <param name="a1">Line a point 1.</param>
+        /// <param name="a2">Line a point 2.</param>
+        /// <param name="b1">Line b point 1.</param>
+        /// <param name="b2">Line b point 2.</param>
+        /// <returns>The result.</returns>
         public static bool IsLineSegIntersect(Point2d a1, Point2d a2, Point2d b1, Point2d b2)
         {
             if ((a1 - a2).Kross(b1 - b2) == 0)
@@ -940,18 +993,18 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 用直线把闭合多段线切成两个闭合的部分 / Cut a closed polyline into two closed sections with a straight line
+        /// Cuts a closed polyline into two closed halves with a straight line
         /// </summary>
-        /// <param name="loop">闭合多段线</param>
-        /// <param name="cut">切割线</param>
-        /// <returns>结果</returns>
+        /// <param name="loop">The closed polyline.</param>
+        /// <param name="cut">The cutting line.</param>
+        /// <returns>The result.</returns>
         public static Polyline[] CutLoopToHalves(Polyline loop, Line cut)
         {
             if (loop.EndPoint != loop.StartPoint)
             {
                 return new Polyline[0];
             }
-            Point3dCollection points = new Point3dCollection();
+            var points = new Point3dCollection();
             loop.IntersectWith3264(cut, Autodesk.AutoCAD.DatabaseServices.Intersect.ExtendArgument, points);
             if (points.Count != 2)
             {
@@ -968,10 +1021,10 @@ namespace AutoCADCommands
                 a = loop.GetParamAtPointX(points[1]);
                 b = loop.GetParamAtPointX(points[0]);
             }
-            Polyline poly1 = new Polyline();
-            Polyline poly2 = new Polyline();
+            var poly1 = new Polyline();
+            var poly2 = new Polyline();
 
-            // 不含开始结束点的那一半
+            // The half without the polyline start/end point.
             poly2.AddVertexAt(0, loop.GetPointAtParameter(a).ToPoint2d(), loop.GetBulgeBetween(a, Math.Ceiling(a)), 0, 0);
             int i = 1;
             for (int n = (int)Math.Ceiling(a); n < b - 1; n++)
@@ -983,7 +1036,7 @@ namespace AutoCADCommands
             poly2.AddVertexAt(i + 1, loop.GetPointAtParameter(b).ToPoint2d(), 0, 0, 0);
             poly2.AddVertexAt(i + 2, loop.GetPointAtParameter(a).ToPoint2d(), 0, 0, 0);
 
-            // 包含开始结束点的那一半
+            // The half with the polyline start/end point.
             poly1.AddVertexAt(0, loop.GetPointAtParameter(b).ToPoint2d(), loop.GetBulgeBetween(b, Math.Ceiling(b)), 0, 0);
             int j = 1;
             for (int n = (int)Math.Ceiling(b); n < loop.EndParam; n++)
@@ -1004,12 +1057,12 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 获取多段线一个弧段的一个子集对应的凸度 / Get the convexity corresponding to a subset of one arc segment of a polyline
+        /// Gets the bulge between two parameters within the same arc segment of a polyline.
         /// </summary>
-        /// <param name="poly">多段线</param>
-        /// <param name="startParam">起始参数</param>
-        /// <param name="endParam">结束参数</param>
-        /// <returns>凸度</returns>
+        /// <param name="poly">The polyline.</param>
+        /// <param name="startParam">The start parameter.</param>
+        /// <param name="endParam">The end parameter.</param>
+        /// <returns>The bulge.</returns>
         public static double GetBulgeBetween(this Polyline poly, double startParam, double endParam)
         {
             double total = poly.GetBulgeAt((int)Math.Floor(startParam));
@@ -1017,17 +1070,17 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 对Closed为True的多段线，改为False，并通过增加一个点来真正闭合。/ For polylines with Closed True, change to False and close by adding a point.
+        /// For a polyline with Closed=True, changes the value to False and closes it by adding a point.
         /// </summary>
-        /// <param name="poly">多段线</param>
-        /// <returns>多段线</returns>
+        /// <param name="poly">The polyline.</param>
+        /// <returns>The result polyline.</returns>
         public static Polyline TrulyClose(this Polyline poly)
         {
             if (poly.Closed == false)
             {
                 return poly;
             }
-            Polyline result = poly.Clone() as Polyline;
+            var result = poly.Clone() as Polyline;
             result.Closed = false;
             if (result.EndPoint != result.StartPoint)
             {
@@ -1037,20 +1090,20 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 偏移多段线 / Offset polyline
+        /// Offsets a polyline.
         /// </summary>
-        /// <param name="poly">多段线</param>
-        /// <param name="offsets">各段偏移量</param>
-        /// <returns>结果</returns>
+        /// <param name="poly">The polyline.</param>
+        /// <param name="offsets">The offsets for each segments.</param>
+        /// <returns>The result polyline.</returns>
         public static Polyline OffsetPoly(this Polyline poly, double[] offsets)
         {
             poly = poly.TrulyClose();
 
-            List<double> bulges = new List<double>();
-            List<Polyline> segs1 = new List<Polyline>();
+            var bulges = new List<double>();
+            var segs1 = new List<Polyline>();
             for (int i = 0; i < poly.NumberOfVertices - 1; i++)
             {
-                Polyline subPoly = new Polyline();
+                var subPoly = new Polyline();
                 subPoly.AddVertexAt(0, poly.GetPointAtParameter(i).ToPoint2d(), poly.GetBulgeAt(i), 0, 0);
                 subPoly.AddVertexAt(1, poly.GetPointAtParameter(i + 1).ToPoint2d(), 0, 0, 0);
                 var temp = subPoly.GetOffsetCurves(offsets[i]);
@@ -1060,16 +1113,16 @@ namespace AutoCADCommands
                     bulges.Add(poly.GetBulgeAt(i));
                 }
             }
-            Point3dCollection points = new Point3dCollection();
+            var points = new Point3dCollection();
             Enumerable.Range(0, segs1.Count).ToList().ForEach(x =>
             {
                 int count = points.Count;
                 int y = x + 1 < segs1.Count ? x + 1 : 0;
                 segs1[x].IntersectWith3264(segs1[y], Autodesk.AutoCAD.DatabaseServices.Intersect.ExtendBoth, points);
-                if (points.Count - count > 1) // 本段为圆弧，有两个交点
+                if (points.Count - count > 1) // This is an arc - more than 1 intersection point.
                 {
-                    Point3d a = points[points.Count - 2];
-                    Point3d b = points[points.Count - 1];
+                    var a = points[points.Count - 2];
+                    var b = points[points.Count - 1];
                     if (segs1[x].EndPoint.DistanceTo(a) > segs1[x].EndPoint.DistanceTo(b))
                     {
                         points.Remove(a);
@@ -1080,37 +1133,37 @@ namespace AutoCADCommands
                     }
                 }
             });
-            Polyline result = new Polyline();
+            var result = new Polyline();
 
             int j = 0;
             points.Cast<Point3d>().ToList().ForEach(x =>
-                {
-                    double bulge = j + 1 < points.Count ? bulges[j + 1] : 0;
-                    result.AddVertexAt(j, x.ToPoint2d(), bulge, 0, 0);
-                    j++;
-                });
-            if (poly.StartPoint == poly.EndPoint) // 若闭合，将末段与首段交点也加到开头
+            {
+                double bulge = j + 1 < points.Count ? bulges[j + 1] : 0;
+                result.AddVertexAt(j, x.ToPoint2d(), bulge, 0, 0);
+                j++;
+            });
+            if (poly.StartPoint == poly.EndPoint) // Closed polyline: add intersection to result.
             {
                 result.AddVertexAt(0, points[points.Count - 1].ToPoint2d(), bulges[0], 0, 0);
             }
-            else // 若不闭合，在首尾加上偏移点而不是偏移线交点。
+            else // Open polyline: add 2 offset points rather than the intersection to result.
             {
                 result.AddVertexAt(0, segs1[0].StartPoint.ToPoint2d(), bulges[0], 0, 0);
                 result.AddVertexAt(result.NumberOfVertices, segs1.Last().EndPoint.ToPoint2d(), 0, 0, 0);
                 if (result.NumberOfVertices > 3)
                 {
-                    result.RemoveVertexAt(result.NumberOfVertices - 2); // 放前面有可能出现几何退化异常
+                    result.RemoveVertexAt(result.NumberOfVertices - 2); // Cannot be put before add - geometry will degrade.
                 }
             }
             return result;
         }
 
         /// <summary>
-        /// 计算圆弧凸度 / Calculate arc bulge
+        /// Gets arc bulge.
         /// </summary>
-        /// <param name="arc">圆弧</param>
-        /// <param name="start">起点</param>
-        /// <returns>凸度</returns>
+        /// <param name="arc">The arc.</param>
+        /// <param name="start">The start point.</param>
+        /// <returns>The bulge.</returns>
         public static double GetArcBulge(this Arc arc, Point3d start)
         {
             double bulge;
@@ -1135,39 +1188,40 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 直线转多段线 / Straight line to polyline
+        /// Converts line to polyline.
         /// </summary>
-        /// <param name="line">直线</param>
-        /// <returns>多段线</returns>
+        /// <param name="line">The line.</param>
+        /// <returns>A polyline.</returns>
         public static Polyline ToPolyline(this Line line)
         {
-            Polyline poly = new Polyline();
+            var poly = new Polyline();
             poly.AddVertexAt(0, line.StartPoint.ToPoint2d(), 0, 0, 0);
             poly.AddVertexAt(1, line.EndPoint.ToPoint2d(), 0, 0, 0);
             return poly;
         }
 
         /// <summary>
-        /// 圆弧转多段线 / Arc to Polyline
+        /// Converts arc to polyline.
         /// </summary>
-        /// <param name="arc">圆弧</param>
-        /// <returns>多段线</returns>
+        /// <param name="arc">The arc.</param>
+        /// <returns>A polyline.</returns>
         public static Polyline ToPolyline(this Arc arc)
         {
-            Polyline poly = new Polyline();
+            var poly = new Polyline();
             poly.AddVertexAt(0, arc.StartPoint.ToPoint2d(), arc.GetArcBulge(arc.StartPoint), 0, 0);
             poly.AddVertexAt(1, arc.EndPoint.ToPoint2d(), 0, 0, 0);
             return poly;
         }
 
         /// <summary>
-        /// 多段线清理：去除重复点 / Polyline Cleanup: Remove duplicate points
+        /// Cleans up a polyline by removing duplicate points.
         /// </summary>
-        /// <param name="poly">多段线</param>
+        /// <param name="poly">The polyline.</param>
+        /// <returns>The number of points removed.</returns>
         public static int PolyClean_RemoveDuplicatedVertex(Polyline poly)
         {
             var points = poly.GetPolyPoints().ToArray();
-            List<int> dupIndices = new List<int>();
+            var dupIndices = new List<int>();
             for (int i = points.Length - 2; i >= 0; i--)
             {
                 if (points[i].DistanceTo(points[i + 1]) < Consts.Epsilon)
@@ -1187,7 +1241,7 @@ namespace AutoCADCommands
         public static int PolyClean_ReducePoints(Polyline poly, double epsilon)
         {
             var points = poly.GetPolyPoints().ToArray();
-            List<int> cleanList = new List<int>();
+            var cleanList = new List<int>();
             int j = 0;
             for (int i = 1; i < points.Length; i++)
             {
@@ -1392,10 +1446,10 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 多段线形心 / Polyline center
+        /// Gets the centroid of a polyline.
         /// </summary>
-        /// <param name="poly">多段线</param>
-        /// <returns>形心</returns>
+        /// <param name="poly">The polyline.</param>
+        /// <returns>The centroid.</returns>
         public static Point3d Centroid(this Polyline poly) // newly 20130801
         {
             var points = poly.GetPoints().ToList();
@@ -1405,7 +1459,7 @@ namespace AutoCADCommands
             }
             else
             {
-                Point3d temp = Point3d.Origin;
+                var temp = Point3d.Origin;
                 double areaTwice = 0;
                 for (int i = 0; i < points.Count; i++)
                 {
@@ -1421,7 +1475,7 @@ namespace AutoCADCommands
 
         #endregion
 
-        #region 辅助算法 / Auxiliary algorithm
+        #region Auxiliary algorithms
 
         /// <summary>
         /// 获取世界坐标到视口坐标的变换矩阵 / Get the transformation matrix of world coordinates to viewport coordinates
@@ -1446,14 +1500,14 @@ namespace AutoCADCommands
         public static void IntersectWith3264(this Entity ent, Entity entOther, Intersect intersectType, Point3dCollection points)
         {
             // 32位与64位AutoCAD应用程序API不同，使用运行时绑定。
-            System.Reflection.MethodInfo mi = typeof(Entity).GetMethod("IntersectWith",
+            var methodInfo = typeof(Entity).GetMethod("IntersectWith",
                 new Type[] { typeof(Entity), typeof(Intersect), typeof(Point3dCollection), typeof(long), typeof(long) });
-            if (mi == null) // 32位AutoCAD
+            if (methodInfo == null) // 32-bit AutoCAD
             {
-                mi = typeof(Entity).GetMethod("IntersectWith",
+                methodInfo = typeof(Entity).GetMethod("IntersectWith",
                 new Type[] { typeof(Entity), typeof(Intersect), typeof(Point3dCollection), typeof(int), typeof(int) });
             }
-            mi.Invoke(ent, new object[] { entOther, intersectType, points, 0, 0 });
+            methodInfo.Invoke(ent, new object[] { entOther, intersectType, points, 0, 0 });
         }
 
         /// <summary>
@@ -1465,8 +1519,8 @@ namespace AutoCADCommands
         /// <returns>交点集合</returns>
         public static List<Point3d> Intersect(this Entity ent, Entity entOther, Intersect intersectType)
         {
-            Point3dCollection points = new Point3dCollection();
-            IntersectWith3264(ent, entOther, intersectType, points);
+            var points = new Point3dCollection();
+            Algorithms.IntersectWith3264(ent, entOther, intersectType, points);
             return points.Cast<Point3d>().ToList();
         }
 
@@ -1589,7 +1643,7 @@ namespace AutoCADCommands
 
         #endregion
 
-        #region 应用级别算法
+        #region Miscellaneous algorithms
 
         public static double GetCurveTotalLengthInPolygon(IEnumerable<Curve> curves, Polyline poly) // newly 20130514
         {
@@ -1622,7 +1676,7 @@ namespace AutoCADCommands
 
         public static List<Polyline> HatchToPline(Hatch ht) // newly 20130729
         {
-            List<Polyline> plines = new List<Polyline>();
+            var plines = new List<Polyline>();
             int loopCount = ht.NumberOfLoops;
             //System.Diagnostics.Debug.Write(loopCount);
             for (int index = 0; index < loopCount;)
@@ -1665,15 +1719,15 @@ namespace AutoCADCommands
     }
 
     /// <summary>
-    /// 面域边界环提取
+    /// The region and loop service.
     /// </summary>
     public static class RegionLoopService
     {
         /// <summary>
-        /// 合并相邻边界
+        /// Merges adjacent boundaries.
         /// </summary>
-        /// <param name="ids">边界集合</param>
-        /// <returns>合并后的边界集合</returns>
+        /// <param name="ids">The boundary IDs to merge.</param>
+        /// <returns>The boundary IDs after merger.</returns>
         public static List<ObjectId> MergeBoundary(IEnumerable<ObjectId> ids)
         {
             if (ids.Count() < 2)
@@ -1682,12 +1736,14 @@ namespace AutoCADCommands
             }
 
             Region region = null;
-            //将所有相邻的地块合并
-            foreach (ObjectId id in ids)
+            // Merge adjacent regions
+            foreach (var id in ids)
             {
-                DBObjectCollection objArr = new DBObjectCollection();
-                objArr.Add(id.QOpenForRead());
-                Region regionSub = Region.CreateFromCurves(objArr)[0] as Region;
+                var objArr = new DBObjectCollection
+                {
+                    id.QOpenForRead()
+                };
+                var regionSub = Region.CreateFromCurves(objArr)[0] as Region;
                 if (region == null)
                 {
                     region = regionSub;
@@ -1702,19 +1758,19 @@ namespace AutoCADCommands
             {
                 return new List<ObjectId>();
             }
-            //地块最外围的边界
+            // Outer loop
             var loops = region.GetLoops().Select(x => x.AddToCurrentSpace()).ToArray();
             return new List<ObjectId>(loops);
         }
 
         /// <summary>
-        /// 获取面域边界环
+        /// Gets loops of region.
         /// </summary>
-        /// <param name="region">面域</param>
-        /// <returns>边界环数组</returns>
+        /// <param name="region">The region.</param>
+        /// <returns>The boundary polyline array.</returns>
         public static Polyline[] GetLoops(this Region region)
         {
-            DBObjectCollection explodeResult = new DBObjectCollection();
+            var explodeResult = new DBObjectCollection();
             region.Explode(explodeResult);
             if (explodeResult[0] is Curve)
             {
@@ -1722,10 +1778,10 @@ namespace AutoCADCommands
             }
             else // explodeResult[0] is Region
             {
-                List<Polyline> polys = new List<Polyline>();
+                var polys = new List<Polyline>();
                 foreach (Region sub in explodeResult)
                 {
-                    DBObjectCollection subResult = new DBObjectCollection();
+                    var subResult = new DBObjectCollection();
                     sub.Explode(subResult);
                     polys.Add(GetLoop(GroupLoops(subResult)[0]));
                 }
@@ -1735,6 +1791,7 @@ namespace AutoCADCommands
 
         #region Private...
 
+        // Gets a loop from lines.
         private static Polyline GetLoop(DBObjectCollection lines)
         {
             Point3d start;
@@ -1746,12 +1803,12 @@ namespace AutoCADCommands
             {
                 start = (lines[0] as Curve).EndPoint;
             }
-            Polyline result = new Polyline();
-            Point3d next = start;
-            int i = 0;
+            var result = new Polyline();
+            var next = start;
+            var i = 0;
             foreach (Curve line in lines)
             {
-                double bulge = line is Arc ? Algorithms.GetArcBulge(line as Arc, next) : 0;
+                var bulge = line is Arc ? Algorithms.GetArcBulge(line as Arc, next) : 0;
                 result.AddVertexAt(i, next.ToPoint2d(), bulge, 0, 0);
                 next = NextPoint(line, next);
                 i++;
@@ -1760,34 +1817,34 @@ namespace AutoCADCommands
             return result;
         }
 
-        //把炸开的线集按成环分组
+        // Groups exploded lines into loops.
         private static List<DBObjectCollection> GroupLoops(DBObjectCollection lines)
         {
-            List<DBObjectCollection> groups = new List<DBObjectCollection>();
-            int i = 0;
+            var groups = new List<DBObjectCollection>();
+            var i = 0;
             while (i < lines.Count - 1)
             {
-                DBObjectCollection group = IncludingRing(lines, lines[i] as Curve);
+                var group = IncludingRing(lines, lines[i] as Curve);
                 groups.Add(group);
                 i += group.Count;
             }
             return groups;
         }
 
-        //测试用。通过此函数输出的文本文件得知，炸开后的线集是按照环来组织的，但并不是按照环中线的顺序排列的。
+        // For test only. It shows exploded lines are grouped by loops, but lines in a loop are not in order.
         private static void ShowExplodeResult(DBObjectCollection lines)
         {
-            StringBuilder sb = new StringBuilder();
+            var sb = new StringBuilder();
             foreach (Curve line in lines)
             {
                 sb.AppendLine(string.Format("({0},{1})->({2},{3})", line.StartPoint.X, line.StartPoint.Y, line.EndPoint.X, line.EndPoint.Y));
             }
-            System.IO.StreamWriter sw = new System.IO.StreamWriter("C:\\ShowExplodeResult.txt");
+            var sw = new StreamWriter("C:\\ShowExplodeResult.txt");
             sw.Write(sb.ToString());
             sw.Close();
         }
 
-        //获取线的另一端
+        // Gets the other end of a curve.
         private static Point3d NextPoint(Curve line, Point3d point)
         {
             if (point.DistanceTo(line.StartPoint) < Consts.Epsilon)
@@ -1804,19 +1861,21 @@ namespace AutoCADCommands
             }
         }
 
-        //获取下一条线
+        // Gets next line.
         private static Curve NextLine(DBObjectCollection lines, Curve line, Point3d point)
         {
             return lines.Cast<Curve>().First(x => (x.StartPoint == point || x.EndPoint == point) && x != line);
         }
 
-        //获取其元素组成的环包含指定线的线集
+        // Gets lines that forms a ring that includes a specified line.
         private static DBObjectCollection IncludingRing(DBObjectCollection lines, Curve origin)
         {
-            DBObjectCollection ring = new DBObjectCollection();
-            ring.Add(origin);
-            Curve next = origin;
-            Point3d point = origin.EndPoint;//从第一条线的终点开始遍历
+            var ring = new DBObjectCollection
+            {
+                origin
+            };
+            var next = origin;
+            var point = origin.EndPoint; // Iterate from the end point of first line.
             while (point != origin.StartPoint)
             {
                 next = NextLine(lines, next, point);
@@ -1857,10 +1916,12 @@ namespace AutoCADCommands
         /// The lower limit.
         /// </summary>
         public double Start => Math.Min(base.Item1, base.Item2);
+
         /// <summary>
         /// The upper limit.
         /// </summary>
         public double End => Math.Max(base.Item1, base.Item2);
+
         /// <summary>
         /// The length.
         /// </summary>
