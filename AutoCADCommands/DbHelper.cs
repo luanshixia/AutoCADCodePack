@@ -633,27 +633,26 @@ namespace AutoCADCommands
         public static void SetBlockAttribute(this BlockReference br, string tag, string value, Point3d pos)
         {
 
-            void Action(DBObject dbObject)
+            void ChangeAttributeAction(DBObject dbObject)
             {
                 var attr = (AttributeReference)dbObject;
-                if (!attr.IsWriteEnabled)
-                {
-                    attr.UpgradeOpen();
-                }
+
                 if (attr.Tag == tag)
                 {
                     attr.TextString = value;
-                    return;
                 }
             }
             foreach (ObjectId id in br.AttributeCollection)
             {
-                id.QOpenForWrite(Action);
+                id.QOpenForWrite(ChangeAttributeAction);
             }
-            AttributeReference ar = new AttributeReference();
-            ar.Tag = tag;
-            ar.TextString = value;
-            ar.Position = pos;
+
+            AttributeReference ar = new AttributeReference
+            {
+                Tag = tag,
+                TextString = value,
+                Position = pos
+            };
             br.AttributeCollection.AppendAttribute(ar);
         }
 
