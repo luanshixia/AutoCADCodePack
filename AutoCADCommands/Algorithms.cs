@@ -453,6 +453,70 @@ namespace AutoCADCommands
             return Algorithms.GetSubCurveByParams(curve, new Interv(interval));
         }
 
+
+        public enum RiemmanType
+        {
+            Left = 1, Right = 2, Middle = 3
+        }
+
+        public static Rectangle3d[] RiemmanSumRectangles(this Curve upperboundCurve, Line lowerbound, RiemmanType riemmanType, int intervals)
+        {
+            var x = lowerbound.EndPoint.DistanceTo(lowerbound.StartPoint) / intervals;
+            var rectangles = new List<Rectangle3d>(intervals);
+
+            //switch (riemmanType)
+            //{
+            //    case RiemmanType.Left:
+            //    {
+            //        break;
+            //    }
+            //    case RiemmanType.Right:
+            //    {
+            //        break;
+            //    }
+            //    case RiemmanType.Middle:
+            //    {
+            //        break;
+            //    }
+            //}
+
+            var i = 1;
+            for (var k = 0; k < intervals; k++)
+            {
+
+                // x2 x3
+                // x1 x4
+
+
+                var x1 = new Point3d(
+                    x: lowerbound.StartPoint.X + (x * k),
+                    y: lowerbound.StartPoint.Y * k,
+                    z: lowerbound.StartPoint.Z * k);
+
+                var x4 = new Point3d(
+                    x: lowerbound.StartPoint.X + (x * i),
+                    y: lowerbound.StartPoint.Y * i,
+                    z: lowerbound.StartPoint.Z * i);
+
+                var x2Line = new Line(x1, new Point3d(x1.X, upperboundCurve.GeometricExtents.MaxPoint.Y + 1, x4.Z));
+                var x3Line = new Line(x4, new Point3d(x4.X, upperboundCurve.GeometricExtents.MaxPoint.Y + 1, x4.Z));
+
+                var x2 = upperboundCurve.Intersect(x2Line, Autodesk.AutoCAD.DatabaseServices.Intersect.ExtendArgument)[0];
+                var x3 = upperboundCurve.Intersect(x3Line, Autodesk.AutoCAD.DatabaseServices.Intersect.ExtendArgument)[0];
+
+                i++;
+
+
+                var rectangle = new Rectangle3d(x2, x3, x1, x4);
+                rectangles.Add(rectangle);
+            }
+
+    
+
+            return rectangles.ToArray();
+        }
+
+
         /// <summary>
         /// Gets all points on curve whose parameters are integers.
         /// </summary>
