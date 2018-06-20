@@ -465,7 +465,7 @@ namespace AutoCADCommands
         /// <param name="upperboundCurve">The curve to be approximated.</param>
         /// <param name="lowerbound">The line defining the range under the upperbound curve.</param>
         /// <param name="riemmanSumRule">The approximation rule.</param>
-        /// <param name="intervals">The number of intervals, or rectangles, to use. Also the number of rectangles to be returned.</param>
+        /// <param name="intervals">The number of intervals, or rectangles, to use. </param>
         /// <returns></returns>
         public static Rectangle3d[] RiemmanSumRectangles(this Curve upperboundCurve, Line lowerbound, RiemmanSumRule riemmanSumRule, int intervals)
         {
@@ -539,7 +539,7 @@ namespace AutoCADCommands
         /// <param name="upperboundCurve">The curve to be approximated.</param>
         /// <param name="lowerbound">The line defining the range under the upperbound curve.</param>
         /// <param name="riemmanSumRule">The approximation rule.</param>
-        /// <param name="intervals">The number of intervals, or rectangles, to use. Also the number of rectangles to be returned.</param>
+        /// <param name="intervals">The number of intervals, or rectangles, to use.</param>
         /// <param name="offset">The height by which to offset the rectangles above the upperbound curve.</param>
         /// <returns></returns>
         public static Rectangle3d[] RiemmanSumRectangles(this Curve upperboundCurve, Line lowerbound,
