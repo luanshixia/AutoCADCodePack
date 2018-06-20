@@ -566,14 +566,20 @@ namespace AutoCADCommands
             if (result == 0)
             {
                 ids = Interaction.GetSelection("\nSelect entities");
-                ids.QWhere(x => !x.Layer.Contains("_Label")).QSelect(x => x.Layer).Distinct().Select(x => string.Format("{0}_Label", x)).ToList().ForEach(x => DbHelper.GetLayerId(x));
+                ids
+                    .QWhere(x => !x.Layer.Contains("_Label"))
+                    .QSelect(x => x.Layer)
+                    .Distinct()
+                    .Select(x => $"{x}_Label")
+                    .ToList()
+                    .ForEach(x => DbHelper.GetLayerId(x));
             }
             else
             {
                 var layers = DbHelper.GetAllLayerNames().Where(x => !x.Contains("_Label")).ToArray();
                 string layer = Gui.GetChoice("Select a layer", layers);
                 ids = QuickSelection.SelectAll().QWhere(x => x.Layer == layer).ToArray();
-                DbHelper.GetLayerId(string.Format("{0}_Label", layer));
+                DbHelper.GetLayerId($"{layer}_Label");
             }
             var texts = new List<MText>();
             ids.QForEach<Entity>(ent =>
@@ -583,7 +589,7 @@ namespace AutoCADCommands
                 {
                     Point3d center = ent.GetCenter();
                     MText text = NoDraw.MText(layerName, height, center, 0, true);
-                    text.Layer = string.Format("{0}_Label", layerName);
+                    text.Layer = $"{layerName}_Label";
                     texts.Add(text);
                 }
             });

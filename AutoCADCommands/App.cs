@@ -266,7 +266,7 @@ namespace AutoCADCommands
         {
             using (var sw = new StreamWriter(LogFile, append: true))
             {
-                sw.WriteLine(string.Format("[{0} {1}] {2}", DateTime.Now.ToShortDateString(), DateTime.Now.ToLongTimeString(), o));
+                sw.WriteLine($"[{DateTime.Now.ToShortDateString()} {DateTime.Now.ToLongTimeString()}] {o}");
             }
         }
 
@@ -279,7 +279,7 @@ namespace AutoCADCommands
         {
             using (var sw = new StreamWriter(LogFile, append: true))
             {
-                sw.WriteLine(string.Format("[{0} {1}] {2}: {3}", DateTime.Now.ToShortDateString(), DateTime.Now.ToLongTimeString(), note, o));
+                sw.WriteLine($"[{DateTime.Now.ToShortDateString()} {DateTime.Now.ToLongTimeString()}] {note}: {o}");
             }
         }
 

@@ -9,7 +9,7 @@ namespace AutoCADCommands
     /// DWG global flexible data storage.
     /// </summary>
     /// <remarks>
-    /// A simple way to store data in DWG. The global data entries are saved in "CustomDictionaries" in the named dictionary table.
+    /// A simple way to store data in DWG. The global data entries are saved in "CustomDictionaries" in the named object dictionary.
     /// </remarks>
     public static class CustomDictionary
     {
@@ -18,29 +18,29 @@ namespace AutoCADCommands
         /// <summary>
         /// Gets value.
         /// </summary>
-        /// <param name="dictionary">字典名</param>
-        /// <param name="key">键</param>
-        /// <returns>值</returns>
+        /// <param name="dictionary">The dictionary name.</param>
+        /// <param name="key">The key.</param>
+        /// <returns>The value.</returns>
         public static string GetValue(string dictionary, string key)
         {
-            return CustomDictionary.GetEntry(CustomDictionary.getDictionaryId(dictionary), key);
+            return CustomDictionary.GetEntry(CustomDictionary.GetDictionaryId(dictionary), key);
         }
 
         /// <summary>
-        /// 设置字典值
+        /// Sets value.
         /// </summary>
-        /// <param name="dictionary">字典名</param>
-        /// <param name="key">键</param>
-        /// <param name="value">值</param>
+        /// <param name="dictionary">The dictionary name.</param>
+        /// <param name="key">The key.</param>
+        /// <param name="value">The value.</param>
         public static void SetValue(string dictionary, string key, string value)
         {
-            CustomDictionary.SetEntry(CustomDictionary.getDictionaryId(dictionary), key, value);
+            CustomDictionary.SetEntry(CustomDictionary.GetDictionaryId(dictionary), key, value);
         }
 
         /// <summary>
-        /// 获取所有字典名
+        /// Gets all dictionary names.
         /// </summary>
-        /// <returns>字典名列表</returns>
+        /// <returns>The names.</returns>
         public static IEnumerable<string> GetDictionaryNames()
         {
             using (var trans = HostApplicationServices.WorkingDatabase.TransactionManager.StartTransaction())
@@ -109,15 +109,15 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 从字典中移除条目
+        /// Removes entry from dictionary.
         /// </summary>
-        /// <param name="dictName">字典名</param>
-        /// <param name="key">键</param>
+        /// <param name="dictName">The dictionary name.</param>
+        /// <param name="key">The key.</param>
         public static void RemoveEntry(string dictName, string key) // newly 20111206
         {
             using (var trans = HostApplicationServices.WorkingDatabase.TransactionManager.StartTransaction())
             {
-                var dict = trans.GetObject(getDictionaryId(dictName), OpenMode.ForWrite) as DBDictionary;
+                var dict = trans.GetObject(GetDictionaryId(dictName), OpenMode.ForWrite) as DBDictionary;
                 if (dict.Contains(key))
                 {
                     dict.Remove(key);
@@ -127,16 +127,16 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 获取字典中的所有键名
+        /// Gets all keys from a dictionary.
         /// </summary>
-        /// <param name="dictionary">字典名</param>
-        /// <returns>键名列表</returns>
+        /// <param name="dictionary">The dictionary name.</param>
+        /// <returns>The keys.</returns>
         public static IEnumerable<string> GetEntryNames(string dictionary)
         {
-            return CustomDictionary.GetEntryNames(CustomDictionary.getDictionaryId(dictionary));
+            return CustomDictionary.GetEntryNames(CustomDictionary.GetDictionaryId(dictionary));
         }
 
-        private static ObjectId getDictionaryId(string dictionaryName)
+        private static ObjectId GetDictionaryId(string dictionaryName)
         {
             using (var doclock = Application.DocumentManager.MdiActiveDocument.LockDocument())
             {
@@ -177,40 +177,40 @@ namespace AutoCADCommands
     public static class CustomObjectDictionary
     {
         /// <summary>
-        /// 获取字典值
+        /// Gets value.
         /// </summary>
-        /// <param name="id">对象ID</param>
-        /// <param name="dictionary">字典名</param>
-        /// <param name="key">键</param>
-        /// <returns>值</returns>
+        /// <param name="id">The object ID.</param>
+        /// <param name="dictionary">The dictionary name.</param>
+        /// <param name="key">The key.</param>
+        /// <returns>The value.</returns>
         public static string GetValue(ObjectId id, string dictionary, string key)
         {
-            return CustomDictionary.GetEntry(CustomObjectDictionary.getDictionaryId(id, dictionary), key);
+            return CustomDictionary.GetEntry(CustomObjectDictionary.GetDictionaryId(id, dictionary), key);
         }
 
         /// <summary>
-        /// 设置字典值
+        /// Sets value.
         /// </summary>
-        /// <param name="id">对象ID</param>
-        /// <param name="dictionary">字典名</param>
-        /// <param name="key">键</param>
-        /// <param name="value">值</param>
+        /// <param name="id">The object ID.</param>
+        /// <param name="dictionary">The dictionary name.</param>
+        /// <param name="key">The key.</param>
+        /// <param name="value">The value.</param>
         public static void SetValue(ObjectId id, string dictionary, string key, string value)
         {
-            CustomDictionary.SetEntry(CustomObjectDictionary.getDictionaryId(id, dictionary), key, value);
+            CustomDictionary.SetEntry(CustomObjectDictionary.GetDictionaryId(id, dictionary), key, value);
         }
 
         /// <summary>
-        /// 从字典中移除条目
+        /// Removes entry from dictionary.
         /// </summary>
-        /// <param name="id">对象ID</param>
-        /// <param name="dictName">字典名</param>
-        /// <param name="key">键</param>
+        /// <param name="id">The object ID.</param>
+        /// <param name="dictName">The dictionary name.</param>
+        /// <param name="key">The key.</param>
         public static void RemoveEntry(ObjectId id, string dictName, string key) // newly 20111206
         {
             using (var trans = HostApplicationServices.WorkingDatabase.TransactionManager.StartTransaction())
             {
-                var dict = trans.GetObject(getDictionaryId(id, dictName), OpenMode.ForWrite) as DBDictionary;
+                var dict = trans.GetObject(GetDictionaryId(id, dictName), OpenMode.ForWrite) as DBDictionary;
                 if (dict.Contains(key))
                 {
                     dict.Remove(key);
@@ -220,10 +220,10 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 获取所有字典名
+        /// Gets all dictionary names.
         /// </summary>
-        /// <param name="id">对象ID</param>
-        /// <returns>字典名列表</returns>
+        /// <param name="id">The object ID.</param>
+        /// <returns>The names.</returns>
         public static IEnumerable<string> GetDictionaryNames(ObjectId id)
         {
             using (var trans = HostApplicationServices.WorkingDatabase.TransactionManager.StartTransaction())
@@ -238,17 +238,17 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 获取字典的所有键名
+        /// Gets all keys from a dictionary.
         /// </summary>
-        /// <param name="id">对象ID</param>
-        /// <param name="dictionary">字典名</param>
-        /// <returns>键名列表</returns>
+        /// <param name="id">The object ID.</param>
+        /// <param name="dictionary">The dictionary name.</param>
+        /// <returns>The keys.</returns>
         public static IEnumerable<string> GetEntryNames(ObjectId id, string dictionary)
         {
-            return CustomDictionary.GetEntryNames(CustomObjectDictionary.getDictionaryId(id, dictionary));
+            return CustomDictionary.GetEntryNames(CustomObjectDictionary.GetDictionaryId(id, dictionary));
         }
 
-        private static ObjectId getDictionaryId(ObjectId id, string dictionaryName)
+        private static ObjectId GetDictionaryId(ObjectId id, string dictionaryName)
         {
             using (var doclock = Application.DocumentManager.MdiActiveDocument.LockDocument())
             {

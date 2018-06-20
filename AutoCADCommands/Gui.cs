@@ -1,133 +1,218 @@
-﻿using System;
+﻿using Autodesk.AutoCAD.Windows;
+using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
-using System.Text;
-
 using System.Windows;
 using System.Windows.Controls;
-using System.ComponentModel;
+using AcadApplication = Autodesk.AutoCAD.ApplicationServices.Application;
+using WinFormsPropertyGrid = System.Windows.Forms.PropertyGrid;
+using WpfWindow = System.Windows.Window;
 
 namespace AutoCADCommands
 {
     /// <summary>
-    /// 图形用户交互
+    /// The GUI component gallery.
     /// </summary>
     public static class Gui
     {
         /// <summary>
-        /// 显示一个命令选项面板
+        /// Shows a GetOption window.
         /// </summary>
-        /// <param name="tip"></param>
-        /// <param name="options"></param>
-        /// <returns></returns>
+        /// <param name="tip">The tip.</param>
+        /// <param name="options">The options.</param>
+        /// <returns>The choice.</returns>
         public static int GetOption(string tip, params string[] options)
         {
-            Window window = new Window { Width = 300, SizeToContent = SizeToContent.Height, WindowStartupLocation = System.Windows.WindowStartupLocation.CenterScreen, ShowInTaskbar = false, WindowStyle = WindowStyle.ToolWindow, Title = "请选择" };
-            StackPanel sp = new StackPanel { Margin = new Thickness(5) };
-            TextBlock tb = new TextBlock { Text = (tip == string.Empty ? "请选择一个选项。" : tip), TextWrapping = TextWrapping.Wrap };
+            var window = new WpfWindow
+            {
+                Width = 300,
+                SizeToContent = SizeToContent.Height,
+                WindowStartupLocation = WindowStartupLocation.CenterScreen,
+                ShowInTaskbar = false,
+                WindowStyle = WindowStyle.ToolWindow,
+                Title = "Options"
+            };
+            var sp = new StackPanel
+            {
+                Margin = new Thickness(5)
+            };
+            var tb = new TextBlock
+            {
+                Text = (tip == string.Empty ? "Please choose one..." : tip),
+                TextWrapping = TextWrapping.Wrap
+            };
             int result = -1;
-            var btns = options.Select((x, i) => new Button { Content = x, Tag = i }).ToList();
-            btns.ForEach(x => x.Click += (s, args) => { result = (int)x.Tag; window.DialogResult = true; });
+            var btns = options
+                .Select((x, i) => new Button
+                {
+                    Content = x,
+                    Tag = i
+                })
+                .ToList();
+            btns.ForEach(x => x.Click += (s, args) =>
+            {
+                result = (int)x.Tag;
+                window.DialogResult = true;
+            });
             sp.Children.Add(tb);
             btns.ForEach(x => sp.Children.Add(x));
             window.Content = sp;
-            Autodesk.AutoCAD.ApplicationServices.Application.ShowModalWindow(window);
+            AcadApplication.ShowModalWindow(window);
             return result;
         }
 
         /// <summary>
-        /// 显示一个列表选择面板
+        /// Shows a GetChoice window.
         /// </summary>
-        /// <param name="tip"></param>
-        /// <param name="choices"></param>
-        /// <returns></returns>
+        /// <param name="tip">The tip.</param>
+        /// <param name="choices">The choices.</param>
+        /// <returns>The choice.</returns>
         public static string GetChoice(string tip, params string[] choices)
         {
-            Window window = new Window { Width = 300, SizeToContent = SizeToContent.Height, WindowStartupLocation = System.Windows.WindowStartupLocation.CenterScreen, ShowInTaskbar = false, WindowStyle = WindowStyle.ToolWindow, Title = "请选择" };
-            StackPanel sp = new StackPanel { Margin = new Thickness(10) };
-            TextBlock tb = new TextBlock { Text = (tip == string.Empty ? "请选择一个项目。" : tip), TextWrapping = TextWrapping.Wrap };
-            ListBox list = new ListBox { Height = 200 };
-            choices.ToList().ForEach(x => list.Items.Add(new ListBoxItem { Content = x }));
-            Button btnOk = new Button { Content = "确定", Margin = new Thickness(5) };
+            var window = new WpfWindow
+            {
+                Width = 300,
+                SizeToContent = SizeToContent.Height,
+                WindowStartupLocation = WindowStartupLocation.CenterScreen,
+                ShowInTaskbar = false,
+                WindowStyle = WindowStyle.ToolWindow,
+                Title = "Choices"
+            };
+            var sp = new StackPanel
+            {
+                Margin = new Thickness(10)
+            };
+            var tb = new TextBlock
+            {
+                Text = (tip == string.Empty ? "Please choose one..." : tip),
+                TextWrapping = TextWrapping.Wrap
+            };
+            var list = new ListBox
+            {
+                Height = 200
+            };
+            choices.ToList().ForEach(x => list.Items.Add(new ListBoxItem
+            {
+                Content = x
+            }));
+            var btnOk = new Button
+            {
+                Content = "OK",
+                Margin = new Thickness(5)
+            };
             btnOk.Click += (s, args) => window.DialogResult = true;
             sp.Children.Add(tb);
             sp.Children.Add(list);
             sp.Children.Add(btnOk);
             window.Content = sp;
-            Autodesk.AutoCAD.ApplicationServices.Application.ShowModalWindow(window);
-            return list.SelectedItem == null ? string.Empty : (list.SelectedItem as ListBoxItem).Content.ToString();
+            AcadApplication.ShowModalWindow(window);
+            return list.SelectedItem == null
+                ? string.Empty
+                : (list.SelectedItem as ListBoxItem).Content.ToString();
         }
 
         /// <summary>
-        /// 显示一个可多选的列表选择面板
+        /// Shows a GetChoices window.
         /// </summary>
-        /// <param name="tip"></param>
-        /// <param name="choices"></param>
-        /// <returns></returns>
+        /// <param name="tip">The tip.</param>
+        /// <param name="choices">The choices.</param>
+        /// <returns>The final choices.</returns>
         public static string[] GetChoices(string tip, params string[] choices)
         {
-            Window window = new Window { Width = 300, SizeToContent = SizeToContent.Height, WindowStartupLocation = System.Windows.WindowStartupLocation.CenterScreen, ShowInTaskbar = false, WindowStyle = WindowStyle.ToolWindow, Title = "请选择" };
-            StackPanel sp = new StackPanel { Margin = new Thickness(10) };
-            TextBlock tb = new TextBlock { Text = (tip == string.Empty ? "请选择一个选项。" : tip), TextWrapping = TextWrapping.Wrap };
-            ListBox list = new ListBox { Height = 200 };
-            choices.ToList().ForEach(x => list.Items.Add(new CheckBox { Content = x }));
-            Button btnOk = new Button { Content = "确定", Margin = new Thickness(5) };
+            var window = new WpfWindow
+            {
+                Width = 300,
+                SizeToContent = SizeToContent.Height,
+                WindowStartupLocation = WindowStartupLocation.CenterScreen,
+                ShowInTaskbar = false,
+                WindowStyle = WindowStyle.ToolWindow,
+                Title = "Choices"
+            };
+            var sp = new StackPanel
+            {
+                Margin = new Thickness(10)
+            };
+            var tb = new TextBlock
+            {
+                Text = (tip == string.Empty ? "Please check items..." : tip),
+                TextWrapping = TextWrapping.Wrap
+            };
+            var list = new ListBox
+            {
+                Height = 200
+            };
+            choices.ToList().ForEach(x => list.Items.Add(new CheckBox
+            {
+                Content = x
+            }));
+            var btnOk = new Button
+            {
+                Content = "OK",
+                Margin = new Thickness(5)
+            };
             btnOk.Click += (s, args) => window.DialogResult = true;
             sp.Children.Add(tb);
             sp.Children.Add(list);
             sp.Children.Add(btnOk);
             window.Content = sp;
-            Autodesk.AutoCAD.ApplicationServices.Application.ShowModalWindow(window);
-            return list.Items.Cast<CheckBox>().Where(x => x.IsChecked == true).Select(x => x.Content.ToString()).ToArray();
+            AcadApplication.ShowModalWindow(window);
+            return list.Items
+                .Cast<CheckBox>()
+                .Where(x => x.IsChecked == true)
+                .Select(x => x.Content.ToString())
+                .ToArray();
         }
 
         /// <summary>
-        /// 显示一个文本报告窗口
+        /// Shows a text report window.
         /// </summary>
-        /// <param name="title"></param>
-        /// <param name="content"></param>
-        /// <param name="width"></param>
-        /// <param name="height"></param>
-        /// <param name="modal"></param>
+        /// <param name="title">The title.</param>
+        /// <param name="content">The content.</param>
+        /// <param name="width">The width.</param>
+        /// <param name="height">The height.</param>
+        /// <param name="modal">Modal or not.</param>
         public static void TextReport(string title, string content, double width, double height, bool modal = false)
         {
-            TextReport tr = new TextReport();
-            tr.Width = width;
-            tr.Height = height;
-            tr.Title = title;
+            var tr = new TextReport
+            {
+                Width = width,
+                Height = height,
+                Title = title
+            };
             tr.txtContent.Text = content;
             if (modal)
             {
-                Autodesk.AutoCAD.ApplicationServices.Application.ShowModalWindow(tr);
+                AcadApplication.ShowModalWindow(tr);
             }
             else
             {
-                Autodesk.AutoCAD.ApplicationServices.Application.ShowModelessWindow(tr);
+                AcadApplication.ShowModelessWindow(tr);
             }
         }
 
         /// <summary>
-        /// 显示一个多值输入窗口
+        /// Shows a multi-inputs window.
         /// </summary>
-        /// <param name="title"></param>
-        /// <param name="entries"></param>
+        /// <param name="title">The title.</param>
+        /// <param name="entries">The input entries.</param>
         public static void MultiInputs(string title, Dictionary<string, string> entries)
         {
-            MultiInputs mi = new MultiInputs();
+            var mi = new MultiInputs();
             mi.Ready(entries, title);
-            Autodesk.AutoCAD.ApplicationServices.Application.ShowModalWindow(mi);
+            AcadApplication.ShowModalWindow(mi);
         }
 
         /// <summary>
-        /// 显示一个输入框
+        /// Shows an input box.
         /// </summary>
-        /// <param name="tip"></param>
-        /// <param name="defaultValue"></param>
-        /// <returns></returns>
+        /// <param name="tip">The tip.</param>
+        /// <param name="defaultValue">The default value.</param>
+        /// <returns>The input.</returns>
         public static string InputBox(string tip, string defaultValue = "")
         {
-            InputBox input = new InputBox(tip, defaultValue);
-            if (Autodesk.AutoCAD.ApplicationServices.Application.ShowModalWindow(input) == true)
+            var input = new InputBox(tip, defaultValue);
+            if (AcadApplication.ShowModalWindow(input) == true)
             {
                 return input.Value;
             }
@@ -135,23 +220,27 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 繁忙提示框
+        /// Shows a busy indicator.
         /// </summary>
         /// <param name="title"></param>
         /// <param name="worker"></param>
         public static void BusyIndicator(string title, BackgroundWorker worker)
         {
             // todo: BusyIndicator
+            throw new NotImplementedException();
         }
 
         /// <summary>
-        /// 进度提示框
+        /// Shows a progress indicator.
         /// </summary>
-        /// <param name="title"></param>
-        /// <param name="worker"></param>
+        /// <param name="title">The title.</param>
+        /// <param name="worker">The background worker.</param>
         public static void ProgressIndicator(string title, BackgroundWorker worker)
         {
-            TaskProgressWindow tpw = new TaskProgressWindow { Title = title + " (0%)" };
+            var tpw = new TaskProgressWindow
+            {
+                Title = title + " (0%)"
+            };
             tpw.CancelButton.Click += (s, args) =>
             {
                 tpw.CancelButton.IsEnabled = false;
@@ -160,23 +249,27 @@ namespace AutoCADCommands
             worker.ProgressChanged += (s, args) =>
             {
                 tpw.ProgressBar.Value = args.ProgressPercentage;
-                tpw.Title = string.Format("{0} ({1}%)", title, args.ProgressPercentage);
+                tpw.Title = $"{title} ({args.ProgressPercentage}%)";
             };
             worker.RunWorkerCompleted += (s, args) => tpw.Close();
-            Autodesk.AutoCAD.ApplicationServices.Application.ShowModalWindow(tpw);
+            AcadApplication.ShowModalWindow(tpw);
         }
 
-        private static Autodesk.AutoCAD.Windows.PaletteSet propertyPalette = new Autodesk.AutoCAD.Windows.PaletteSet("属性");
-        private static System.Windows.Forms.PropertyGrid propertyGrid = new System.Windows.Forms.PropertyGrid();
+        private static PaletteSet propertyPalette = new PaletteSet("Properties");
+        private static WinFormsPropertyGrid propertyGrid = new WinFormsPropertyGrid();
 
+        /// <summary>
+        /// Shows a property palette.
+        /// </summary>
+        /// <param name="obj">The property object.</param>
         public static void PropertyPalette(object obj) // newly 20140529
         {
             if (!propertyPalette.Visible)
             {
                 if (propertyPalette.Count == 0)
                 {
-                    propertyPalette.Add("属性", propertyGrid);
-                    propertyPalette.Dock = Autodesk.AutoCAD.Windows.DockSides.Left;
+                    propertyPalette.Add("Properties", propertyGrid);
+                    propertyPalette.Dock = DockSides.Left;
                 }
                 propertyPalette.Visible = true;
             }

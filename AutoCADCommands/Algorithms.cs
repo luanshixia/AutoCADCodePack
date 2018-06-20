@@ -1880,7 +1880,7 @@ namespace AutoCADCommands
             var sb = new StringBuilder();
             foreach (Curve line in lines)
             {
-                sb.AppendLine(string.Format("({0},{1})->({2},{3})", line.StartPoint.X, line.StartPoint.Y, line.EndPoint.X, line.EndPoint.Y));
+                sb.AppendLine($"({line.StartPoint.X},{line.StartPoint.Y})->({line.EndPoint.X},{line.EndPoint.Y})");
             }
             var sw = new StreamWriter("C:\\ShowExplodeResult.txt");
             sw.Write(sb.ToString());
