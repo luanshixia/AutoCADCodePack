@@ -534,6 +534,24 @@ namespace AutoCADCommands
         }
 
         /// <summary>
+        /// Gets an array of rectangles used in a Riemman sum approximation.
+        /// </summary>
+        /// <param name="upperboundCurve">The curve to be approximated.</param>
+        /// <param name="lowerbound">The line defining the range under the upperbound curve.</param>
+        /// <param name="riemmanSumRule">The approximation rule.</param>
+        /// <param name="intervals">The number of intervals, or rectangles, to use. Also the number of rectangles to be returned.</param>
+        /// <param name="offset">The height by which to offset the rectangles above the upperbound curve.</param>
+        /// <returns></returns>
+        public static Rectangle3d[] RiemmanSumRectangles(this Curve upperboundCurve, Line lowerbound,
+            RiemmanSumRule riemmanSumRule, int intervals, double offset)
+        {
+            var transformation = Point3d.Origin.GetVectorTo(new Point3d(0, offset, 0));
+            var offsetUpperBound = (Curve)upperboundCurve.GetTransformedCopy(Matrix3d.Displacement(transformation));
+
+            return RiemmanSumRectangles(offsetUpperBound, lowerbound, riemmanSumRule, intervals);
+        }
+
+        /// <summary>
         /// Gets all points on curve whose parameters are integers.
         /// </summary>
         /// <param name="cv">The curve.</param>
