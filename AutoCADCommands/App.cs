@@ -1,36 +1,34 @@
-﻿using System;
+﻿using Autodesk.AutoCAD.ApplicationServices;
+using Autodesk.AutoCAD.DatabaseServices;
+using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
+using System.Reflection;
 using System.Runtime.InteropServices;
-
-using Autodesk.AutoCAD.ApplicationServices;
-using Autodesk.AutoCAD.DatabaseServices;
-using Autodesk.AutoCAD.EditorInput;
-using Autodesk.AutoCAD.Geometry;
-using Autodesk.AutoCAD.Runtime;
 
 namespace AutoCADCommands
 {
     /// <summary>
-    /// 应用程序相关，并提供一组用于多文档开发的方法
+    /// Application and multi-docs.
     /// </summary>
     public static class App
     {
         /// <summary>
-        /// 获取程序目录
+        /// Gets the current folder.
         /// </summary>
         public static string CurrentFolder
         {
             get
             {
-                string s = System.Reflection.Assembly.GetCallingAssembly().Location;
+                string s = Assembly.GetCallingAssembly().Location;
                 return s.Remove(s.LastIndexOf('\\') + 1);
             }
         }
 
         /// <summary>
-        /// 获取活动文档目录
+        /// Gets the document folder.
         /// </summary>
         public static string DocumentFolder
         {
@@ -49,14 +47,14 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 加载其他程序集
+        /// Loads another assembly.
         /// </summary>
-        /// <param name="dllName">程序集文件名（相对路径）</param>
+        /// <param name="dllName">The assembly file name (relative path).</param>
         public static void LoadDll(string dllName)
         {
             try
             {
-                System.Reflection.Assembly.LoadFrom(App.CurrentFolder + dllName);
+                Assembly.LoadFrom(Path.Combine(App.CurrentFolder, dllName));
             }
             catch
             {
@@ -65,21 +63,33 @@ namespace AutoCADCommands
 
         #region multi doc
 
+        /// <summary>
+        /// Determines if a document is newly created.
+        /// </summary>
+        /// <param name="doc">The document.</param>
+        /// <returns>The result.</returns>
         public static bool IsDocumentNew(Document doc = null) // newly 20140730
         {
             if (doc == null)
             {
                 doc = Application.DocumentManager.MdiActiveDocument;
             }
-            return !IsDocumentSaved(doc);
+
+            return !App.IsDocumentSaved(doc);
         }
 
+        /// <summary>
+        /// Determines if a document is saved.
+        /// </summary>
+        /// <param name="doc">The document.</param>
+        /// <returns>The result.</returns>
         public static bool IsDocumentSaved(Document doc = null) // newly 20140730
         {
             if (doc == null)
             {
                 doc = Application.DocumentManager.MdiActiveDocument;
             }
+
             return doc.Name != null && doc.Name.Contains(":");
         }
 
@@ -92,57 +102,57 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 获取所有打开的文档
+        /// Gets all opened documents.
         /// </summary>
-        /// <returns>文档集合</returns>
-        public static List<Document> GetAllOpenedDoc()
+        /// <returns>All opened documents.</returns>
+        public static List<Document> GetAllOpenedDocuments()
         {
-            return GetAllOpenedDocInternal().ToList();
+            return App.GetAllOpenedDocInternal().ToList();
         }
 
         /// <summary>
-        /// 锁定当前文档并执行操作
+        /// Locks the current document and do things.
         /// </summary>
-        /// <param name="action">要执行的函数</param>
+        /// <param name="action">The things to do.</param>
         public static void LockAndExecute(Action action)
         {
-            using (DocumentLock doclock = Application.DocumentManager.MdiActiveDocument.LockDocument())
+            using (var doclock = Application.DocumentManager.MdiActiveDocument.LockDocument())
             {
                 action();
             }
         }
 
         /// <summary>
-        /// 锁定制定文档并执行操作
+        /// Locks a specified document and do things.
         /// </summary>
-        /// <param name="doc">要锁定的文档</param>
-        /// <param name="action">要执行的函数</param>
+        /// <param name="doc">The document to lock.</param>
+        /// <param name="action">Then things to do.</param>
         public static void LockAndExecute(Document doc, Action action)
         {
-            using (DocumentLock doclock = doc.LockDocument())
+            using (var doclock = doc.LockDocument())
             {
                 action();
             }
         }
 
         /// <summary>
-        /// 锁定当前文档并执行操作
+        /// Locks the current document and do things.
         /// </summary>
-        /// <typeparam name="T">操作返回值的类型</typeparam>
-        /// <param name="function">要执行的操作</param>
-        /// <returns>操作返回的结果</returns>
+        /// <typeparam name="T">The type of the return value.</typeparam>
+        /// <param name="function">The things to do.</param>
+        /// <returns>The value returned by the action.</returns>
         public static T LockAndExecute<T>(Func<T> function)
         {
-            using (DocumentLock doclock = Application.DocumentManager.MdiActiveDocument.LockDocument())
+            using (var doclock = Application.DocumentManager.MdiActiveDocument.LockDocument())
             {
                 return function();
             }
         }
 
         /// <summary>
-        /// 设置活动文档
+        /// Sets the active document.
         /// </summary>
-        /// <param name="doc">文档</param>
+        /// <param name="doc">The document to be set as active.</param>
         public static void SetActiveDocument(Document doc)
         {
             Application.DocumentManager.MdiActiveDocument = doc;
@@ -150,116 +160,133 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 设置工作数据库
+        /// Sets the working database.
         /// </summary>
-        /// <param name="db">数据库</param>
+        /// <param name="db">The database to be set as the working database.</param>
         public static void SetWorkingDatabase(Database db)
         {
             HostApplicationServices.WorkingDatabase = db;
         }
 
         /// <summary>
-        /// 打开文档
+        /// Opens a file as a document.
         /// </summary>
-        /// <param name="file">文件名</param>
-        /// <returns>打开的文档</returns>
+        /// <param name="file">The file name.</param>
+        /// <returns>The opened document.</returns>
         public static Document OpenDocument(string file)
         {
             return Application.DocumentManager.Open(file, false);
         }
 
         /// <summary>
-        /// 打开或激活文档
+        /// Opens or activates a file as a document.
         /// </summary>
-        /// <param name="file">文件名</param>
-        /// <returns>打开的文档</returns>
+        /// <param name="file">The file name.</param>
+        /// <returns>The opened document.</returns>
         public static Document OpenOrActivateDocument(string file)
         {
-            Document doc = FindOpenedDocument(file);
+            var doc = App.FindOpenedDocument(file);
             if (doc != null)
             {
-                SetActiveDocument(doc);
+                App.SetActiveDocument(doc);
                 return doc;
             }
-            else
-            {
-                return OpenDocument(file);
-            }
+
+            return App.OpenDocument(file);
         }
 
         /// <summary>
-        /// 查找打开的文档
+        /// Finds an opened document by file name.
         /// </summary>
-        /// <param name="file">文件名</param>
-        /// <returns>找到的文档</returns>
+        /// <param name="file">The file name.</param>
+        /// <returns>The document found.</returns>
         public static Document FindOpenedDocument(string file)
         {
-            if (Application.DocumentManager.Cast<Document>().Any(x => x.Name == file))
-            {
-                return Application.DocumentManager.Cast<Document>().First(x => x.Name == file);
-            }
-            else
-            {
-                return null;
-            }
+            return Application.DocumentManager
+                .Cast<Document>()
+                .FirstOrDefault(x => x.Name == file);
         }
 
         #endregion
     }
 
     /// <summary>
-    /// 表示异常：多段线需要清理
+    /// The polyline needs cleanup exception.
     /// </summary>
-    public class PolylineNeedCleanException : System.Exception
+    public class PolylineNeedsCleanupException : Exception
     {
-        public PolylineNeedCleanException(string message)
-            : base(message)
+        /// <summary>
+        /// Initializes a new instance of the exception.
+        /// </summary>
+        public PolylineNeedsCleanupException()
         {
         }
 
+        /// <summary>
+        /// Initializes a new instance of the exception.
+        /// </summary>
+        /// <param name="message">The message.</param>
+        public PolylineNeedsCleanupException(string message) : base(message)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the exception.
+        /// </summary>
+        /// <param name="message">The message.</param>
+        /// <param name="innerException">The inner exception.</param>
+        public PolylineNeedsCleanupException(string message, Exception innerException) : base(message, innerException)
+        {
+        }
+
+        /// <summary>
+        /// Shows a message dialog of this exception.
+        /// </summary>
         public void ShowMessage()
         {
-            Interaction.TaskDialog("多段线需要清理。", "去清理", "还是去清理", "AutoCAD", "请运行PolyClean命令。");
+            Interaction.TaskDialog("Polyline needs a clean-up", "Go to clean it up.", "Go to clean it up.", "AutoCAD", "Please run `PolyClean`.");
         }
     }
 
     /// <summary>
-    /// 提供一组创建日志的方法
+    /// The log manager.
     /// </summary>
     public static class LogManager
     {
         /// <summary>
-        /// 日志文件名
+        /// The log file name.
         /// </summary>
         public const string LogFile = "C:\\AcadCodePack.log";
 
         /// <summary>
-        /// 将对象写入日志
+        /// Writes object to logs.
         /// </summary>
-        /// <param name="o">对象</param>
+        /// <param name="o">The object.</param>
         public static void Write(object o)
         {
-            System.IO.StreamWriter sw = new System.IO.StreamWriter(LogFile, true);
-            sw.WriteLine(string.Format("[{0} {1}] {2}", DateTime.Now.ToShortDateString(), DateTime.Now.ToLongTimeString(), o));
-            sw.Close();
+            using (var sw = new StreamWriter(LogFile, append: true))
+            {
+                sw.WriteLine(string.Format("[{0} {1}] {2}", DateTime.Now.ToShortDateString(), DateTime.Now.ToLongTimeString(), o));
+            }
         }
 
         /// <summary>
-        /// 将对象写入日志
+        /// Writes object to logs.
         /// </summary>
-        /// <param name="note">说明</param>
-        /// <param name="o">对象</param>
+        /// <param name="note">The note.</param>
+        /// <param name="o">The object.</param>
         public static void Write(string note, object o)
         {
-            System.IO.StreamWriter sw = new System.IO.StreamWriter(LogFile, true);
-            sw.WriteLine(string.Format("[{0} {1}] {2}: {3}", DateTime.Now.ToShortDateString(), DateTime.Now.ToLongTimeString(), note, o));
-            sw.Close();
+            using (var sw = new StreamWriter(LogFile, append: true))
+            {
+                sw.WriteLine(string.Format("[{0} {1}] {2}: {3}", DateTime.Now.ToShortDateString(), DateTime.Now.ToLongTimeString(), note, o));
+            }
         }
 
         /// <summary>
-        /// 获取基于时间的名称
+        /// Gets a time based name.
         /// </summary>
-        /// <returns>名称</returns>
+        /// <returns>The name.</returns>
         public static string GetTimeBasedName()
         {
             string s = DateTime.Now.ToShortDateString() + "-" + DateTime.Now.ToLongTimeString();
@@ -267,33 +294,34 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 纯文本表格
+        /// The log table.
         /// </summary>
         public class LogTable
         {
-            private int[] _colWidths;
+            private readonly int[] _colWidths;
+
             /// <summary>
-            /// Tab字符的宽度，为8
+            /// The tab width.
             /// </summary>
             public const int TabWidth = 8;
 
             /// <summary>
-            /// 初始化新实例
+            /// Initializes a new instance.
             /// </summary>
-            /// <param name="colWidths">列宽，应为TabWidth的整数倍</param>
+            /// <param name="colWidths">The column widths. The values should be multiples of the tab width.</param>
             public LogTable(params int[] colWidths)
             {
                 _colWidths = colWidths;
             }
 
             /// <summary>
-            /// 获取一行的字符串表示
+            /// Gets the string representation of a row.
             /// </summary>
-            /// <param name="contents">行中元素</param>
-            /// <returns>字符串表示</returns>
+            /// <param name="contents">The contents.</param>
+            /// <returns>The result.</returns>
             public string GetRow(params object[] contents)
             {
-                StringBuilder sb = new StringBuilder();
+                var sb = new StringBuilder();
                 for (int i = 0; i < contents.Length; i++)
                 {
                     string content = contents[i].ToString();
@@ -308,10 +336,10 @@ namespace AutoCADCommands
             }
 
             /// <summary>
-            /// 统计字符串宽度，ASCII字符宽度为1，其他字符宽度为2
+            /// Gets string width: ASCII as 1, others as 2.
             /// </summary>
-            /// <param name="content">字符串</param>
-            /// <returns>宽度</returns>
+            /// <param name="content">The string.</param>
+            /// <returns>The width.</returns>
             public static int GetStringWidth(string content)
             {
                 return content.Sum(c => c > 255 ? 2 : 1);
@@ -319,6 +347,9 @@ namespace AutoCADCommands
         }
     }
 
+    /// <summary>
+    /// ObjectARX C functions wrapper.
+    /// </summary>
     public static class Arx
     {
         [DllImport("acad.exe", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl, EntryPoint = "acedCmd")]
