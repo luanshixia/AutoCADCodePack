@@ -14,7 +14,7 @@ using System.Windows.Shapes;
 namespace AutoCADCommands
 {
     /// <summary>
-    /// TaskProgressWindow.xaml 的交互逻辑
+    /// TaskProgressWindow.xaml code behind.
     /// </summary>
     public partial class TaskProgressWindow : Window
     {

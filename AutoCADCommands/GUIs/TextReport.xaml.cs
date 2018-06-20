@@ -15,7 +15,7 @@ using System.Windows.Shapes;
 namespace AutoCADCommands
 {
     /// <summary>
-    /// TextReport.xaml 的交互逻辑
+    /// TextReport.xaml code behind.
     /// </summary>
     public partial class TextReport : Window
     {

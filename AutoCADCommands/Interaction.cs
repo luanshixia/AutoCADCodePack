@@ -657,7 +657,7 @@ namespace AutoCADCommands
         /// <param name="entIds">实体集</param>
         public static void ZoomObjects(IEnumerable<ObjectId> entIds)
         {
-            Extents3d extent = entIds.GetExtents();
+            var extent = entIds.GetExtents();
             Interaction.ZoomView(extent);
         }
 
@@ -667,7 +667,7 @@ namespace AutoCADCommands
         /// <param name="extent">范围</param>
         public static void ZoomView(Extents3d extent)
         {
-            Zoom(extent.MinPoint, extent.MaxPoint, new Point3d(), 1);
+            Interaction.Zoom(extent.MinPoint, extent.MaxPoint, new Point3d(), 1);
         }
 
         /// <summary>
@@ -675,156 +675,154 @@ namespace AutoCADCommands
         /// </summary>
         public static void ZoomExtents()
         {
-            if (HostApplicationServices.WorkingDatabase.TileMode) // 当前为模型空间
+            if (HostApplicationServices.WorkingDatabase.TileMode) // Model space
             {
-                Zoom(HostApplicationServices.WorkingDatabase.Extmin, HostApplicationServices.WorkingDatabase.Extmax, new Point3d(), 1);
+                Interaction.Zoom(HostApplicationServices.WorkingDatabase.Extmin, HostApplicationServices.WorkingDatabase.Extmax, new Point3d(), 1);
             }
-            else // 当前为图纸空间
+            else // Paper space
             {
-                //BlockTableRecord btr = HostApplicationServices.WorkingDatabase.CurrentSpaceId.QOpenForRead() as BlockTableRecord;
-                //Extents3d extents = btr.Cast<ObjectId>().GetExtents();
-                Zoom(new Point3d(), new Point3d(), new Point3d(), 1);
+                Interaction.Zoom(new Point3d(), new Point3d(), new Point3d(), 1);
             }
         }
 
-        //
-        // Zoom函数来源于AutoCAD .NET Developer's Guide
-        //
-        internal static void Zoom(Point3d pMin, Point3d pMax, Point3d pCenter, double dFactor)
+        /// <summary>
+        /// The internal Zoom() method (credit: AutoCAD .NET Developer's Guide).
+        /// </summary>
+        /// <param name="min"></param>
+        /// <param name="max"></param>
+        /// <param name="center"></param>
+        /// <param name="factor"></param>
+        internal static void Zoom(Point3d min, Point3d max, Point3d center, double factor)
         {
             // Get the current document and database
-            Document acDoc = Application.DocumentManager.MdiActiveDocument;
-            Database acCurDb = acDoc.Database;
+            var document = Application.DocumentManager.MdiActiveDocument;
+            var database = document.Database;
 
-            int nCurVport = System.Convert.ToInt32(Application.GetSystemVariable("CVPORT"));
+            int currentViewport = Convert.ToInt32(Application.GetSystemVariable("CVPORT"));
 
             // Get the extents of the current space no points
             // or only a center point is provided
             // Check to see if Model space is current
-            if (acCurDb.TileMode == true)
+            if (database.TileMode)
             {
-                if (pMin.Equals(new Point3d()) == true &&
-                         pMax.Equals(new Point3d()) == true)
+                if (min.Equals(new Point3d()) && max.Equals(new Point3d()))
                 {
-                    pMin = acCurDb.Extmin;
-                    pMax = acCurDb.Extmax;
+                    min = database.Extmin;
+                    max = database.Extmax;
                 }
             }
             else
             {
                 // Check to see if Paper space is current
-                if (nCurVport == 1)
+                if (currentViewport == 1)
                 {
                     // Get the extents of Paper space
-                    if (pMin.Equals(new Point3d()) == true &&
-                        pMax.Equals(new Point3d()) == true)
+                    if (min.Equals(new Point3d()) && max.Equals(new Point3d()))
                     {
-                        pMin = acCurDb.Pextmin;
-                        pMax = acCurDb.Pextmax;
+                        min = database.Pextmin;
+                        max = database.Pextmax;
                     }
                 }
                 else
                 {
                     // Get the extents of Model space
-                    if (pMin.Equals(new Point3d()) == true &&
-                        pMax.Equals(new Point3d()) == true)
+                    if (min.Equals(new Point3d()) && max.Equals(new Point3d()))
                     {
-                        pMin = acCurDb.Extmin;
-                        pMax = acCurDb.Extmax;
+                        min = database.Extmin;
+                        max = database.Extmax;
                     }
                 }
             }
 
             // Start a transaction
-            using (Transaction acTrans = acCurDb.TransactionManager.StartTransaction())
+            using (var trans = database.TransactionManager.StartTransaction())
             {
                 // Get the current view
-                using (ViewTableRecord acView = acDoc.Editor.GetCurrentView())
+                using (var currentView = document.Editor.GetCurrentView())
                 {
-                    Extents3d eExtents;
+                    Extents3d extents;
 
                     // Translate WCS coordinates to DCS
-                    Matrix3d matWCS2DCS;
-                    matWCS2DCS = Matrix3d.PlaneToWorld(acView.ViewDirection);
-                    matWCS2DCS = Matrix3d.Displacement(acView.Target - Point3d.Origin) * matWCS2DCS;
-                    matWCS2DCS = Matrix3d.Rotation(-acView.ViewTwist,
-                                                   acView.ViewDirection,
-                                                   acView.Target) * matWCS2DCS;
+                    var matWCS2DCS = Matrix3d.PlaneToWorld(currentView.ViewDirection);
+                    matWCS2DCS = Matrix3d.Displacement(currentView.Target - Point3d.Origin) * matWCS2DCS;
+                    matWCS2DCS = Matrix3d.Rotation(
+                        angle: -currentView.ViewTwist,
+                        axis: currentView.ViewDirection,
+                        center: currentView.Target) * matWCS2DCS;
 
                     // If a center point is specified, define the min and max
                     // point of the extents
                     // for Center and Scale modes
-                    if (pCenter.DistanceTo(Point3d.Origin) != 0)
+                    if (center.DistanceTo(Point3d.Origin) != 0)
                     {
-                        pMin = new Point3d(pCenter.X - (acView.Width / 2),
-                                           pCenter.Y - (acView.Height / 2), 0);
-
-                        pMax = new Point3d((acView.Width / 2) + pCenter.X,
-                                           (acView.Height / 2) + pCenter.Y, 0);
+                        min = new Point3d(center.X - (currentView.Width / 2), center.Y - (currentView.Height / 2), 0);
+                        max = new Point3d((currentView.Width / 2) + center.X, (currentView.Height / 2) + center.Y, 0);
                     }
 
                     // Create an extents object using a line
-                    using (Line acLine = new Line(pMin, pMax))
+                    using (Line line = new Line(min, max))
                     {
-                        eExtents = new Extents3d(acLine.Bounds.Value.MinPoint,
-                                                 acLine.Bounds.Value.MaxPoint);
+                        extents = new Extents3d(line.Bounds.Value.MinPoint, line.Bounds.Value.MaxPoint);
                     }
 
                     // Calculate the ratio between the width and height of the current view
-                    double dViewRatio;
-                    dViewRatio = (acView.Width / acView.Height);
+                    double viewRatio = currentView.Width / currentView.Height;
 
                     // Tranform the extents of the view
                     matWCS2DCS = matWCS2DCS.Inverse();
-                    eExtents.TransformBy(matWCS2DCS);
+                    extents.TransformBy(matWCS2DCS);
 
-                    double dWidth;
-                    double dHeight;
-                    Point2d pNewCentPt;
+                    double width;
+                    double height;
+                    Point2d newCenter;
 
                     // Check to see if a center point was provided (Center and Scale modes)
-                    if (pCenter.DistanceTo(Point3d.Origin) != 0)
+                    if (center.DistanceTo(Point3d.Origin) != 0)
                     {
-                        dWidth = acView.Width;
-                        dHeight = acView.Height;
+                        width = currentView.Width;
+                        height = currentView.Height;
 
-                        if (dFactor == 0)
+                        if (factor == 0)
                         {
-                            pCenter = pCenter.TransformBy(matWCS2DCS);
+                            center = center.TransformBy(matWCS2DCS);
                         }
 
-                        pNewCentPt = new Point2d(pCenter.X, pCenter.Y);
+                        newCenter = new Point2d(center.X, center.Y);
                     }
                     else // Working in Window, Extents and Limits mode
                     {
                         // Calculate the new width and height of the current view
-                        dWidth = eExtents.MaxPoint.X - eExtents.MinPoint.X;
-                        dHeight = eExtents.MaxPoint.Y - eExtents.MinPoint.Y;
+                        width = extents.MaxPoint.X - extents.MinPoint.X;
+                        height = extents.MaxPoint.Y - extents.MinPoint.Y;
 
                         // Get the center of the view
-                        pNewCentPt = new Point2d(((eExtents.MaxPoint.X + eExtents.MinPoint.X) * 0.5),
-                                                 ((eExtents.MaxPoint.Y + eExtents.MinPoint.Y) * 0.5));
+                        newCenter = new Point2d(
+                            ((extents.MaxPoint.X + extents.MinPoint.X) * 0.5),
+                            ((extents.MaxPoint.Y + extents.MinPoint.Y) * 0.5));
                     }
 
                     // Check to see if the new width fits in current window
-                    if (dWidth > (dHeight * dViewRatio)) dHeight = dWidth / dViewRatio;
+                    if (width > (height * viewRatio))
+                    {
+                        height = width / viewRatio;
+                    }
 
                     // Resize and scale the view
-                    if (dFactor != 0)
+                    if (factor != 0)
                     {
-                        acView.Height = dHeight * dFactor;
-                        acView.Width = dWidth * dFactor;
+                        currentView.Height = height * factor;
+                        currentView.Width = width * factor;
                     }
 
                     // Set the center of the view
-                    acView.CenterPoint = pNewCentPt;
+                    currentView.CenterPoint = newCenter;
 
                     // Set the current view
-                    acDoc.Editor.SetCurrentView(acView);
+                    document.Editor.SetCurrentView(currentView);
                 }
 
                 // Commit the changes
-                acTrans.Commit();
+                trans.Commit();
             }
         }
 

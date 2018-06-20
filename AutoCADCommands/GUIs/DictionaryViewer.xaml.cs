@@ -15,7 +15,7 @@ using System.Windows.Shapes;
 namespace AutoCADCommands
 {
     /// <summary>
-    /// DictionaryViewer.xaml 的交互逻辑
+    /// DictionaryViewer.xaml code behind.
     /// </summary>
     public partial class DictionaryViewer : Window
     {
@@ -38,12 +38,12 @@ namespace AutoCADCommands
             _getValue = getValue;
             _setValue = setValue;
         }
-		
-		public void DictionaryViewer_Loaded(object sender, RoutedEventArgs e)
-		{
+
+        public void DictionaryViewer_Loaded(object sender, RoutedEventArgs e)
+        {
             _getDictNames().ToList().ForEach(x => lstDicts.Items.Add(x));
             lstDicts.SelectedIndex = 0;
-		}
+        }
 
         private void lstDicts_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
@@ -62,16 +62,17 @@ namespace AutoCADCommands
             string key = _getEntryNames(dict).OrderBy(x => x).ToList()[lstEntries.SelectedIndex];
             string oldValue = _getValue(dict, key);
 
-            InputBox ib = new InputBox(oldValue) { Owner = this }; // mod 20130201
+            var ib = new InputBox(oldValue)
+            {
+                Owner = this
+            }; // mod 20130201
             if (ib.ShowDialog() == true)
             {
                 _setValue(dict, key, ib.Value);
             }
 
-            // 更新ListView
+            // Update ListView
             lstDicts_SelectionChanged(null, null);
         }
     }
-	
-	
 }
