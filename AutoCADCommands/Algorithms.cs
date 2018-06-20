@@ -403,23 +403,41 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// Gets all points on curve whose parameters are integers.
+        /// Gets all points on curve whose parameters are an arithmetic sequence starting from 0.
         /// </summary>
         /// <param name="cv">The curve.</param>
+        /// <param name="paramDelta">The parameter increment. Th default is 1, in which case the method returns all points on curve whose parameters are integres.</param>
         /// <returns>The points.</returns>
-        public static IEnumerable<Point3d> GetPoints(this Curve cv)
+        public static IEnumerable<Point3d> GetPoints(this Curve cv, double paramDelta = 1)
         {
-            for (int i = 0; i <= cv.EndParam; i++)
+            for (var param = 0d; param <= cv.EndParam; param += paramDelta)
             {
-                yield return cv.GetPointAtParam(i);
+                yield return cv.GetPointAtParam(param);
             }
         }
 
         /// <summary>
-        /// 获取多段线的顶点。与GetPoints的区别在于IsClosed=true的情况 / Get the vertex of the polyline. The difference with GetPoints is the condition of IsClosed=true
+        /// Gets all points on curve whose distances (from start) are an arithmetic sequence starting from 0.
         /// </summary>
-        /// <param name="poly">多段线</param>
-        /// <returns>点集</returns>
+        /// <param name="cv">The curve.</param>
+        /// <param name="distDelta">The dist increment.</param>
+        /// <returns>The points.</returns>
+        public static IEnumerable<Point3d> GetPointsByDist(this Curve cv, double distDelta)
+        {
+            for (var dist = 0d; dist <= cv.GetDistAtParam(cv.EndParam); dist += distDelta)
+            {
+                yield return cv.GetPointAtDistX(dist);
+            }
+        }
+
+        /// <summary>
+        /// Gets all vertices of a polyline.
+        /// </summary>
+        /// <remarks>
+        /// For a polyline, the difference between this method and `GetPoints()` is when `IsClosed=true`.
+        /// </remarks>
+        /// <param name="poly">The polyline.</param>
+        /// <returns>The points.</returns>
         public static IEnumerable<Point3d> GetPolyPoints(this Polyline poly)
         {
             for (int i = 0; i < poly.NumberOfVertices; i++)
@@ -429,12 +447,13 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 获取曲线的参数等分点 / Get the parameters of the curve
+        /// Gets points that equally divide (parameter wise) a curve into `divs` (number of) segments.
         /// </summary>
-        /// <param name="cv">曲线</param>
-        /// <param name="divs">等分数</param>
-        /// <returns>点集</returns>
-        public static IEnumerable<Point3d> GetPoints(this Curve cv, int divs) // todo: 获取曲线的距离等分点 / Get the curve's distance equal points
+        /// <param name="cv">The curve.</param>
+        /// <param name="divs">The number of divisions.</param>
+        /// <returns>The points.</returns>
+        [Obsolete("This method has a design defect and will be removed.")]
+        public static IEnumerable<Point3d> GetPoints(this Curve cv, int divs)
         {
             double div = cv.EndParam / divs;
             for (double i = 0; i < cv.EndParam + div; i += div)
@@ -445,7 +464,7 @@ namespace AutoCADCommands
 
         private static IEnumerable<Point3d> GetPolylineFitPointsImp(this Curve cv, int divsWhenArc)
         {
-            Polyline poly = cv as Polyline;
+            var poly = cv as Polyline;
             if (poly == null)
             {
                 yield return cv.StartPoint;
@@ -461,7 +480,9 @@ namespace AutoCADCommands
                     }
                     else
                     {
-                        int divs = divsWhenArc == 0 ? (int)((Math.Atan(Math.Abs(poly.GetBulgeAt(i))) * 4) / (Math.PI / 18) + 4) : divsWhenArc;  // 加4应对特别小的弧度，小弧度对应的弧段长度可能很大
+                        int divs = divsWhenArc == 0 ? (int)((Math.Atan(Math.Abs(poly.GetBulgeAt(i))) * 4) / (Math.PI / 18) + 4) : divsWhenArc;
+                        // adding 4 in case extra small arcs, whose lengths might be huge.
+                        // TODO: this is a design defect. We probably need to use fixed dist.
                         for (int j = 0; j < divs; j++)
                         {
                             yield return poly.GetPointAtParam(i + (double)j / divs);
@@ -473,43 +494,59 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 获取多段线的拟合点集 / Get polyline fitting point set
+        /// Gets polyline fit points (in case of arcs).
         /// </summary>
-        /// <param name="cv">多段线</param>
-        /// <param name="divsWhenArc">弧段的分段数，默认为0，表示智能选取</param>
-        /// <returns>拟合点集</returns>
+        /// <param name="cv">The polyline.</param>
+        /// <param name="divsWhenArc">Number of divisions for arcs. The default is 0 (smart).</param>
+        /// <returns>The points.</returns>
         public static IEnumerable<Point3d> GetPolylineFitPoints(this Curve cv, int divsWhenArc = 0)
         {
             try
             {
-                return GetPolylineFitPointsImp(cv, divsWhenArc).ToArray();
+                return Algorithms.GetPolylineFitPointsImp(cv, divsWhenArc).ToArray();
             }
             catch
             {
-                throw new PolylineNeedCleanException("请先运行多段线清理。");
+                throw new PolylineNeedCleanException("Please run polyline cleanup first.");
             }
         }
 
         /// <summary>
-        /// 获取曲线上以整数参数点为界的曲线段 / Get curve segments on the curve bounded by integer parameter points
+        /// Gets subcurves by dividing a curve on points whose parameters are an arithmetic sequence starting from 0.
         /// </summary>
-        /// <param name="cv">曲线</param>
-        /// <returns>曲线段集</returns>
-        public static IEnumerable<Curve> GetSegments(this Curve cv)
+        /// <param name="cv">The curve.</param>
+        /// <param name="paramDelta">The parameter increment. Th default is 1, in which case the method divides the curve on points whose parameters are integers.</param>
+        /// <returns>The result curves.</returns>
+        public static IEnumerable<Curve> GetSegments(this Curve cv, double paramDelta = 1)
         {
-            for (int i = 0; i < cv.EndParam; i++)
+            for (var param = 0d; param < cv.EndParam; param += paramDelta)
             {
-                yield return cv.GetSubCurveByParams(new Interv(i, i + 1));
+                yield return cv.GetSubCurveByParams((param, param + paramDelta));
             }
         }
 
         /// <summary>
-        /// 计算两曲线的最小距离 / Calculate the minimum distance between two curves
+        /// Gets subcurves by dividing a curve on points whose distances (from start) are an arithmetic sequence starting from 0.
         /// </summary>
-        /// <param name="cv1">曲线1</param>
-        /// <param name="cv2">曲线2</param>
-        /// <param name="divs">等分数</param>
-        /// <returns>距离</returns>
+        /// <param name="cv">The curve.</param>
+        /// <param name="distDelta">The dist increment.</param>
+        /// <returns>The result curves.</returns>
+        public static IEnumerable<Curve> GetSegmentsByDist(this Curve cv, double distDelta)
+        {
+            for (var dist = 0d; dist < cv.GetDistAtParam(cv.EndParam); dist += distDelta)
+            {
+                yield return cv.GetSubCurve((dist, dist + distDelta)); // TODO: unify patterns of using "Param" and "Dist".
+            }
+        }
+
+        /// <summary>
+        /// Gets the minimum distance between two curves.
+        /// </summary>
+        /// <param name="cv1">The curve 1.</param>
+        /// <param name="cv2">The curve 2.</param>
+        /// <param name="divs">The number of divisions per curve used for calculating.</param>
+        /// <returns>The distance.</returns>
+        [Obsolete("The desgin has defect and the implementation is not optimized.")]
         public static double GetDistOfTwoCurve(Curve cv1, Curve cv2, int divs = 100)
         {
             var pts1 = cv1.GetPoints(divs);
@@ -832,8 +869,8 @@ namespace AutoCADCommands
         /// <summary>
         /// Converts Vector3d to Vector2d.
         /// </summary>
-        /// <param name="point">点</param>
-        /// <returns>结果</returns>
+        /// <param name="point">The Vector3d.</param>
+        /// <returns>A Vector2d.</returns>
         public static Vector2d ToVector2d(this Vector3d point)
         {
             return new Vector2d(point.X, point.Y);
@@ -1234,10 +1271,11 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 多段线清理：去除过近点 / Polyline Cleanup: Remove Near Points
+        /// Cleans up a polyline by removing approximate points.
         /// </summary>
-        /// <param name="poly">多段线</param>
-        /// <param name="epsilon">距离容差</param>
+        /// <param name="poly">The polyline.</param>
+        /// <param name="epsilon">The eplison.</param>
+        /// <returns>The number of points removed.</returns>
         public static int PolyClean_ReducePoints(Polyline poly, double epsilon)
         {
             var points = poly.GetPolyPoints().ToArray();
@@ -1260,32 +1298,35 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 多段线清理：去除多余共线点 / Polyline Cleanup: Remove Excess Collinear 
+        /// Cleans up a polyline by removing extra collinear points. 
         /// </summary>
-        /// <param name="poly">多段线</param>
+        /// <param name="poly">The polyline.</param>
         public static void PolyClean_RemoveColinearPoints(Polyline poly)
         {
             var points = poly.GetPolyPoints().ToArray();
-            List<int> cleanList = new List<int>();
+            var cleanList = new List<int>();
             int j = 0;
             for (int i = 1; i < points.Length; i++)
             {
-                // todo: 实现去除共线点
+                // TODO: implement this.
+                throw new NotImplementedException();
             }
         }
 
         /// <summary>
-        /// 多段线清理：规整方向 / Polyline Cleanup: Regular 
+        /// Cleans up a polyline by setting topo direction.
         /// </summary>
-        /// <param name="poly">多段线</param>
-        /// <param name="dir">方向</param>
-        public static int PolyClean_SetTopoDirection(Polyline poly, Direction dir)
+        /// <param name="poly">The polyline.</param>
+        /// <param name="dir">The direction.</param>
+        /// <returns>A value indicating if a reversion is done.</returns>
+        public static bool PolyClean_SetTopoDirection(Polyline poly, Direction dir)
         {
-            int count = 0;
             if (poly.StartPoint == poly.EndPoint)
             {
-                return 0;
+                return false;
             }
+
+            var reversed = false;
             var delta = poly.EndPoint - poly.StartPoint;
             switch (dir)
             {
@@ -1293,68 +1334,68 @@ namespace AutoCADCommands
                     if (delta.X > 0)
                     {
                         poly.ReverseCurve();
-                        count++;
+                        reversed = true;
                     }
                     break;
                 case Direction.North:
                     if (delta.Y < 0)
                     {
                         poly.ReverseCurve();
-                        count++;
+                        reversed = true;
                     }
                     break;
                 case Direction.East:
                     if (delta.X < 0)
                     {
                         poly.ReverseCurve();
-                        count++;
+                        reversed = true;
                     }
                     break;
                 case Direction.South:
                     if (delta.Y > 0)
                     {
                         poly.ReverseCurve();
-                        count++;
+                        reversed = true;
                     }
                     break;
                 default:
                     break;
             }
-            return count;
+            return reversed;
         }
 
         /// <summary>
-        /// 方向 / direction
+        /// The direction.
         /// </summary>
         public enum Direction
         {
             /// <summary>
-            /// 无
+            /// None.
             /// </summary>
             None,
             /// <summary>
-            /// 西
+            /// West.
             /// </summary>
             West,
             /// <summary>
-            /// 北
+            /// North.
             /// </summary>
             North,
             /// <summary>
-            /// 东
+            /// East.
             /// </summary>
             East,
             /// <summary>
-            /// 南
+            /// South.
             /// </summary>
             South
         }
 
         /// <summary>
-        /// 连接多段线 / Connect polyline
+        /// Connects polylines.
         /// </summary>
-        /// <param name="poly">多段线</param>
-        /// <param name="poly1">多段线1</param>
+        /// <param name="poly">The base polyline.</param>
+        /// <param name="poly1">The other polyline.</param>
         public static void JoinPolyline(this Polyline poly, Polyline poly1)
         {
             int index = poly.GetPolyPoints().Count();
@@ -1368,15 +1409,15 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 连接多段线 / Connect polyline
+        /// Connects polylines.
         /// </summary>
-        /// <param name="poly1">多段线1</param>
-        /// <param name="poly2">多段线2</param>
-        /// <returns>连接结果</returns>
+        /// <param name="poly1">The polyline 1.</param>
+        /// <param name="poly2">The polyline 2.</param>
+        /// <returns>The result polyline.</returns>
         public static Polyline PolyJoin(this Polyline poly1, Polyline poly2)
         {
             int index = 0;
-            Polyline poly = new Polyline();
+            var poly = new Polyline();
             for (int i = 0; i < poly1.NumberOfVertices; i++)
             {
                 if (i == poly1.NumberOfVertices - 1 && poly1.EndPoint == poly2.StartPoint)
@@ -1397,33 +1438,37 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 连接多段线 / Connect polyline
+        /// Connects polyline.
         /// </summary>
-        /// <param name="polys">多段线列表</param>
-        /// <returns>连接结果</returns>
+        /// <param name="polys">The polylines.</param>
+        /// <returns>The result polyline.</returns>
         public static Polyline PolyJoin(this List<Polyline> polys) // newly 20130807
         {
             return polys.Aggregate(Algorithms.PolyJoin);
         }
 
         /// <summary>
-        /// 连接多段线，忽略中间顶点 / Connect polylines, ignoring intermediate vertices
+        /// Connects polylines, ignoring intermediate vertices.
         /// </summary>
-        /// <param name="polys">多段线列表</param>
-        /// <returns>连接结果</returns>
+        /// <param name="polys">The polylines.</param>
+        /// <returns>The result polyline.</returns>
         public static Polyline PolyJoinIgnoreMiddleVertices(this List<Polyline> polys) // newly 20130807
         {
-            Polyline poly = new Polyline();
-            var points = polys.SelectMany(p => new[] { p.StartPoint, p.EndPoint }).Distinct().ToList();
+            var poly = new Polyline();
+            var points = polys
+                .SelectMany(p => new[] { p.StartPoint, p.EndPoint })
+                .Distinct()
+                .ToList();
+
             return NoDraw.Pline(points);
         }
 
         /// <summary>
-        /// 点在多段线内判断 / Points are joined within polylines
+        /// Determines if a point is in a polygon (defined by a polyline).
         /// </summary>
-        /// <param name="poly">多段线</param>
-        /// <param name="p">点</param>
-        /// <returns>结果</returns>
+        /// <param name="poly">The polygon.</param>
+        /// <param name="p">The point.</param>
+        /// <returns>The result.</returns>
         public static bool IsPointIn(this Polyline poly, Point3d p)
         {
             double temp = 0;
@@ -1478,28 +1523,29 @@ namespace AutoCADCommands
         #region Auxiliary algorithms
 
         /// <summary>
-        /// 获取世界坐标到视口坐标的变换矩阵 / Get the transformation matrix of world coordinates to viewport coordinates
+        /// Gets the transformation matrix of world coordinates to viewport coordinates
         /// </summary>
-        /// <param name="viewCenter"></param>
-        /// <param name="viewportCenter"></param>
-        /// <param name="scale"></param>
+        /// <param name="viewCenter">The view center.</param>
+        /// <param name="viewportCenter">The viewport center.</param>
+        /// <param name="scale">The scale.</param>
         /// <returns></returns>
         public static Matrix3d WorldToViewport(Point3d viewCenter, Point3d viewportCenter, double scale)
         {
-            //return Matrix3d.Displacement(viewportCenter - viewCenter);
-            return Matrix3d.Scaling(1.0 / scale, viewportCenter).PostMultiplyBy(Matrix3d.Displacement(viewportCenter - viewCenter));
+            return Matrix3d
+                .Scaling(1.0 / scale, viewportCenter)
+                .PostMultiplyBy(Matrix3d.Displacement(viewportCenter - viewCenter));
         }
 
         /// <summary>
-        /// 实体相交 / Physical intersection
+        /// Intersects entities.
         /// </summary>
-        /// <param name="ent">实体</param>
-        /// <param name="entOther">另一实体</param>
-        /// <param name="intersectType">相交类型</param>
-        /// <param name="points">交点容器</param>
-        public static void IntersectWith3264(this Entity ent, Entity entOther, Intersect intersectType, Point3dCollection points)
+        /// <param name="ent">The entity.</param>
+        /// <param name="entOther">The other entity.</param>
+        /// <param name="intersectType">The type.</param>
+        /// <param name="points">The intersection points output.</param>
+        internal static void IntersectWith3264(this Entity ent, Entity entOther, Intersect intersectType, Point3dCollection points)
         {
-            // 32位与64位AutoCAD应用程序API不同，使用运行时绑定。
+            // NOTE: Use runtime binding for difference between 32- and 64-bit APIs.
             var methodInfo = typeof(Entity).GetMethod("IntersectWith",
                 new Type[] { typeof(Entity), typeof(Intersect), typeof(Point3dCollection), typeof(long), typeof(long) });
             if (methodInfo == null) // 32-bit AutoCAD
@@ -1511,12 +1557,12 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 实体相交求交点 / Entity intersect intersection newly 20140805
+        /// Intersects entities.
         /// </summary>
-        /// <param name="ent">实体</param>
-        /// <param name="entOther">另一实体</param>
-        /// <param name="intersectType">相交类型</param>
-        /// <returns>交点集合</returns>
+        /// <param name="ent">The entity.</param>
+        /// <param name="entOther">The other entity.</param>
+        /// <param name="intersectType">The type.</param>
+        /// <returns>The intersection points.</returns>
         public static List<Point3d> Intersect(this Entity ent, Entity entOther, Intersect intersectType)
         {
             var points = new Point3dCollection();
@@ -1525,11 +1571,11 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 字符串转双精度浮点 / String to double-precision floating point
+        /// Converts string to double.
         /// </summary>
-        /// <param name="s">字符串</param>
-        /// <param name="defaultValue">默认值</param>
-        /// <returns>结果</returns>
+        /// <param name="s">The string.</param>
+        /// <param name="defaultValue">The default value.</param>
+        /// <returns>The result.</returns>
         public static double ToDouble(this string s, double defaultValue)
         {
             try
@@ -1543,42 +1589,42 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 字符串转双精度浮点，失败得到0 / String to double-precision floating point, failed to get 0
+        /// Converts string to double with default 0.
         /// </summary>
-        /// <param name="s">字符串</param>
-        /// <returns>结果</returns>
+        /// <param name="s">The string.</param>
+        /// <returns>The result.</returns>
         public static double ToDouble(this string s)
         {
             return s.ToDouble(0);
         }
 
         /// <summary>
-        /// 取余运算 / Retrieval operation
+        /// Gets remainder.
         /// </summary>
-        /// <param name="n">被除数</param>
-        /// <param name="m">模</param>
-        /// <returns>余数，[0, m)</returns>
+        /// <param name="n">The divident.</param>
+        /// <param name="m">The divisor.</param>
+        /// <returns>The remainder within [0, m).</returns>
         public static int Mod(this int n, int m)
         {
             return (n > 0) ? (n % m) : (n % m + m);
         }
 
         /// <summary>
-        /// 向量夹角：[0, Pi] / Vector angle: [0, Pi]
+        /// Gets the angle between two vectors within [0, Pi].
         /// </summary>
-        /// <param name="v0">向量0</param>
-        /// <param name="v1">向量1</param>
-        /// <returns>结果</returns>
+        /// <param name="v0">The vector 0.</param>
+        /// <param name="v1">The vector 1.</param>
+        /// <returns>The result.</returns>
         public static double ZeroToPiAngleTo(this Vector2d v0, Vector2d v1)
         {
             return v0.GetAngleTo(v1);
         }
 
         /// <summary>
-        /// 向量方位角：[0, 2Pi] / Vector azimuth: [0, 2Pi]
+        /// Gets the heading (direction) angle of a vector within [0, 2Pi].
         /// </summary>
-        /// <param name="v0">向量0</param>
-        /// <returns>结果</returns>
+        /// <param name="v0">The vector.</param>
+        /// <returns>The result.</returns>
         public static double DirAngleZeroTo2Pi(this Vector2d v0)
         {
             double angle = v0.ZeroToPiAngleTo(Vector2d.XAxis);
@@ -1590,11 +1636,11 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 向量夹角：[0, 2Pi]
+        /// Gets the angle between two vectors within [0, 2Pi].
         /// </summary>
-        /// <param name="v0">向量0</param>
-        /// <param name="v1">向量1</param>
-        /// <returns>结果</returns>
+        /// <param name="v0">The vector 0.</param>
+        /// <param name="v1">The vector 1.</param>
+        /// <returns>The result.</returns>
         public static double ZeroTo2PiAngleTo(this Vector2d v0, Vector2d v1)
         {
             double angle0 = v0.DirAngleZeroTo2Pi();
@@ -1605,11 +1651,11 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 向量夹角：[-Pi, Pi]
+        /// Gets the angle between two vectors within [-Pi, Pi].
         /// </summary>
-        /// <param name="v0">向量0</param>
-        /// <param name="v1">向量1</param>
-        /// <returns>结果</returns>
+        /// <param name="v0">The vector 0.</param>
+        /// <param name="v1">The vector 1.</param>
+        /// <returns>The result.</returns>
         public static double MinusPiToPiAngleTo(this Vector2d v0, Vector2d v1)
         {
             double angle0 = v0.DirAngleZeroTo2Pi();
