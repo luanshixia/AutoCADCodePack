@@ -214,5 +214,4 @@ namespace AutoCADCommands
             return StartDrag(new JigPromptPointOptions(msg), callFun);
         }
     }
-
 }
