@@ -21,8 +21,8 @@ namespace AutoCADCommands
         /// 获取程序目录
         /// </summary>
         public static string CurrentFolder
-        {            get
-
+        {
+            get
             {
                 string s = System.Reflection.Assembly.GetCallingAssembly().Location;
                 return s.Remove(s.LastIndexOf('\\') + 1);
