@@ -372,7 +372,7 @@ namespace AutoCADCommands
         /// <param name="message">提示</param>
         /// <param name="filter">过滤器，结构同TypedValue</param>
         /// <returns>实体ID数组</returns>
-        public static ObjectId[] GetSelection(string message, TupleList<int, object> filter)
+        public static ObjectId[] GetSelection(string message, List<(int, object)> filter)
         {
             Editor ed = Application.DocumentManager.MdiActiveDocument.Editor;
             PromptSelectionOptions opt = new PromptSelectionOptions { MessageForAdding = message };

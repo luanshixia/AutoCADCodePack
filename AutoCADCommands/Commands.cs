@@ -232,8 +232,8 @@ namespace AutoCADCommands
         /// <returns></returns>
         public static ObjectId Pline(IEnumerable<Point3d> points, double globalWidth)
         {
-            TupleList<Point3d, double> pairs = new TupleList<Point3d, double>();
-            points.ToList().ForEach(x => pairs.Add(x, 0));
+            var pairs = new List<(Point3d, double)>();
+            points.ToList().ForEach(x => pairs.Add((x, 0)));
             return Pline(pairs, globalWidth);
         }
 
@@ -243,9 +243,9 @@ namespace AutoCADCommands
         /// <param name="pointBulgePairs"></param>
         /// <param name="globalWidth"></param>
         /// <returns></returns>
-        public static ObjectId Pline(TupleList<Point3d, double> pointBulgePairs, double globalWidth)
+        public static ObjectId Pline(List<(Point3d, double)> pointBulgePairs, double globalWidth)
         {
-            Polyline poly = new Polyline();
+            var poly = new Polyline();
             Enumerable.Range(0, pointBulgePairs.Count).ToList().ForEach(x =>
                 poly.AddVertexAt(x, new Point2d(pointBulgePairs[x].Item1.X, pointBulgePairs[x].Item1.Y), pointBulgePairs[x].Item2, globalWidth, globalWidth)
                 );
@@ -1093,8 +1093,8 @@ namespace AutoCADCommands
         /// <returns></returns>
         public static Polyline Pline(IEnumerable<Point3d> points, double globalWidth)
         {
-            TupleList<Point3d, double> pairs = new TupleList<Point3d, double>();
-            points.ToList().ForEach(x => pairs.Add(x, 0));
+            var pairs = new List<(Point3d, double)>();
+            points.ToList().ForEach(x => pairs.Add((x, 0)));
             return Pline(pairs, globalWidth);
         }
 
@@ -1104,7 +1104,7 @@ namespace AutoCADCommands
         /// <param name="pointBulgePairs"></param>
         /// <param name="globalWidth"></param>
         /// <returns></returns>
-        public static Polyline Pline(TupleList<Point3d, double> pointBulgePairs, double globalWidth)
+        public static Polyline Pline(List<(Point3d, double)> pointBulgePairs, double globalWidth)
         {
             Polyline poly = new Polyline();
             Enumerable.Range(0, pointBulgePairs.Count).ToList().ForEach(x =>
