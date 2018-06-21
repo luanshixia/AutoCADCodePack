@@ -156,9 +156,6 @@
     </Page>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="KnownIssues.txt" />
-  </ItemGroup>
-  <ItemGroup>
     <None Include="AutoCADCommands.ruleset" />
     <None Include="packages.config" />
   </ItemGroup>
