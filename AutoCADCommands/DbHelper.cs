@@ -578,11 +578,10 @@ namespace AutoCADCommands
             foreach (ObjectId attrId in blockReference.AttributeCollection)
             {
                 AttributeReference attr = attrId.QOpenForRead<AttributeReference>();
-                attrs.Add(attr.Tag, attr.ObjectId);
+                attrs.Add(attr.Tag, attrId);
             }
             return attrs;
         }
-
 
         /// <summary>
         /// 获取块属性集合
