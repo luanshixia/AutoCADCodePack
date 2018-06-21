@@ -1,19 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
-using Autodesk.AutoCAD.ApplicationServices;
+﻿using Autodesk.AutoCAD.ApplicationServices;
 using Autodesk.AutoCAD.DatabaseServices;
 using Autodesk.AutoCAD.EditorInput;
 using Autodesk.AutoCAD.Geometry;
-using Autodesk.AutoCAD.Runtime;
 using Autodesk.Windows;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace AutoCADCommands
 {
     /// <summary>
-    /// 命令行用户交互
+    /// Command-line user interactions.
     /// </summary>
     public class Interaction
     {
@@ -121,10 +118,12 @@ namespace AutoCADCommands
         public static string GetKeywords(string message, string[] keys, int defaultIndex = 0)
         {
             Editor ed = Application.DocumentManager.MdiActiveDocument.Editor;
-            PromptKeywordOptions opt = new PromptKeywordOptions(message); // mod 20140527
+            var opt = new PromptKeywordOptions(message)
+            {
+                AllowNone = true
+            }; // mod 20140527
             keys.ToList().ForEach(k => opt.Keywords.Add(k));
             opt.Keywords.Default = keys[defaultIndex];
-            opt.AllowNone = true;
             PromptResult res = ed.GetKeywords(opt);
             if (res.Status == PromptStatus.OK)
             {
@@ -204,8 +203,10 @@ namespace AutoCADCommands
         public static Point3d GetPoint(string message)
         {
             Editor ed = Application.DocumentManager.MdiActiveDocument.Editor;
-            PromptPointOptions opt = new PromptPointOptions(message);
-            opt.AllowNone = true;
+            PromptPointOptions opt = new PromptPointOptions(message)
+            {
+                AllowNone = true
+            };
             PromptPointResult res = ed.GetPoint(opt);
             if (res.Status == PromptStatus.OK)
             {
@@ -371,7 +372,7 @@ namespace AutoCADCommands
         /// <param name="message">提示</param>
         /// <param name="filter">过滤器，结构同TypedValue</param>
         /// <returns>实体ID数组</returns>
-        public static ObjectId[] GetSelection(string message, TupleList<int, object> filter)
+        public static ObjectId[] GetSelection(string message, List<(int, object)> filter)
         {
             Editor ed = Application.DocumentManager.MdiActiveDocument.Editor;
             PromptSelectionOptions opt = new PromptSelectionOptions { MessageForAdding = message };
@@ -595,25 +596,26 @@ namespace AutoCADCommands
         /// <returns>用户选择</returns>
         public static bool TaskDialog(string mainInstruction, string yesChoice, string noChoice, string title = "AutoCAD", string content = "", string footer = "", string expanded = "")
         {
-            //WPF任务对话框
-            TaskDialog td = new TaskDialog();
-            td.WindowTitle = title;
-            td.MainInstruction = mainInstruction;
-            td.ContentText = content;
-            td.MainIcon = TaskDialogIcon.Information;
-            td.FooterIcon = TaskDialogIcon.Warning;
-            td.FooterText = footer;
-            td.CollapsedControlText = "详细信息";
-            td.ExpandedControlText = "详细信息";
-            td.ExpandedByDefault = false;
-            td.ExpandedText = expanded;
-            td.AllowDialogCancellation = false;
-            td.UseCommandLinks = true;
+            var td = new TaskDialog
+            {
+                WindowTitle = title,
+                MainInstruction = mainInstruction,
+                ContentText = content,
+                MainIcon = TaskDialogIcon.Information,
+                FooterIcon = TaskDialogIcon.Warning,
+                FooterText = footer,
+                CollapsedControlText = "详细信息",
+                ExpandedControlText = "详细信息",
+                ExpandedByDefault = false,
+                ExpandedText = expanded,
+                AllowDialogCancellation = false,
+                UseCommandLinks = true
+            };
             td.Buttons.Add(new TaskDialogButton(1, yesChoice));
             td.Buttons.Add(new TaskDialogButton(2, noChoice));
             td.DefaultButton = 1;
             int[] btnId = null;
-            td.Callback = delegate(ActiveTaskDialog atd, TaskDialogCallbackArgs e, object sender)
+            td.Callback = (atd, e, sender) =>
             {
                 if (e.Notification == TaskDialogNotification.ButtonClicked)
                 {
@@ -627,10 +629,8 @@ namespace AutoCADCommands
             {
                 return true;
             }
-            else
-            {
-                return false;
-            }
+
+            return false;
         }
 
         /// <summary>
@@ -657,7 +657,7 @@ namespace AutoCADCommands
         /// <param name="entIds">实体集</param>
         public static void ZoomObjects(IEnumerable<ObjectId> entIds)
         {
-            Extents3d extent = entIds.GetExtents();
+            var extent = entIds.GetExtents();
             Interaction.ZoomView(extent);
         }
 
@@ -667,7 +667,7 @@ namespace AutoCADCommands
         /// <param name="extent">范围</param>
         public static void ZoomView(Extents3d extent)
         {
-            Zoom(extent.MinPoint, extent.MaxPoint, new Point3d(), 1);
+            Interaction.Zoom(extent.MinPoint, extent.MaxPoint, new Point3d(), 1);
         }
 
         /// <summary>
@@ -675,156 +675,154 @@ namespace AutoCADCommands
         /// </summary>
         public static void ZoomExtents()
         {
-            if (HostApplicationServices.WorkingDatabase.TileMode) // 当前为模型空间
+            if (HostApplicationServices.WorkingDatabase.TileMode) // Model space
             {
-                Zoom(HostApplicationServices.WorkingDatabase.Extmin, HostApplicationServices.WorkingDatabase.Extmax, new Point3d(), 1);
+                Interaction.Zoom(HostApplicationServices.WorkingDatabase.Extmin, HostApplicationServices.WorkingDatabase.Extmax, new Point3d(), 1);
             }
-            else // 当前为图纸空间
+            else // Paper space
             {
-                //BlockTableRecord btr = HostApplicationServices.WorkingDatabase.CurrentSpaceId.QOpenForRead() as BlockTableRecord;
-                //Extents3d extents = btr.Cast<ObjectId>().GetExtents();
-                Zoom(new Point3d(), new Point3d(), new Point3d(), 1);
+                Interaction.Zoom(new Point3d(), new Point3d(), new Point3d(), 1);
             }
         }
 
-        //
-        // Zoom函数来源于AutoCAD .NET Developer's Guide
-        //
-        internal static void Zoom(Point3d pMin, Point3d pMax, Point3d pCenter, double dFactor)
+        /// <summary>
+        /// The internal Zoom() method (credit: AutoCAD .NET Developer's Guide).
+        /// </summary>
+        /// <param name="min"></param>
+        /// <param name="max"></param>
+        /// <param name="center"></param>
+        /// <param name="factor"></param>
+        internal static void Zoom(Point3d min, Point3d max, Point3d center, double factor)
         {
             // Get the current document and database
-            Document acDoc = Application.DocumentManager.MdiActiveDocument;
-            Database acCurDb = acDoc.Database;
+            var document = Application.DocumentManager.MdiActiveDocument;
+            var database = document.Database;
 
-            int nCurVport = System.Convert.ToInt32(Application.GetSystemVariable("CVPORT"));
+            int currentViewport = Convert.ToInt32(Application.GetSystemVariable("CVPORT"));
 
             // Get the extents of the current space no points
             // or only a center point is provided
             // Check to see if Model space is current
-            if (acCurDb.TileMode == true)
+            if (database.TileMode)
             {
-                if (pMin.Equals(new Point3d()) == true &&
-                         pMax.Equals(new Point3d()) == true)
+                if (min.Equals(new Point3d()) && max.Equals(new Point3d()))
                 {
-                    pMin = acCurDb.Extmin;
-                    pMax = acCurDb.Extmax;
+                    min = database.Extmin;
+                    max = database.Extmax;
                 }
             }
             else
             {
                 // Check to see if Paper space is current
-                if (nCurVport == 1)
+                if (currentViewport == 1)
                 {
                     // Get the extents of Paper space
-                    if (pMin.Equals(new Point3d()) == true &&
-                        pMax.Equals(new Point3d()) == true)
+                    if (min.Equals(new Point3d()) && max.Equals(new Point3d()))
                     {
-                        pMin = acCurDb.Pextmin;
-                        pMax = acCurDb.Pextmax;
+                        min = database.Pextmin;
+                        max = database.Pextmax;
                     }
                 }
                 else
                 {
                     // Get the extents of Model space
-                    if (pMin.Equals(new Point3d()) == true &&
-                        pMax.Equals(new Point3d()) == true)
+                    if (min.Equals(new Point3d()) && max.Equals(new Point3d()))
                     {
-                        pMin = acCurDb.Extmin;
-                        pMax = acCurDb.Extmax;
+                        min = database.Extmin;
+                        max = database.Extmax;
                     }
                 }
             }
 
             // Start a transaction
-            using (Transaction acTrans = acCurDb.TransactionManager.StartTransaction())
+            using (var trans = database.TransactionManager.StartTransaction())
             {
                 // Get the current view
-                using (ViewTableRecord acView = acDoc.Editor.GetCurrentView())
+                using (var currentView = document.Editor.GetCurrentView())
                 {
-                    Extents3d eExtents;
+                    Extents3d extents;
 
                     // Translate WCS coordinates to DCS
-                    Matrix3d matWCS2DCS;
-                    matWCS2DCS = Matrix3d.PlaneToWorld(acView.ViewDirection);
-                    matWCS2DCS = Matrix3d.Displacement(acView.Target - Point3d.Origin) * matWCS2DCS;
-                    matWCS2DCS = Matrix3d.Rotation(-acView.ViewTwist,
-                                                   acView.ViewDirection,
-                                                   acView.Target) * matWCS2DCS;
+                    var matWCS2DCS = Matrix3d.PlaneToWorld(currentView.ViewDirection);
+                    matWCS2DCS = Matrix3d.Displacement(currentView.Target - Point3d.Origin) * matWCS2DCS;
+                    matWCS2DCS = Matrix3d.Rotation(
+                        angle: -currentView.ViewTwist,
+                        axis: currentView.ViewDirection,
+                        center: currentView.Target) * matWCS2DCS;
 
                     // If a center point is specified, define the min and max
                     // point of the extents
                     // for Center and Scale modes
-                    if (pCenter.DistanceTo(Point3d.Origin) != 0)
+                    if (center.DistanceTo(Point3d.Origin) != 0)
                     {
-                        pMin = new Point3d(pCenter.X - (acView.Width / 2),
-                                           pCenter.Y - (acView.Height / 2), 0);
-
-                        pMax = new Point3d((acView.Width / 2) + pCenter.X,
-                                           (acView.Height / 2) + pCenter.Y, 0);
+                        min = new Point3d(center.X - (currentView.Width / 2), center.Y - (currentView.Height / 2), 0);
+                        max = new Point3d((currentView.Width / 2) + center.X, (currentView.Height / 2) + center.Y, 0);
                     }
 
                     // Create an extents object using a line
-                    using (Line acLine = new Line(pMin, pMax))
+                    using (Line line = new Line(min, max))
                     {
-                        eExtents = new Extents3d(acLine.Bounds.Value.MinPoint,
-                                                 acLine.Bounds.Value.MaxPoint);
+                        extents = new Extents3d(line.Bounds.Value.MinPoint, line.Bounds.Value.MaxPoint);
                     }
 
                     // Calculate the ratio between the width and height of the current view
-                    double dViewRatio;
-                    dViewRatio = (acView.Width / acView.Height);
+                    double viewRatio = currentView.Width / currentView.Height;
 
                     // Tranform the extents of the view
                     matWCS2DCS = matWCS2DCS.Inverse();
-                    eExtents.TransformBy(matWCS2DCS);
+                    extents.TransformBy(matWCS2DCS);
 
-                    double dWidth;
-                    double dHeight;
-                    Point2d pNewCentPt;
+                    double width;
+                    double height;
+                    Point2d newCenter;
 
                     // Check to see if a center point was provided (Center and Scale modes)
-                    if (pCenter.DistanceTo(Point3d.Origin) != 0)
+                    if (center.DistanceTo(Point3d.Origin) != 0)
                     {
-                        dWidth = acView.Width;
-                        dHeight = acView.Height;
+                        width = currentView.Width;
+                        height = currentView.Height;
 
-                        if (dFactor == 0)
+                        if (factor == 0)
                         {
-                            pCenter = pCenter.TransformBy(matWCS2DCS);
+                            center = center.TransformBy(matWCS2DCS);
                         }
 
-                        pNewCentPt = new Point2d(pCenter.X, pCenter.Y);
+                        newCenter = new Point2d(center.X, center.Y);
                     }
                     else // Working in Window, Extents and Limits mode
                     {
                         // Calculate the new width and height of the current view
-                        dWidth = eExtents.MaxPoint.X - eExtents.MinPoint.X;
-                        dHeight = eExtents.MaxPoint.Y - eExtents.MinPoint.Y;
+                        width = extents.MaxPoint.X - extents.MinPoint.X;
+                        height = extents.MaxPoint.Y - extents.MinPoint.Y;
 
                         // Get the center of the view
-                        pNewCentPt = new Point2d(((eExtents.MaxPoint.X + eExtents.MinPoint.X) * 0.5),
-                                                 ((eExtents.MaxPoint.Y + eExtents.MinPoint.Y) * 0.5));
+                        newCenter = new Point2d(
+                            ((extents.MaxPoint.X + extents.MinPoint.X) * 0.5),
+                            ((extents.MaxPoint.Y + extents.MinPoint.Y) * 0.5));
                     }
 
                     // Check to see if the new width fits in current window
-                    if (dWidth > (dHeight * dViewRatio)) dHeight = dWidth / dViewRatio;
+                    if (width > (height * viewRatio))
+                    {
+                        height = width / viewRatio;
+                    }
 
                     // Resize and scale the view
-                    if (dFactor != 0)
+                    if (factor != 0)
                     {
-                        acView.Height = dHeight * dFactor;
-                        acView.Width = dWidth * dFactor;
+                        currentView.Height = height * factor;
+                        currentView.Width = width * factor;
                     }
 
                     // Set the center of the view
-                    acView.CenterPoint = pNewCentPt;
+                    currentView.CenterPoint = newCenter;
 
                     // Set the current view
-                    acDoc.Editor.SetCurrentView(acView);
+                    document.Editor.SetCurrentView(currentView);
                 }
 
                 // Commit the changes
-                acTrans.Commit();
+                trans.Commit();
             }
         }
 
@@ -1012,7 +1010,7 @@ namespace AutoCADCommands
         {
             if (ids.Count > 0)
             {
-                List<ObjectId> highlightIds = new List<ObjectId>();
+                var highlightIds = new List<ObjectId>();
                 while (true)
                 {
                     string input = Interaction.GetString("\n输入编号查看，按回车退出");
@@ -1027,10 +1025,7 @@ namespace AutoCADCommands
                         continue;
                     }
 
-                    if (action != null)
-                    {
-                        action(index);
-                    }
+                    action?.Invoke(index);
                     highlightIds.Clear();
                     highlightIds.Add(ids[index - 1]);
                     Interaction.ZoomObjects(highlightIds);
@@ -1043,10 +1038,9 @@ namespace AutoCADCommands
     internal class LineJig : EntityJig
     {
         private Point3d _startPoint;
-        private Point3d _endPoint;
         private string _message;
 
-        public Point3d EndPoint { get { return _endPoint; } }
+        public Point3d EndPoint { get; private set; }
 
         public LineJig(Point3d startPoint, string message)
             : base(new Line(startPoint, Point3d.Origin))
@@ -1067,9 +1061,9 @@ namespace AutoCADCommands
             {
                 return SamplerStatus.Cancel;
             }
-            else if (endPoint != _endPoint)
+            else if (endPoint != EndPoint)
             {
-                _endPoint = endPoint;
+                EndPoint = endPoint;
                 return SamplerStatus.OK;
             }
             else
@@ -1083,7 +1077,7 @@ namespace AutoCADCommands
             try
             {
                 Line line = Entity as Line;
-                line.EndPoint = _endPoint;
+                line.EndPoint = EndPoint;
             }
             catch
             {
@@ -1094,26 +1088,27 @@ namespace AutoCADCommands
 
     internal class PositionJig : EntityJig
     {
-        private Entity _ent;
         private Point3d _pos = Point3d.Origin;
         private Vector3d _move;
 
-        public Entity Ent { get { return _ent; } }
+        public Entity Ent { get; }
 
         public PositionJig(Entity ent)
             : base(ent)
         {
-            _ent = ent;
+            Ent = ent;
         }
 
         protected override SamplerStatus Sampler(JigPrompts prompts)
         {
-            JigPromptPointOptions jppo = new JigPromptPointOptions("\n指定位置");
+            var jppo = new JigPromptPointOptions("\n指定位置")
+            {
+                Cursor = CursorType.EntitySelect,
+                UseBasePoint = false,
+                UserInputControls = UserInputControls.NullResponseAccepted
+            };
             jppo.Keywords.Add(""); // mod 20140527
-            jppo.Cursor = CursorType.EntitySelect;
-            jppo.UseBasePoint = false;
-            jppo.UserInputControls = UserInputControls.NullResponseAccepted;
-            Point3d pos = prompts.AcquirePoint(jppo).Value;
+            var pos = prompts.AcquirePoint(jppo).Value;
             if (pos.IsNull())
             {
                 return SamplerStatus.Cancel;
@@ -1135,7 +1130,7 @@ namespace AutoCADCommands
         {
             try
             {
-                _ent.TransformBy(Matrix3d.Displacement(_move));
+                Ent.TransformBy(Matrix3d.Displacement(_move));
             }
             catch
             {
@@ -1146,7 +1141,6 @@ namespace AutoCADCommands
 
     internal class ScaleJig : EntityJig
     {
-        private Entity _ent;
         private Point3d _pos = Point3d.Origin;
         private Vector3d _move;
         private Point3d _basePoint;
@@ -1155,15 +1149,15 @@ namespace AutoCADCommands
         //private double _scale;
         private double _mag;
 
-        public Entity Ent { get { return _ent; } }
+        public Entity Ent { get; }
 
         public ScaleJig(Entity ent, Point3d basePoint, string message)
             : base(ent)
         {
-            _ent = ent;
+            Ent = ent;
             _basePoint = basePoint;
             _message = message;
-            _extents = _ent.GeometricExtents;
+            _extents = Ent.GeometricExtents;
             //_scale = 1;
             _mag = 1;
         }
@@ -1177,7 +1171,7 @@ namespace AutoCADCommands
             jppo.UserInputControls = UserInputControls.NullResponseAccepted;
             Point3d corner = prompts.AcquirePoint(jppo).Value;
             Point3d pos = Point3d.Origin + 0.5 * (_basePoint.GetAsVector() + corner.GetAsVector());
-            var extents = _ent.GeometricExtents;
+            var extents = Ent.GeometricExtents;
             double scale = Math.Min(
                 Math.Abs(corner.X - _basePoint.X) / (extents.MaxPoint.X - extents.MinPoint.X),
                 Math.Abs(corner.Y - _basePoint.Y) / (extents.MaxPoint.Y - extents.MinPoint.Y));
@@ -1209,8 +1203,8 @@ namespace AutoCADCommands
         {
             try
             {
-                _ent.TransformBy(Matrix3d.Displacement(_move));
-                _ent.TransformBy(Matrix3d.Scaling(_mag, _pos)); // 必须先平移，再缩放。
+                Ent.TransformBy(Matrix3d.Displacement(_move));
+                Ent.TransformBy(Matrix3d.Scaling(_mag, _pos)); // 必须先平移，再缩放。
             }
             catch
             {
@@ -1237,13 +1231,15 @@ namespace AutoCADCommands
 
         protected override SamplerStatus Sampler(JigPrompts prompts)
         {
-            JigPromptPointOptions jppo = new JigPromptPointOptions(_message);
+            var jppo = new JigPromptPointOptions(_message)
+            {
+                Cursor = CursorType.EntitySelect,
+                BasePoint = _center,
+                UseBasePoint = true,
+                UserInputControls = UserInputControls.NullResponseAccepted
+            };
             jppo.Keywords.Add(""); // mod 20140527
-            jppo.Cursor = CursorType.EntitySelect;
-            jppo.BasePoint = _center;
-            jppo.UseBasePoint = true;
-            jppo.UserInputControls = UserInputControls.NullResponseAccepted;
-            Point3d end = prompts.AcquirePoint(jppo).Value;
+            var end = prompts.AcquirePoint(jppo).Value;
             if (end.IsNull())
             {
                 return SamplerStatus.Cancel;
@@ -1263,7 +1259,7 @@ namespace AutoCADCommands
         {
             try
             {
-                Vector3d dir = _end - _center;
+                var dir = _end - _center;
                 double angle = dir.GetAngleTo(Vector3d.YAxis);
                 if (dir.X > 0)
                 {

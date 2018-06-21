@@ -15,7 +15,7 @@ using System.Windows.Shapes;
 namespace AutoCADCommands
 {
     /// <summary>
-    /// InputBox.xaml 的交互逻辑
+    /// InputBox.xaml code behind.
     /// </summary>
     public partial class InputBox : Window
     {

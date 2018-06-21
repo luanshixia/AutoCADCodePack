@@ -15,7 +15,7 @@ using System.Windows.Shapes;
 namespace AutoCADCommands
 {
     /// <summary>
-    /// MultiInputs.xaml 的交互逻辑
+    /// MultiInputs.xaml code behind.
     /// </summary>
     public partial class MultiInputs : Window
     {
@@ -26,18 +26,29 @@ namespace AutoCADCommands
             InitializeComponent();
         }
 
-        public void Ready(Dictionary<string, string> entries, string title = "信息采集器")
+        public void Ready(Dictionary<string, string> entries, string title = "Inputs")
         {
             Values = entries;
             foreach (var entry in entries)
             {
-                DockPanel dp = new DockPanel();
-                TextBlock lable = new TextBlock { Text = entry.Key, ToolTip = entry.Key, Width = 150, VerticalAlignment = System.Windows.VerticalAlignment.Center };
-                TextBox text = new TextBox { Text = entry.Value };
-                DockPanel.SetDock(lable, Dock.Left);
+                var lable = new TextBlock
+                {
+                    Text = entry.Key,
+                    ToolTip = entry.Key,
+                    Width = 150,
+                    VerticalAlignment = VerticalAlignment.Center
+                };
+                var text = new TextBox
+                {
+                    Text = entry.Value
+                };
+                var dp = new DockPanel
+                {
+                    Tag = entry
+                };
                 dp.Children.Add(lable);
                 dp.Children.Add(text);
-                dp.Tag = entry;
+                DockPanel.SetDock(lable, Dock.Left);
                 stack1.Children.Add(dp);
             }
             this.Title = title;

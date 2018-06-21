@@ -132,7 +132,6 @@
     <Compile Include="GUIs\TextReport.xaml.cs">
       <DependentUpon>TextReport.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Tuples.cs" />
   </ItemGroup>
   <ItemGroup>
     <Page Include="GUIs\DictionaryViewer.xaml">

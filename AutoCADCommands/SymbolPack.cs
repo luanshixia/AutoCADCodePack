@@ -1,40 +1,35 @@
-﻿using System;
+﻿using Autodesk.AutoCAD.DatabaseServices;
+using Autodesk.AutoCAD.Geometry;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-
-using Autodesk.AutoCAD.ApplicationServices;
-using Autodesk.AutoCAD.DatabaseServices;
-using Autodesk.AutoCAD.EditorInput;
-using Autodesk.AutoCAD.Geometry;
-using Autodesk.AutoCAD.Runtime;
 
 namespace AutoCADCommands
 {
     /// <summary>
-    /// 符号包
+    /// The symbol pack.
     /// </summary>
-    public class SymbolPack
+    public static class SymbolPack
     {
         public static ObjectId Arrow(Point3d end, Point3d head, ArrowOption opt)
         {
-            ObjectId body = Draw.Line(end, head);
+            var body = Draw.Line(end, head);
             body.QOpenForWrite<Entity>(x => x.ColorIndex = opt.ColorIndex);
-            ObjectId arrow = Modify.Group(new ObjectId[] { body });
+            var arrow = Modify.Group(new[] { body });
 
             if (opt.HeadStyle == ArrowHeadStyle.ClockHand)
             {
-                Vector3d dir = head - end;
+                var dir = head - end;
                 dir = dir.GetNormal();
-                Vector3d nor = new Vector3d(dir.Y, -dir.X, 0);
-                Point3d headBase = head - opt.HeadLength * dir;
-                Point3d left = headBase - opt.HeadWidth / 2 * nor;
-                Point3d right = headBase + opt.HeadWidth / 2 * nor;
-                ObjectId l = Draw.Line(head, left);
-                ObjectId r = Draw.Line(head, right);
-                l.QOpenForWrite<Entity>(x => x.ColorIndex = opt.ColorIndex);
-                r.QOpenForWrite<Entity>(x => x.ColorIndex = opt.ColorIndex);
-                Modify.AppendToGroup(arrow, new ObjectId[] { l, r });
+                var nor = new Vector3d(dir.Y, -dir.X, 0);
+                var headBase = head - opt.HeadLength * dir;
+                var left = headBase - opt.HeadWidth / 2 * nor;
+                var right = headBase + opt.HeadWidth / 2 * nor;
+                var leftLine = Draw.Line(head, left);
+                var rightLine = Draw.Line(head, right);
+                leftLine.QOpenForWrite<Entity>(x => x.ColorIndex = opt.ColorIndex);
+                rightLine.QOpenForWrite<Entity>(x => x.ColorIndex = opt.ColorIndex);
+                Modify.AppendToGroup(arrow, new[] { leftLine, rightLine });
             }
 
             return arrow;
@@ -68,8 +63,10 @@ namespace AutoCADCommands
             var line22 = line1.GetOffsetCurves(-width)[0] as Polyline;
             var line2 = line21.GetDistToPoint(p3) < line22.GetDistToPoint(p3) ? line21 : line22;
             var length = line1.Length;
-            var lines = Algorithms.Range(step, length, step)
-                .Select(pos => NoDraw.Pline(line1.GetPointAtDistX(pos), line2.GetPointAtDistX(pos))).ToList();
+            var lines = Algorithms
+                .Range(step, length, step)
+                .Select(pos => NoDraw.Pline(line1.GetPointAtDistX(pos), line2.GetPointAtDistX(pos)))
+                .ToList();
             lines.Add(line1);
             lines.Add(line2);
             return lines.ToArray().AddToCurrentSpace();
@@ -115,6 +112,9 @@ namespace AutoCADCommands
         }
     }
 
+    /// <summary>
+    /// The line bundle definition.
+    /// </summary>
     public class LineBundleDefinition
     {
         public double Width;
@@ -122,6 +122,9 @@ namespace AutoCADCommands
         public double Offset;
     }
 
+    /// <summary>
+    /// The arrow option.
+    /// </summary>
     public class ArrowOption
     {
         public byte ColorIndex = 0;
@@ -130,6 +133,9 @@ namespace AutoCADCommands
         public ArrowHeadStyle HeadStyle = ArrowHeadStyle.ClockHand;
     }
 
+    /// <summary>
+    /// The arrow head style.
+    /// </summary>
     public enum ArrowHeadStyle
     {
         RosePink,
@@ -140,152 +146,140 @@ namespace AutoCADCommands
     }
 
     /// <summary>
-    /// 函数图象绘制器
+    /// The (math function) graph plotter.
     /// </summary>
     public class GraphPlotter
     {
-        private GraphOption _option;
-        private Interv _xRange;
-        private Interv _yRange; // 原始，不乘ratio
-        private List<ObjectId> _entIds = new List<ObjectId>();
-        private TupleList<IEnumerable<Point2d>, int> _curves = new TupleList<IEnumerable<Point2d>, int>();
+        private GraphOption Option { get; }
 
-        public GraphPlotter(GraphOption opt)
-        {
-            _option = opt;
-            _xRange = opt.xRange;
-            _yRange = opt.yRange;
-        }
+        private Interv XRange { get; set; }
+
+        private Interv YRange { get; set; } // Original, without ratio applied.
+
+        private List<(IEnumerable<Point2d>, int)> Curves { get; } = new List<(IEnumerable<Point2d>, int)>();
+
+        private double RealRatio => this.Option.yRatio * (this.XRange.Length * this.Option.xRedundanceFactor) / (this.YRange.Length * this.Option.yRedundanceFactor);
 
         public GraphPlotter()
         {
-            _option = new GraphOption();
+            this.Option = new GraphOption();
         }
 
-        public double RealRatio 
-        { 
-            get 
-            { 
-                return _option.yRatio * (_xRange.Length * _option.xRedundanceFactor) / (_yRange.Length * _option.yRedundanceFactor); 
-            } 
+        public GraphPlotter(GraphOption opt)
+        {
+            this.Option = opt;
+            this.XRange = opt.xRange;
+            this.YRange = opt.yRange;
         }
 
         public void Plot(IEnumerable<Point2d> points, int color = -1)
         {
-            _curves.Add(points.OrderBy(x => x.X).ToArray(), color);
+            this.Curves.Add((points.OrderBy(x => x.X).ToArray(), color));
 
-            Interv xRange = new Interv(points.Min(x => x.X), points.Max(x => x.X));
-            Interv yRange = new Interv(points.Min(x => x.Y), points.Max(x => x.Y));
-            if (_xRange == null)
+            var xRange = new Interv(points.Min(x => x.X), points.Max(x => x.X));
+            var yRange = new Interv(points.Min(x => x.Y), points.Max(x => x.Y));
+            if (this.XRange == null)
             {
-                _xRange = xRange;
+                this.XRange = xRange;
             }
             else
             {
-                _xRange = _xRange.AddInterval(xRange);
+                this.XRange = this.XRange.AddInterval(xRange);
             }
-            if (_yRange == null)
+            if (this.YRange == null)
             {
-                _yRange = yRange;
+                this.YRange = yRange;
             }
             else
             {
-                _yRange = _yRange.AddInterval(yRange);
+                this.YRange = this.YRange.AddInterval(yRange);
             }
         }
 
         public void Plot(Func<double, double> function, Interv xRange, int color = -1)
         {
-            double delta = xRange.Length / _option.SampleCount;
-            var points = Enumerable.Range(0, _option.SampleCount + 1).Select(x =>
-            {
-                double xx = xRange.Start + x * delta;
-                return new Point2d(xx, function(xx));
-            }).ToArray();
-            Plot(points, color);
+            double delta = xRange.Length / this.Option.SampleCount;
+            var points = Enumerable
+                .Range(0, this.Option.SampleCount + 1)
+                .Select(x =>
+                {
+                    double xx = xRange.Start + x * delta;
+                    return new Point2d(xx, function(xx));
+                })
+                .ToArray();
+
+            this.Plot(points, color);
         }
 
         public ObjectId GetGraphBlock()
         {
-            if (_xRange == null || _yRange == null)
+            if (this.XRange == null || this.YRange == null)
             {
-                throw new System.Exception("未指定绘制内容");
+                throw new Exception("Plot undefined.");
             }
 
-            // 控制最小范围
-            if (_xRange.Length < Consts.Epsilon)
+            var entIds = new List<ObjectId>();
+
+            // Ranges cannot be less than epsilon.
+            if (this.XRange.Length < Consts.Epsilon)
             {
-                _xRange = new Interv(_xRange.Start - Consts.Epsilon, _xRange.End + Consts.Epsilon);
+                this.XRange = new Interv(this.XRange.Start - Consts.Epsilon, this.XRange.End + Consts.Epsilon);
             }
-            if (_yRange.Length < Consts.Epsilon)
+            if (this.YRange.Length < Consts.Epsilon)
             {
-                _yRange = new Interv(_yRange.Start - Consts.Epsilon, _yRange.End + Consts.Epsilon);
+                this.YRange = new Interv(this.YRange.Start - Consts.Epsilon, this.YRange.End + Consts.Epsilon);
             }
 
-            // 获取刻度值
-            double[] xStops = GetDivStops(_option.xDelta, _xRange, _option.xRedundanceFactor);
-            double[] yStops = GetDivStops(_option.yDelta, _yRange, _option.yRedundanceFactor);
+            // Stops
+            double[] xStops = GraphPlotter.GetDivStops(this.Option.xDelta, this.XRange, this.Option.xRedundanceFactor);
+            double[] yStops = GraphPlotter.GetDivStops(this.Option.yDelta, this.YRange, this.Option.yRedundanceFactor);
 
-            // 刻度网格
-            List<ObjectId> gridLines = new List<ObjectId>();
+            // Grid lines
+            var gridLines = new List<ObjectId>();
             foreach (var xStop in xStops)
             {
-                gridLines.Add(Draw.Line(new Point3d(xStop, RealRatio * yStops.First(), 0), new Point3d(xStop, RealRatio * yStops.Last(), 0)));
+                gridLines.Add(Draw.Line(new Point3d(xStop, this.RealRatio * yStops.First(), 0), new Point3d(xStop, this.RealRatio * yStops.Last(), 0)));
             }
             foreach (var yStop in yStops)
             {
-                gridLines.Add(Draw.Line(new Point3d(xStops.First(), RealRatio * yStop, 0), new Point3d(xStops.Last(), RealRatio * yStop, 0)));
+                gridLines.Add(Draw.Line(new Point3d(xStops.First(), this.RealRatio * yStop, 0), new Point3d(xStops.Last(), this.RealRatio * yStop, 0)));
             }
-            gridLines.QForEach<Entity>(x => x.ColorIndex = _option.GridColor);
-            _entIds.AddRange(gridLines);
+            gridLines.QForEach<Entity>(x => x.ColorIndex = this.Option.GridColor);
+            entIds.AddRange(gridLines);
 
-            // 刻度标记
-            List<ObjectId> labels = new List<ObjectId>();
-            double txtHeight = _xRange.Length / 50;
+            // Labels
+            var labels = new List<ObjectId>();
+            double txtHeight = this.XRange.Length / 50;
             foreach (var xStop in xStops)
             {
-                labels.Add(Draw.MText(xStop.ToString("0.###"), txtHeight, new Point3d(xStop, RealRatio * yStops.First() - 2 * txtHeight, 0), 0, true));
+                labels.Add(Draw.MText(xStop.ToString("0.###"), txtHeight, new Point3d(xStop, this.RealRatio * yStops.First() - 2 * txtHeight, 0), 0, true));
             }
             foreach (var yStop in yStops)
             {
-                labels.Add(Draw.MText(yStop.ToString("0.###"), txtHeight, new Point3d(xStops.First() - 2 * txtHeight, RealRatio * yStop, 0), 0, true));
+                labels.Add(Draw.MText(yStop.ToString("0.###"), txtHeight, new Point3d(xStops.First() - 2 * txtHeight, this.RealRatio * yStop, 0), 0, true));
             }
-            labels.QForEach<Entity>(x => x.ColorIndex = _option.LabelColor);
-            _entIds.AddRange(labels);
+            labels.QForEach<Entity>(x => x.ColorIndex = this.Option.LabelColor);
+            entIds.AddRange(labels);
 
-            // 曲线
-            foreach (var curve in _curves)
+            // Curves
+            foreach (var curve in this.Curves)
             {
-                ObjectId plineId = Draw.Pline(curve.Item1.OrderBy(x => x.X).Select(x => new Point3d(x.X, RealRatio * x.Y, 0)));
-                int color1 = curve.Item2 == -1 ? _option.CurveColor : curve.Item2;
+                var plineId = Draw.Pline(curve.Item1.OrderBy(x => x.X).Select(x => new Point3d(x.X, this.RealRatio * x.Y, 0)));
+                int color1 = curve.Item2 == -1 ? this.Option.CurveColor : curve.Item2;
                 plineId.QOpenForWrite<Entity>(x => x.ColorIndex = color1);
-                _entIds.Add(plineId);
+                entIds.Add(plineId);
             }
 
-            // 返回块
-            ObjectId result = Draw.Block(_entIds, "tjGraph" + LogManager.GetTimeBasedName(), _entIds.GetCenter());
-            _entIds.QForEach(x => x.Erase());
-            _entIds.Clear();
+            // Returns a block.
+            var result = Draw.Block(entIds, "tjGraph" + LogManager.GetTimeBasedName(), entIds.GetCenter());
+            entIds.QForEach(x => x.Erase());
+            entIds.Clear();
             return result;
         }
 
-        private double[] GetDivStops(int divs, Interv range)
+        private static double[] GetDivStops(double delta, Interv range, double redundanceFactor = 1)
         {
-            // 算法有问题。从数学上考虑，对应一个不定方程，很复杂。
-
-            // 每个刻度点都是刻度间隔的整数倍。问题转化为求divs个连续整数。
-            double delta = Math.Ceiling(range.Length / divs);
-            int nDigit = (int)Math.Log10(range.Length / divs); //delta.ToString().Length;
-            double scale = Math.Pow(10, nDigit - 1);
-            delta = Math.Ceiling(delta / scale) * scale;
-            int mid = (int)Math.Floor((range.Start + range.End) / 2 / delta);
-            int start = mid - divs / 2;
-            return Enumerable.Range(start, divs + 1).Select(x => x * delta).ToArray();
-        }
-
-        private double[] GetDivStops(double delta, Interv range, double redundanceFactor = 1)
-        {
-            List<double> result = new List<double>();
+            var result = new List<double>();
             double redundance = (redundanceFactor - 1) / 2 * range.Length;
             result.Add(range.Start - redundance);
             double start = Math.Ceiling((range.Start - redundance) / delta) * delta;
@@ -298,6 +292,9 @@ namespace AutoCADCommands
         }
     }
 
+    /// <summary>
+    /// The graph option.
+    /// </summary>
     public class GraphOption
     {
         //public int xDivs = 5;
@@ -317,5 +314,6 @@ namespace AutoCADCommands
 
     public class TablePlotter
     {
+        // TODO: implement this.
     }
 }

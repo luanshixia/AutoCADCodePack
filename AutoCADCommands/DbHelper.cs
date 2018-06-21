@@ -12,7 +12,7 @@ using Autodesk.AutoCAD.Runtime;
 namespace AutoCADCommands
 {
     /// <summary>
-    /// 数据库相关操作
+    /// Database operation helpers.
     /// </summary>
     public static class DbHelper
     {
@@ -752,8 +752,11 @@ namespace AutoCADCommands
         #endregion
 
         /// <summary>
-        /// call this at the launch of your app and each time you create new doc
+        /// Initializes the database.
         /// </summary>
+        /// <remarks>
+        /// Call this at the launch of your app and each time you create new doc.
+        /// </remarks>
         public static void InitializeDatabase(Database db = null)
         {
             if (db == null)
