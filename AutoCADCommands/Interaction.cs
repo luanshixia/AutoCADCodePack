@@ -2,6 +2,7 @@
 using Autodesk.AutoCAD.DatabaseServices;
 using Autodesk.AutoCAD.EditorInput;
 using Autodesk.AutoCAD.Geometry;
+using Autodesk.AutoCAD.GraphicsInterface;
 using Autodesk.Windows;
 using System;
 using System.Collections.Generic;
@@ -9,6 +10,7 @@ using System.Linq;
 using System.Windows.Forms;
 using Application = Autodesk.AutoCAD.ApplicationServices.Application;
 using ColorDialog = Autodesk.AutoCAD.Windows.ColorDialog;
+using Polyline = Autodesk.AutoCAD.DatabaseServices.Polyline;
 
 namespace AutoCADCommands
 {
@@ -1053,6 +1055,40 @@ namespace AutoCADCommands
                     Interaction.HighlightObjects(highlightIds);
                 }
             }
+        }
+
+        public static PromptResult StartDrag<TOptions, TResult>(TOptions options, Entity entity, Func<Entity, TResult, bool> updateAction)
+            where TOptions : JigPromptOptions
+            where TResult : PromptResult
+        {
+            var ed = Application.DocumentManager.MdiActiveDocument.Editor;
+            var jig = new FlexEntityJig(options, entity, (ent, result) => updateAction(ent, (TResult)result));
+            return ed.Drag(jig);
+        }
+
+        public static PromptResult StartDrag(string message, Entity entity, Func<Entity, PromptPointResult, bool> updateAction)
+        {
+            var ed = Application.DocumentManager.MdiActiveDocument.Editor;
+            var options = new JigPromptPointOptions(message); // TODO: other options?
+            var jig = new FlexEntityJig(options, entity, (ent, result) => updateAction(ent, (PromptPointResult)result));
+            return ed.Drag(jig);
+        }
+
+        public static PromptResult StartDrag<TOptions, TResult>(TOptions options, Func<TResult, Drawable> updateAction)
+            where TOptions: JigPromptOptions
+            where TResult: PromptResult
+        {
+            var ed = Application.DocumentManager.MdiActiveDocument.Editor;
+            var jig = new FlexDrawJig(options, result => updateAction((TResult)result));
+            return ed.Drag(jig);
+        }
+
+        public static PromptResult StartDrag(string message, Func<PromptPointResult, Drawable> updateAction)
+        {
+            var ed = Application.DocumentManager.MdiActiveDocument.Editor;
+            var options = new JigPromptPointOptions(message); // TODO: other options?
+            var jig = new FlexDrawJig(options, result => updateAction((PromptPointResult)result));
+            return ed.Drag(jig);
         }
     }
 

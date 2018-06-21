@@ -14,7 +14,6 @@ namespace AutoCADCommands
     /// </summary>
     public class CodePackTest
     {
-
         #region Commands that you can provide out of the box in your application
 
         /// <summary>
@@ -747,19 +746,19 @@ namespace AutoCADCommands
         public void TestJigDrag()
         {
             var circle = new Circle(new Point3d(), Vector3d.ZAxis, 10.0);
-            var promptResult = JigDrag.StartDrag("\nCenter:", result =>
+            var promptResult = Interaction.StartDrag("\nCenter:", result =>
             {
-                circle.Center = result.Point;
-                result.Draw(circle);
+                circle.Center = result.Value;
+                return circle;
             });
             if (promptResult.Status != PromptStatus.OK)
             {
                 return;
             }
-            promptResult = JigDrag.StartDrag(new JigPromptDistanceOptions("\nRadius:"), result =>
+            promptResult = Interaction.StartDrag(new JigPromptDistanceOptions("\nRadius:"), (PromptDoubleResult result) =>
             {
-                circle.Radius = result.Dist == 0.0 ? 1e-6 : result.Dist;
-                result.Draw(circle);
+                circle.Radius = result.Value == 0.0 ? 1e-6 : result.Value;
+                return circle;
             });
             if (promptResult.Status == PromptStatus.OK)
             {
