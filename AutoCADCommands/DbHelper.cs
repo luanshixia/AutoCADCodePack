@@ -652,7 +652,7 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// Appends an attribute to a block reference.
+        /// Appends an attribute to a block reference. This extends the native AppendAttribute Method.
         /// </summary>
         /// <param name="blockReference">The block reference.</param>
         /// <param name="attributeReference">The attribute definition.</param>
