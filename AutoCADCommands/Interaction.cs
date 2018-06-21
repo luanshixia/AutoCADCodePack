@@ -1,4 +1,4 @@
-﻿using Autodesk.AutoCAD.ApplicationServices;
+﻿using Autodesk.AutoCAD.Colors;
 using Autodesk.AutoCAD.DatabaseServices;
 using Autodesk.AutoCAD.EditorInput;
 using Autodesk.AutoCAD.Geometry;
@@ -6,6 +6,9 @@ using Autodesk.Windows;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Windows.Forms;
+using Application = Autodesk.AutoCAD.ApplicationServices.Application;
+using ColorDialog = Autodesk.AutoCAD.Windows.ColorDialog;
 
 namespace AutoCADCommands
 {
@@ -144,7 +147,7 @@ namespace AutoCADCommands
         public static double GetValue(string message, double? defaultValue = null)
         {
             Editor ed = Application.DocumentManager.MdiActiveDocument.Editor;
-            PromptDoubleResult res = defaultValue == null 
+            PromptDoubleResult res = defaultValue == null
                 ? ed.GetDouble(new PromptDoubleOptions(message) { AllowNone = true })
                 : ed.GetDouble(new PromptDoubleOptions(message) { DefaultValue = defaultValue.Value, AllowNone = true });
             if (res.Status == PromptStatus.OK)
@@ -830,11 +833,12 @@ namespace AutoCADCommands
         /// 可视化插入实体
         /// </summary>
         /// <param name="ent">实体</param>
+        /// <param name="message">The message.</param>
         /// <returns>实体ID</returns>
-        public static ObjectId InsertEntity(Entity ent)
+        public static ObjectId InsertEntity(Entity ent, string message = "\nSpecify insert point")
         {
             Editor ed = Application.DocumentManager.MdiActiveDocument.Editor;
-            PositionJig jig = new PositionJig(ent);
+            PositionJig jig = new PositionJig(ent, message);
             PromptResult res = ed.Drag(jig);
             if (res.Status == PromptStatus.OK)
             {
@@ -856,7 +860,6 @@ namespace AutoCADCommands
         public static ObjectId InsertScalingEntity(Entity ent, Point3d basePoint, string message = "\n指定对角点")
         {
             Editor ed = Application.DocumentManager.MdiActiveDocument.Editor;
-            //ScalingJig jig = new ScalingJig(ent, basePoint, message);
             ScaleJig jig = new ScaleJig(ent, basePoint, message);
             PromptResult res = ed.Drag(jig);
             if (res.Status == PromptStatus.OK)
@@ -900,8 +903,14 @@ namespace AutoCADCommands
         /// <returns>文件名</returns>
         public static string SaveFileDialogBySystem(string title, string fileName, string filter)
         {
-            System.Windows.Forms.SaveFileDialog sfd = new System.Windows.Forms.SaveFileDialog { Title = title, FileName = fileName, Filter = filter };
-            if (sfd.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            var sfd = new SaveFileDialog
+            {
+                Title = title,
+                FileName = fileName,
+                Filter = filter
+            };
+
+            if (sfd.ShowDialog() == DialogResult.OK)
             {
                 return sfd.FileName;
             }
@@ -920,8 +929,14 @@ namespace AutoCADCommands
         /// <returns>文件名</returns>
         public static string OpenFileDialogBySystem(string title, string fileName, string filter)
         {
-            System.Windows.Forms.OpenFileDialog ofd = new System.Windows.Forms.OpenFileDialog { Title = title, FileName = fileName, Filter = filter };
-            if (ofd.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            var ofd = new OpenFileDialog
+            {
+                Title = title,
+                FileName = fileName,
+                Filter = filter
+            };
+
+            if (ofd.ShowDialog() == DialogResult.OK)
             {
                 return ofd.FileName;
             }
@@ -938,8 +953,14 @@ namespace AutoCADCommands
         /// <returns>文件夹名</returns>
         public static string FolderDialog(string instruction)
         {
-            System.Windows.Forms.FolderBrowserDialog fbd = new System.Windows.Forms.FolderBrowserDialog { Description = instruction, RootFolder = Environment.SpecialFolder.Desktop, ShowNewFolderButton = true };
-            if (fbd.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            var fbd = new FolderBrowserDialog
+            {
+                Description = instruction,
+                RootFolder = Environment.SpecialFolder.Desktop,
+                ShowNewFolderButton = true
+            };
+
+            if (fbd.ShowDialog() == DialogResult.OK)
             {
                 return fbd.SelectedPath;
             }
@@ -958,10 +979,10 @@ namespace AutoCADCommands
         /// AutoCAD颜色对话框
         /// </summary>
         /// <returns>颜色</returns>
-        public static Autodesk.AutoCAD.Colors.Color ColorDialog()
+        public static Color ColorDialog()
         {
-            Autodesk.AutoCAD.Windows.ColorDialog cd = new Autodesk.AutoCAD.Windows.ColorDialog();
-            if (cd.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            var cd = new ColorDialog();
+            if (cd.ShowDialog() == DialogResult.OK)
             {
                 return cd.Color;
             }
@@ -1090,18 +1111,20 @@ namespace AutoCADCommands
     {
         private Point3d _pos = Point3d.Origin;
         private Vector3d _move;
+        private string _message;
 
         public Entity Ent { get; }
 
-        public PositionJig(Entity ent)
+        public PositionJig(Entity ent, string message)
             : base(ent)
         {
-            Ent = ent;
+            this.Ent = ent;
+            this._message = message;
         }
 
         protected override SamplerStatus Sampler(JigPrompts prompts)
         {
-            var jppo = new JigPromptPointOptions("\n指定位置")
+            var jppo = new JigPromptPointOptions(this._message)
             {
                 Cursor = CursorType.EntitySelect,
                 UseBasePoint = false,
@@ -1154,28 +1177,32 @@ namespace AutoCADCommands
         public ScaleJig(Entity ent, Point3d basePoint, string message)
             : base(ent)
         {
-            Ent = ent;
-            _basePoint = basePoint;
-            _message = message;
-            _extents = Ent.GeometricExtents;
-            //_scale = 1;
-            _mag = 1;
+            this.Ent = ent;
+            this._basePoint = basePoint;
+            this._message = message;
+            this._extents = Ent.GeometricExtents;
+            // this._scale = 1;
+            this._mag = 1;
         }
 
         protected override SamplerStatus Sampler(JigPrompts prompts)
         {
-            JigPromptPointOptions jppo = new JigPromptPointOptions(_message);
+            var jppo = new JigPromptPointOptions(_message)
+            {
+                Cursor = CursorType.EntitySelect,
+                UseBasePoint = false,
+                UserInputControls = UserInputControls.NullResponseAccepted
+            };
             jppo.Keywords.Add(""); // mod 20140527
-            jppo.Cursor = CursorType.EntitySelect;
-            jppo.UseBasePoint = false;
-            jppo.UserInputControls = UserInputControls.NullResponseAccepted;
-            Point3d corner = prompts.AcquirePoint(jppo).Value;
-            Point3d pos = Point3d.Origin + 0.5 * (_basePoint.GetAsVector() + corner.GetAsVector());
+            var corner = prompts.AcquirePoint(jppo).Value;
+            var pos = Point3d.Origin + 0.5 * (_basePoint.GetAsVector() + corner.GetAsVector());
             var extents = Ent.GeometricExtents;
             double scale = Math.Min(
                 Math.Abs(corner.X - _basePoint.X) / (extents.MaxPoint.X - extents.MinPoint.X),
                 Math.Abs(corner.Y - _basePoint.Y) / (extents.MaxPoint.Y - extents.MinPoint.Y));
-            if (scale < Consts.Epsilon) // 在一开始scale势必很小。过小的scale会导致矩阵运算出现非等比缩放变换，从而被CAD拒绝，导致异常。
+
+            // NOTE: the scale is likely small at the beginning. Too small a scale leads to non-proportional scaling for matrix operation, and thus gets rejected by AutoCAD and causes exception.
+            if (scale < Consts.Epsilon)
             {
                 scale = Consts.Epsilon;
             }
@@ -1203,8 +1230,9 @@ namespace AutoCADCommands
         {
             try
             {
+                // NOTE: mind the order.
                 Ent.TransformBy(Matrix3d.Displacement(_move));
-                Ent.TransformBy(Matrix3d.Scaling(_mag, _pos)); // 必须先平移，再缩放。
+                Ent.TransformBy(Matrix3d.Scaling(_mag, _pos));
             }
             catch
             {
@@ -1220,18 +1248,18 @@ namespace AutoCADCommands
         private string _message;
         private double _angle;
 
-        public Entity Ent { get { return Entity; } }
+        public Entity Ent => base.Entity;
 
         public RotationJig(Entity ent, Point3d center, string message)
             : base(ent)
         {
-            _center = center;
-            _message = message;
+            this._center = center;
+            this._message = message;
         }
 
         protected override SamplerStatus Sampler(JigPrompts prompts)
         {
-            var jppo = new JigPromptPointOptions(_message)
+            var jppo = new JigPromptPointOptions(this._message)
             {
                 Cursor = CursorType.EntitySelect,
                 BasePoint = _center,
@@ -1246,27 +1274,25 @@ namespace AutoCADCommands
             }
             else if (end != _end)
             {
-                _end = end;
+                this._end = end;
                 return SamplerStatus.OK;
             }
-            else
-            {
-                return SamplerStatus.NoChange;
-            }
+
+            return SamplerStatus.NoChange;
         }
 
         protected override bool Update()
         {
             try
             {
-                var dir = _end - _center;
+                var dir = this._end - this._center;
                 double angle = dir.GetAngleTo(Vector3d.YAxis);
                 if (dir.X > 0)
                 {
                     angle = Math.PI * 2 - angle;
                 }
-                Entity.TransformBy(Matrix3d.Rotation(angle - _angle, Vector3d.ZAxis, _center));
-                _angle = angle;
+                Entity.TransformBy(Matrix3d.Rotation(angle - this._angle, Vector3d.ZAxis, this._center));
+                this._angle = angle;
                 return true;
             }
             catch

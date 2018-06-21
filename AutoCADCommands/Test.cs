@@ -733,37 +733,37 @@ namespace AutoCADCommands
         [CommandMethod("TestGraph")]
         public void TestGraph()
         {
-            var opt = new GraphOption { xDelta = 20, yDelta = 0.5, yRatio = 0.5, SampleCount = 500 };
-            var gp = new GraphPlotter(opt);
-            gp.Plot(Math.Sin, new Interv(5, 102));
-            gp.Plot(x => Math.Cos(x) + 1, new Interv(10, 90), 3);
-            var graph = gp.GetGraphBlock();
-            var br = new BlockReference(Point3d.Origin, graph);
+            var option = new GraphOption { xDelta = 20, yDelta = 0.5, yRatio = 0.5, SampleCount = 500 };
+            var graphPlotter = new GraphPlotter(option);
+            graphPlotter.Plot(Math.Sin, new Interv(5, 102));
+            graphPlotter.Plot(x => Math.Cos(x) + 1, new Interv(10, 90), 3);
+            var graph = graphPlotter.GetGraphBlock();
+            var blockReference = new BlockReference(Point3d.Origin, graph);
             var first = Interaction.GetPoint("\nSpecify extent point 1");
-            Interaction.InsertScalingEntity(br, first, "\nSpecify extent point 2");
+            Interaction.InsertScalingEntity(blockReference, first, "\nSpecify extent point 2");
         }
 
         [CommandMethod("TestJigDrag")]
         public void TestJigDrag()
         {
-            var cir = new Circle(new Point3d(), Vector3d.ZAxis, 10.0);
-            var v = JigDrag.StartDrag("\nCenter:", rst =>
+            var circle = new Circle(new Point3d(), Vector3d.ZAxis, 10.0);
+            var promptResult = JigDrag.StartDrag("\nCenter:", result =>
             {
-                cir.Center = rst.Point;
-                rst.Draw(cir);
+                circle.Center = result.Point;
+                result.Draw(circle);
             });
-            if (v.Status != PromptStatus.OK)
+            if (promptResult.Status != PromptStatus.OK)
             {
                 return;
             }
-            v = JigDrag.StartDrag(new JigPromptDistanceOptions("\nRadius:"), rst =>
+            promptResult = JigDrag.StartDrag(new JigPromptDistanceOptions("\nRadius:"), result =>
             {
-                cir.Radius = rst.Dist == 0.0 ? 1e-6 : rst.Dist;
-                rst.Draw(cir);
+                circle.Radius = result.Dist == 0.0 ? 1e-6 : result.Dist;
+                result.Draw(circle);
             });
-            if (v.Status == PromptStatus.OK)
+            if (promptResult.Status == PromptStatus.OK)
             {
-                cir.AddToCurrentSpace();
+                circle.AddToCurrentSpace();
             }
         }
 
@@ -771,10 +771,10 @@ namespace AutoCADCommands
         public void TestQOpen()
         {
             var ids = QuickSelection.SelectAll("LWPOLYLINE").QWhere(x => x.GetCode() == "parcel").ToArray();
-            ids.QForEach<Polyline>(x =>
+            ids.QForEach<Polyline>(poly =>
             {
-                x.ConstantWidth = 2;
-                x.ColorIndex = 0;
+                poly.ConstantWidth = 2;
+                poly.ColorIndex = 0;
             });
         }
 
@@ -930,7 +930,8 @@ namespace AutoCADCommands
         [CommandMethod("TestLayout")]
         public void TestLayout()
         {
-            var layout = Layouts.Create("TestLayout").QOpenForRead<Layout>();
+            // TODO: verify the layout API change.
+            var layout = LayoutManager.Current.CreateLayout("TestLayout").QOpenForRead<Layout>();
             LayoutManager.Current.CurrentLayout = "TestLayout";
             var vps = layout.GetViewports();
             if (vps.Count > 1)
