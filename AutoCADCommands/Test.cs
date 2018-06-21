@@ -1003,12 +1003,20 @@ namespace AutoCADCommands
         }
 
         [CommandMethod("TestAddAttribute")]
-        public void TestAddAttribute()
+        public void TestAppendAttribute()
         {
             var iId = Draw.Insert("test", Point3d.Origin);
+            var attribute = new AttributeReference
+            {
+                Tag = "test",
+                TextString = "test value",
+                Position = Point3d.Origin
+            };
+
             iId.QOpenForWrite<BlockReference>(br =>
             {
-                br.SetBlockAttribute("Test", "0", Point3d.Origin);
+                // using default overwrite and createIfMissing
+                br.AppendAttribute(attribute);
             });
         }
 
