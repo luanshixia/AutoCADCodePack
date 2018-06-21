@@ -1005,7 +1005,7 @@ namespace AutoCADCommands
         [CommandMethod("TestAddAttribute")]
         public void TestAppendAttribute()
         {
-            var iId = Draw.Insert("test", Point3d.Origin);
+            var id = Draw.Insert("test", Point3d.Origin);
             var attribute = new AttributeReference
             {
                 Tag = "test",
@@ -1013,7 +1013,7 @@ namespace AutoCADCommands
                 Position = Point3d.Origin
             };
 
-            iId.QOpenForWrite<BlockReference>(br =>
+            id.QOpenForWrite<BlockReference>(br =>
             {
                 // using default overwrite and createIfMissing
                 br.AppendAttribute(attribute);

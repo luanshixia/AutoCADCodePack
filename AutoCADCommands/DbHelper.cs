@@ -574,11 +574,23 @@ namespace AutoCADCommands
         /// <returns></returns>
         public static Dictionary<string, ObjectId> GetBlockAttributeIds(this BlockReference blockReference)
         {
-            Dictionary<string, ObjectId> attrs = new Dictionary<string, ObjectId>();
+            var attrs = new Dictionary<string, ObjectId>();
             foreach (ObjectId attrId in blockReference.AttributeCollection)
             {
-                AttributeReference attr = attrId.QOpenForRead<AttributeReference>();
-                attrs.Add(attr.Tag, attrId);
+                // if block reference is already write enabled, trying to OpenForRead will throw.
+                if (blockReference.IsWriteEnabled)
+                {
+                    attrId.QOpenForWrite<AttributeReference>(x =>
+                    {
+                        attrs.Add(x.Tag, attrId);
+                    });
+                }
+                else
+                {
+                    var attr = attrId.QOpenForRead<AttributeReference>();
+                    attrs.Add(attr.Tag, attrId);
+
+                }
             }
             return attrs;
         }
