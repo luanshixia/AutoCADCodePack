@@ -422,62 +422,33 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 确认AppName已注册
+        /// Makes sure app names are registered.
         /// </summary>
-        /// <param name="appName"></param>
-        public static void AffirmRegApp(string appName)
+        /// <param name="appNames">The app names.</param>
+        public static void AffirmRegApp(params string[] appNames) // newly 20130122
         {
-            AffirmRegApp(HostApplicationServices.WorkingDatabase, appName);
+            DbHelper.AffirmRegApp(HostApplicationServices.WorkingDatabase, appNames);
         }
 
         /// <summary>
-        /// 确认AppName已注册
+        /// Makes sure app names are registered.
         /// </summary>
-        /// <param name="db"></param>
-        /// <param name="appName"></param>
-        public static void AffirmRegApp(Database db, string appName)
+        /// <param name="db">The database to register to.</param>
+        /// <param name="appNames">The app names.</param>
+        public static void AffirmRegApp(Database db, params string[] appNames) // newly 20130122
         {
-            using (Transaction transaction = db.TransactionManager.StartTransaction())
+            using (var transaction = db.TransactionManager.StartTransaction())
             {
-                RegAppTable table = transaction.GetObject(db.RegAppTableId, OpenMode.ForRead) as RegAppTable;
-                if (!table.Has(appName))
-                {
-                    table.UpgradeOpen();
-                    RegAppTableRecord record = new RegAppTableRecord();
-                    record.Name = appName;
-                    table.Add(record);
-                    transaction.AddNewlyCreatedDBObject(record, true);
-                }
-                transaction.Commit();
-            }
-        }
-
-        /// <summary>
-        /// 确认AppName已注册
-        /// </summary>
-        /// <param name="appNames"></param>
-        public static void AffirmRegApp(string[] appNames) // newly 20130122
-        {
-            AffirmRegApp(HostApplicationServices.WorkingDatabase, appNames);
-        }
-
-        /// <summary>
-        /// 确认AppName已注册
-        /// </summary>
-        /// <param name="db"></param>
-        /// <param name="appNames"></param>
-        public static void AffirmRegApp(Database db, string[] appNames) // newly 20130122
-        {
-            using (Transaction transaction = db.TransactionManager.StartTransaction())
-            {
-                RegAppTable table = transaction.GetObject(db.RegAppTableId, OpenMode.ForRead) as RegAppTable;
+                var table = transaction.GetObject(db.RegAppTableId, OpenMode.ForRead) as RegAppTable;
                 foreach (string appName in appNames)
                 {
                     if (!table.Has(appName))
                     {
                         table.UpgradeOpen();
-                        RegAppTableRecord record = new RegAppTableRecord();
-                        record.Name = appName;
+                        var record = new RegAppTableRecord
+                        {
+                            Name = appName
+                        };
                         table.Add(record);
                         transaction.AddNewlyCreatedDBObject(record, true);
                     }
@@ -798,10 +769,16 @@ namespace AutoCADCommands
             {
                 db = HostApplicationServices.WorkingDatabase;
             }
-            AffirmRegApp(Consts.AppNameForCode);
-            AffirmRegApp(Consts.AppNameForID);
-            AffirmRegApp(Consts.AppNameForName);
-            AffirmRegApp(Consts.AppNameForTags);
+
+            var appNames = new[]
+            {
+                Consts.AppNameForCode,
+                Consts.AppNameForID,
+                Consts.AppNameForName,
+                Consts.AppNameForTags
+            };
+
+            AffirmRegApp(db, appNames);
         }
     }
 }
