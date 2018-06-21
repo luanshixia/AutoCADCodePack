@@ -568,6 +568,23 @@ namespace AutoCADCommands
         #region block attribute
 
         /// <summary>
+        /// Returns a dictionary of a block reference's block attribute names and ObjectIds.
+        /// </summary>
+        /// <param name="blockReference">The block reference.</param>
+        /// <returns></returns>
+        public static Dictionary<string, ObjectId> GetBlockAttributeIds(this BlockReference blockReference)
+        {
+            Dictionary<string, ObjectId> attrs = new Dictionary<string, ObjectId>();
+            foreach (ObjectId attrId in blockReference.AttributeCollection)
+            {
+                AttributeReference attr = attrId.QOpenForRead<AttributeReference>();
+                attrs.Add(attr.Tag, attr.ObjectId);
+            }
+            return attrs;
+        }
+
+
+        /// <summary>
         /// 获取块属性集合
         /// </summary>
         /// <param name="br"></param>
@@ -577,8 +594,19 @@ namespace AutoCADCommands
             Dictionary<string, string> attrs = new Dictionary<string, string>();
             foreach (ObjectId attrId in br.AttributeCollection)
             {
-                AttributeReference attr = attrId.QOpenForRead<AttributeReference>();
-                attrs.Add(attr.Tag, attr.TextString);
+                // if block reference is already write enabled, trying to OpenForRead will throw.
+                if (br.IsWriteEnabled)
+                {
+                    attrId.QOpenForWrite<AttributeReference>(x =>
+                   {
+                       attrs.Add(x.Tag, x.TextString);
+                   });
+                }
+                else
+                {
+                    var attr = attrId.QOpenForRead<AttributeReference>();
+                    attrs.Add(attr.Tag, attr.TextString);
+                }
             }
             return attrs;
         }
@@ -624,38 +652,34 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 设置块属性
+        /// Appends an attribute to a block reference.
         /// </summary>
-        /// <param name="br">The block reference entity. Must be opened for write.</param>
-        /// <param name="tag">tag</param>
-        /// <param name="value">value</param>
-        /// <param name="pos">pos</param>
-        public static void SetBlockAttribute(this BlockReference br, string tag, string value, Point3d pos)
+        /// <param name="blockReference">The block reference.</param>
+        /// <param name="attributeReference">The attribute definition.</param>
+        /// <param name="overwrite">Overwrite if the attribute already exists.</param>
+        /// <param name="createIfMissing">Create the attribute if it doesn't already exist.</param>
+        public static void AppendAttribute(this BlockReference blockReference, AttributeReference attributeReference, bool overwrite = true, bool createIfMissing = true)
         {
-
-            void ChangeAttributeAction(DBObject dbObject)
+            using (var trans = HostApplicationServices.WorkingDatabase.TransactionManager.StartTransaction())
             {
-                var attr = (AttributeReference)dbObject;
-
-                if (attr.Tag == tag)
+                var attrs = blockReference.GetBlockAttributes();
+                if (!attrs.ContainsKey(attributeReference.Tag))
                 {
-                    attr.TextString = value;
+                    if (createIfMissing)
+                    {
+                        blockReference.AttributeCollection.AppendAttribute(attributeReference);
+                    }
                 }
+                else
+                {
+                    if (overwrite)
+                    {
+                        blockReference.AttributeCollection.AppendAttribute(attributeReference);
+                    }
+                }
+                trans.Commit();
             }
-            foreach (ObjectId id in br.AttributeCollection)
-            {
-                id.QOpenForWrite(ChangeAttributeAction);
-            }
-
-            AttributeReference ar = new AttributeReference
-            {
-                Tag = tag,
-                TextString = value,
-                Position = pos
-            };
-            br.AttributeCollection.AppendAttribute(ar);
         }
-
 
         #endregion
 
