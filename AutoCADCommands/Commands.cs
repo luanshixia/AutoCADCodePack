@@ -34,27 +34,9 @@ namespace AutoCADCommands
         /// <returns></returns>
         public static ObjectId[] Divide(Curve curve, int number, Entity entity)
         {
-            double start = curve.GetDistAtParam(curve.StartParam);
-            double end = curve.GetDistAtParam(curve.EndParam);
-            double interval = (end - start) / number;
-
-            return Enumerable
-                .Range(1, number - 1)
-                .Select(n =>
-                {
-                    var parameter = start + n * interval;
-                    var objNew = entity.Clone() as Entity;
-                    if (objNew is DBPoint)
-                    {
-                        (objNew as DBPoint).Position = curve.GetPointAtParam(parameter);
-                    }
-                    else if (objNew is BlockReference)
-                    {
-                        (objNew as BlockReference).Position = curve.GetPointAtParam(parameter);
-                    }
-
-                    return objNew;
-                })
+            return Draw
+                .GetCurvePoints(curve, number: number)
+                .PlaceEntity(entity)
                 .AddToCurrentSpace();
         }
 
@@ -67,28 +49,40 @@ namespace AutoCADCommands
         /// <returns></returns>
         public static ObjectId[] Measure(Curve curve, double interval, Entity entity)
         {
+            return Draw
+                .GetCurvePoints(curve, interval: interval)
+                .PlaceEntity(entity)
+                .AddToCurrentSpace();
+        }
+
+        private static IEnumerable<Point3d> GetCurvePoints(Curve curve, int number = -1, double interval = -1)
+        {
             double start = curve.GetDistAtParam(curve.StartParam);
             double end = curve.GetDistAtParam(curve.EndParam);
-            int number = (int)Math.Floor((end - start) / interval);
+            interval = interval == -1 ? (end - start) / number : interval;
+            number =  number == -1 ? (int)Math.Floor((end - start) / interval): number;
 
             return Enumerable
                 .Range(1, number - 1)
-                .Select(n =>
-                {
-                    var parameter = start + n * interval;
-                    var objNew = entity.Clone() as Entity;
-                    if (objNew is DBPoint)
-                    {
-                        (objNew as DBPoint).Position = curve.GetPointAtParam(parameter);
-                    }
-                    else if (objNew is BlockReference)
-                    {
-                        (objNew as BlockReference).Position = curve.GetPointAtParam(parameter);
-                    }
+                .Select(n => curve.GetPointAtParam(start + n * interval));
+        }
 
-                    return objNew;
-                })
-                .AddToCurrentSpace();
+        private static IEnumerable<Entity> PlaceEntity(this IEnumerable<Point3d> positions, Entity entity)
+        {
+            foreach (var position in positions)
+            {
+                var newEntity = entity.Clone() as Entity;
+                if (newEntity is DBPoint)
+                {
+                    (newEntity as DBPoint).Position = position;
+                }
+                else if (newEntity is BlockReference)
+                {
+                    (newEntity as BlockReference).Position = position;
+                }
+
+                yield return newEntity;
+            }
         }
 
         #endregion
