@@ -90,116 +90,78 @@ namespace AutoCADCommands
         #region line
 
         /// <summary>
-        /// 绘制直线
+        /// Draws a line.
         /// </summary>
-        /// <param name="p1"></param>
-        /// <param name="p2"></param>
-        /// <returns></returns>
-        public static ObjectId Line(Point3d p1, Point3d p2)
+        /// <param name="point1">The point 1.</param>
+        /// <param name="point2">The point 2.</param>
+        /// <returns>The object ID.</returns>
+        public static ObjectId Line(Point3d point1, Point3d point2)
         {
-            return Draw.AddToCurrentSpace(new Line(p1, p2));
+            return Draw.AddToCurrentSpace(new Line(point1, point2));
         }
 
         /// <summary>
-        /// 绘制直线
+        /// Draws multiple lines by a sequence of points.
         /// </summary>
-        /// <param name="points"></param>
-        /// <returns></returns>
+        /// <param name="points">The points.</param>
+        /// <returns>The object IDs.</returns>
         public static ObjectId[] Line(params Point3d[] points)
         {
-            return Enumerable.Range(0, points.Length - 1).Select(x => Line(points[x], points[x + 1])).ToArray();
+            return NoDraw.Line(points).AddToCurrentSpace();
         }
 
         /// <summary>
-        /// 绘制圆弧：三点（调用ArcFromGeoArc）
+        /// Draws an arc from 3 points.
         /// </summary>
-        /// <param name="p1"></param>
-        /// <param name="p2"></param>
-        /// <param name="p3"></param>
-        /// <returns></returns>
-        public static ObjectId Arc3P(Point3d p1, Point3d p2, Point3d p3)
+        /// <param name="point1">The point 1.</param>
+        /// <param name="point2">The point 2.</param>
+        /// <param name="point3">The point 3.</param>
+        /// <returns>The object ID.</returns>
+        public static ObjectId Arc3P(Point3d point1, Point3d point2, Point3d point3)
         {
-            CircularArc3d arc = new CircularArc3d(p1, p2, p3);
-            Vector3d dir1 = p1 - arc.Center;
-            double startangle = dir1.GetAngleTo(Vector3d.XAxis);
-            if (dir1.Y < 0)
-            {
-                startangle = Math.PI * 2 - startangle;
-            }
-            Vector3d dir2 = p3 - arc.Center;
-            double endangle = dir2.GetAngleTo(Vector3d.XAxis);
-            if (dir2.Y < 0)
-            {
-                endangle = Math.PI * 2 - endangle;
-            }
-            Arc dbArc = new Arc(arc.Center, arc.Radius, startangle, endangle);
-            double angle = arc.EndAngle;
-            if (dbArc.GetDistToPoint(p2) > Consts.Epsilon)
-            {
-                angle = -angle;
-            }
-            return ArcSCA(p1, arc.Center, angle);
+            return NoDraw.Arc3P(point1, point2, point3).AddToCurrentSpace();
         }
 
-        //public static void ArcSCE(Point3d start, Point3d center, Point3d end)
+        //public static ObjectId ArcSCE(Point3d start, Point3d center, Point3d end)
         //{
         //}
 
         /// <summary>
-        /// 绘制圆弧：起点圆心角度（调用ArcFromGeoArc）
+        /// Draws an arc from start, center, and angle.
         /// </summary>
-        /// <param name="start"></param>
-        /// <param name="center"></param>
-        /// <param name="angle"></param>
-        /// <returns></returns>
+        /// <param name="start">The start point.</param>
+        /// <param name="center">The center point.</param>
+        /// <param name="angle">The angle.</param>
+        /// <returns>The object ID.</returns>
         public static ObjectId ArcSCA(Point3d start, Point3d center, double angle)
         {
-            double radius = center.DistanceTo(start);
-            Vector3d dir1 = start - center;
-            double startangle = dir1.GetAngleTo(Vector3d.XAxis);
-            if (dir1.Y < 0)
-            {
-                startangle = Math.PI * 2 - startangle;
-            }
-            double endangle;
-            if (angle > 0)
-            {
-                endangle = startangle + angle;
-            }
-            else
-            {
-                double a = startangle;
-                startangle = startangle + angle;
-                endangle = a;
-            }
-            CircularArc3d arc = new CircularArc3d(center, Vector3d.ZAxis, Vector3d.XAxis, radius, startangle, endangle);
-            return ArcFromGeoArc(arc);
+            return NoDraw.ArcSCA(start, center, angle).AddToCurrentSpace();
         }
 
-        //public static void ArcSCL(Point3d start, Point3d center, double length)
+        //public static ObjectId ArcSCL(Point3d start, Point3d center, double length)
         //{
         //}
 
-        //public static void ArcSEA(Point3d start, Point3d end, double angle)
+        //public static ObjectId ArcSEA(Point3d start, Point3d end, double angle)
         //{
         //}
 
-        //public static void ArcSED(Point3d start, Point3d end, Vector3d dir)
+        //public static ObjectId ArcSED(Point3d start, Point3d end, Vector3d dir)
         //{
         //}
 
-        //public static void ArcSER(Point3d start, Point3d end, double radius)
+        //public static ObjectId ArcSER(Point3d start, Point3d end, double radius)
         //{
         //}
 
         /// <summary>
-        /// 绘制圆弧：从GeoArc
+        /// Draws an arc from a geometry arc.
         /// </summary>
-        /// <param name="arc"></param>
-        /// <returns></returns>
-        public static ObjectId ArcFromGeoArc(CircularArc3d arc)
+        /// <param name="arc">The arc.</param>
+        /// <returns>The object ID.</returns>
+        public static ObjectId ArcFromGeometry(CircularArc3d arc)
         {
-            return Draw.AddToCurrentSpace(new Arc(arc.Center, arc.Radius, arc.StartAngle, arc.EndAngle));
+            return NoDraw.ArcFromGeometry(arc).AddToCurrentSpace();
         }
 
         /// <summary>
@@ -1023,24 +985,111 @@ namespace AutoCADCommands
     public static class NoDraw
     {
         /// <summary>
-        /// 创建直线
+        /// Creates a line.
         /// </summary>
-        /// <param name="p1"></param>
-        /// <param name="p2"></param>
-        /// <returns></returns>
-        public static Line Line(Point3d p1, Point3d p2)
+        /// <param name="point1">The point 1.</param>
+        /// <param name="point2">The point 2.</param>
+        /// <returns>The result.</returns>
+        public static Line Line(Point3d point1, Point3d point2)
         {
-            return new Line(p1, p2);
+            return new Line(point1, point2);
         }
 
         /// <summary>
-        /// 创建直线
+        /// Creates multiple lines from a sequence of points.
         /// </summary>
-        /// <param name="points"></param>
-        /// <returns></returns>
+        /// <param name="points">The points.</param>
+        /// <returns>The result.</returns>
         public static Line[] Line(params Point3d[] points)
         {
-            return Enumerable.Range(0, points.Length - 1).Select(x => Line(points[x], points[x + 1])).ToArray();
+            return Enumerable
+                .Range(0, points.Length - 1)
+                .Select(x => Line(points[x], points[x + 1]))
+                .ToArray();
+        }
+
+        /// <summary>
+        /// Creates an arc from 3 points.
+        /// </summary>
+        /// <param name="point1">The point 1.</param>
+        /// <param name="point2">The point 2.</param>
+        /// <param name="point3">The point 3.</param>
+        /// <returns>The result.</returns>
+        public static Arc Arc3P(Point3d point1, Point3d point2, Point3d point3)
+        {
+            var arc = new CircularArc3d(point1, point2, point3);
+            return NoDraw.ArcFromGeometry(arc);
+        }
+
+        //public static Arc ArcSCE(Point3d start, Point3d center, Point3d end)
+        //{
+        //}
+
+        /// <summary>
+        /// Creates an arc from start, center, and angle.
+        /// </summary>
+        /// <param name="start">The start point.</param>
+        /// <param name="center">The center point.</param>
+        /// <param name="angle">The angle.</param>
+        /// <returns>The result.</returns>
+        public static Arc ArcSCA(Point3d start, Point3d center, double angle)
+        {
+            double radius = center.DistanceTo(start);
+            var dir1 = start - center;
+            double startangle = dir1.GetAngleTo(Vector3d.XAxis);
+            if (dir1.Y < 0)
+            {
+                startangle = Math.PI * 2 - startangle;
+            }
+            double endangle;
+            if (angle > 0)
+            {
+                endangle = startangle + angle;
+            }
+            else
+            {
+                double a = startangle;
+                startangle = startangle + angle;
+                endangle = a;
+            }
+            var arc = new CircularArc3d(center, Vector3d.ZAxis, Vector3d.XAxis, radius, startangle, endangle);
+            return NoDraw.ArcFromGeometry(arc);
+        }
+
+        //public static Arc ArcSCL(Point3d start, Point3d center, double length)
+        //{
+        //}
+
+        //public static Arc ArcSEA(Point3d start, Point3d end, double angle)
+        //{
+        //}
+
+        //public static Arc ArcSED(Point3d start, Point3d end, Vector3d dir)
+        //{
+        //}
+
+        //public static Arc ArcSER(Point3d start, Point3d end, double radius)
+        //{
+        //}
+
+        /// <summary>
+        /// Creates an arc from a geometry arc.
+        /// </summary>
+        /// <param name="arc">The geometry arc.</param>
+        /// <returns>The result.</returns>
+        public static Arc ArcFromGeometry(CircularArc3d arc)
+        {
+            return new Arc(arc.Center, arc.Normal, arc.Radius, arc.StartAngle, arc.EndAngle);
+        }
+
+        /// <summary>
+        /// Creates an arc from a geometry arc.
+        /// </summary>
+        /// <param name="arc">The geometry arc.</param>
+        /// <returns>The result.</returns>
+        public static Arc ArcFromGeometry(CircularArc2d arc)
+        {
+            return new Arc(arc.Center.ToPoint3d(), Vector3d.ZAxis, arc.Radius, arc.StartAngle, arc.EndAngle);
         }
 
         /// <summary>
@@ -1062,7 +1111,9 @@ namespace AutoCADCommands
         /// <returns></returns>
         public static Circle Circle(Point3d p1, Point3d p2)
         {
-            return Circle(Point3d.Origin + 0.5 * ((p1 - Point3d.Origin) + (p2 - Point3d.Origin)), 0.5 * p1.DistanceTo(p2));
+            return NoDraw.Circle(
+                center: Point3d.Origin + 0.5 * ((p1 - Point3d.Origin) + (p2 - Point3d.Origin)),
+                radius: 0.5 * p1.DistanceTo(p2));
         }
 
         /// <summary>
@@ -1074,8 +1125,28 @@ namespace AutoCADCommands
         /// <returns></returns>
         public static Circle Circle(Point3d p1, Point3d p2, Point3d p3)
         {
-            CircularArc2d geo = new CircularArc2d(new Point2d(p1.X, p1.Y), new Point2d(p2.X, p2.Y), new Point2d(p3.X, p3.Y));
-            return Circle(new Point3d(geo.Center.X, geo.Center.Y, 0), geo.Radius);
+            var geo = new CircularArc3d(p1, p2, p3);
+            return NoDraw.Circle(geo);
+        }
+
+        /// <summary>
+        /// Creates a circle from a geometry circle.
+        /// </summary>
+        /// <param name="circle">The geometry circle.</param>
+        /// <returns>The result.</returns>
+        public static Circle Circle(CircularArc3d circle)
+        {
+            return new Circle(circle.Center, circle.Normal, circle.Radius);
+        }
+
+        /// <summary>
+        /// Creates a circle from a geometry circle.
+        /// </summary>
+        /// <param name="circle">The geometry circle.</param>
+        /// <returns>The result.</returns>
+        public static Circle Circle(CircularArc2d circle)
+        {
+            return new Circle(circle.Center.ToPoint3d(), Vector3d.ZAxis, circle.Radius);
         }
 
         /// <summary>
