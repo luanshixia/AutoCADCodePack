@@ -22,7 +22,7 @@ namespace AutoCADCommands
         /// <returns>The object ID.</returns>
         public static ObjectId Point(Point3d position)
         {
-            return Draw.AddToCurrentSpace(new DBPoint(position));
+            return NoDraw.Point(position).AddToCurrentSpace();
         }
 
         /// <summary>
@@ -60,7 +60,7 @@ namespace AutoCADCommands
             double start = curve.GetDistAtParam(curve.StartParam);
             double end = curve.GetDistAtParam(curve.EndParam);
             interval = interval == -1 ? (end - start) / number : interval;
-            number =  number == -1 ? (int)Math.Floor((end - start) / interval): number;
+            number = number == -1 ? (int)Math.Floor((end - start) / interval) : number;
 
             return Enumerable
                 .Range(1, number - 1)
@@ -97,7 +97,7 @@ namespace AutoCADCommands
         /// <returns>The object ID.</returns>
         public static ObjectId Line(Point3d point1, Point3d point2)
         {
-            return Draw.AddToCurrentSpace(new Line(point1, point2));
+            return NoDraw.Line(point1, point2).AddToCurrentSpace();
         }
 
         /// <summary>
@@ -157,7 +157,7 @@ namespace AutoCADCommands
         /// <summary>
         /// Draws an arc from a geometry arc.
         /// </summary>
-        /// <param name="arc">The arc.</param>
+        /// <param name="arc">The geometry arc.</param>
         /// <returns>The object ID.</returns>
         public static ObjectId ArcFromGeometry(CircularArc3d arc)
         {
@@ -165,99 +165,66 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 创建多段线 newly 20140717
+        /// Draws an arc from a geometry arc.
         /// </summary>
-        /// <param name="points"></param>
-        /// <returns></returns>
+        /// <param name="arc">The geometry arc.</param>
+        /// <returns>The object ID.</returns>
+        public static ObjectId ArcFromGeometry(CircularArc2d arc)
+        {
+            return NoDraw.ArcFromGeometry(arc).AddToCurrentSpace();
+        }
+
+        /// <summary>
+        /// Draws a polyline by a sequence of points.
+        /// </summary>
+        /// <param name="points">The points.</param>
+        /// <returns>The object ID.</returns>
         public static ObjectId Pline(params Point3d[] points)
         {
-            return Pline(points.ToList());
+            return NoDraw.Pline(points).AddToCurrentSpace();
         }
 
         /// <summary>
-        /// 绘制多段线
+        /// Draws a polyline by a sequence of points and a global width.
         /// </summary>
-        /// <param name="points"></param>
-        /// <returns></returns>
-        public static ObjectId Pline(IEnumerable<Point3d> points)
+        /// <param name="points">The points.</param>
+        /// <param name="globalWidth">The global width. Default is 0.</param>
+        /// <returns>The object ID.</returns>
+        public static ObjectId Pline(IEnumerable<Point3d> points, double globalWidth = 0)
         {
-            return Pline(points, 0);
+            return NoDraw.Pline(points, globalWidth).AddToCurrentSpace();
         }
 
         /// <summary>
-        /// 绘制多段线
+        /// Draws a polyline by a sequence of vertices (position + bulge).
         /// </summary>
-        /// <param name="points"></param>
-        /// <param name="globalWidth"></param>
-        /// <returns></returns>
-        public static ObjectId Pline(IEnumerable<Point3d> points, double globalWidth)
+        /// <param name="vertices">The vertices.</param>
+        /// <param name="globalWidth">The global width. Default is 0.</param>
+        /// <returns>The object ID.</returns>
+        public static ObjectId Pline(List<(Point3d, double)> vertices, double globalWidth = 0)
         {
-            var pairs = new List<(Point3d, double)>();
-            points.ToList().ForEach(x => pairs.Add((x, 0)));
-            return Pline(pairs, globalWidth);
+            return NoDraw.Pline(vertices, globalWidth).AddToCurrentSpace();
         }
 
         /// <summary>
-        /// 绘制多段线
+        /// Draws a spline by fit points.
         /// </summary>
-        /// <param name="pointBulgePairs"></param>
-        /// <param name="globalWidth"></param>
-        /// <returns></returns>
-        public static ObjectId Pline(List<(Point3d, double)> pointBulgePairs, double globalWidth)
-        {
-            var poly = new Polyline();
-            Enumerable.Range(0, pointBulgePairs.Count).ToList().ForEach(x =>
-                poly.AddVertexAt(x, new Point2d(pointBulgePairs[x].Item1.X, pointBulgePairs[x].Item1.Y), pointBulgePairs[x].Item2, globalWidth, globalWidth)
-                );
-            return Draw.AddToCurrentSpace(poly);
-        }
-
-        /// <summary>
-        /// 绘制拟合点样条线
-        /// </summary>
-        /// <param name="points"></param>
-        /// <returns></returns>
+        /// <param name="points">The points to fit.</param>
+        /// <returns>The object ID.</returns>
         public static ObjectId SplineFit(Point3d[] points)
         {
-            Point3dCollection pts = new Point3dCollection(points);
-            Spline spline = new Spline(pts, 3, Consts.Epsilon);
-            return Draw.AddToCurrentSpace(spline);
+            return NoDraw.SplineFit(points).AddToCurrentSpace();
         }
 
         /// <summary>
-        /// 绘制控制点样条线
+        /// Draws a spline by control points.
         /// </summary>
-        /// <param name="points"></param>
-        /// <param name="closed"></param>
-        /// <returns></returns>
+        /// <param name="points">The control points.</param>
+        /// <param name="closed">Whether to close the spline.</param>
+        /// <returns>The object ID.</returns>
         public static ObjectId SplineCV(Point3d[] points, bool closed = false)
         {
-            Point3dCollection pts = new Point3dCollection(points);
-            DoubleCollection knots;
-            DoubleCollection weights;
-            if (!closed)
-            {
-                var knots1 = Enumerable.Range(0, points.Length - 2).Select(x => (double)x).ToList();
-                knots1.Insert(0, 0);
-                knots1.Insert(0, 0);
-                knots1.Insert(0, 0);
-                knots1.Add(points.Length - 3);
-                knots1.Add(points.Length - 3);
-                knots1.Add(points.Length - 3);
-                knots = new DoubleCollection(knots1.ToArray());
-                weights = new DoubleCollection(Enumerable.Repeat(1, points.Length).Select(x => (double)x).ToArray());
-            }
-            else
-            {
-                pts.Add(points[0]);
-                pts.Add(points[1]);
-                pts.Add(points[2]);
-                var knots1 = Enumerable.Range(0, points.Length + 7).Select(x => (double)x).ToList();
-                knots = new DoubleCollection(knots1.ToArray());
-                weights = new DoubleCollection(Enumerable.Repeat(1, points.Length + 3).Select(x => (double)x).ToArray());
-            }
-            Spline spline = new Spline(3, true, closed, closed, pts, knots, weights, 0, 0);
-            return Draw.AddToCurrentSpace(spline);
+            return NoDraw.SplineCV(points, closed).AddToCurrentSpace();
         }
 
         #endregion
@@ -265,117 +232,116 @@ namespace AutoCADCommands
         #region shape
 
         /// <summary>
-        /// 绘制矩形
+        /// Draws a rectangle.
         /// </summary>
-        /// <param name="p1"></param>
-        /// <param name="p2"></param>
-        /// <returns></returns>
-        public static ObjectId Rectang(Point3d p1, Point3d p2)
+        /// <param name="point1">The point 1.</param>
+        /// <param name="point2">The point 2.</param>
+        /// <returns>The object ID.</returns>
+        public static ObjectId Rectang(Point3d point1, Point3d point2)
         {
-            Point3d[] points = new Point3d[4];
-            points[0] = p1;
-            points[1] = new Point3d(p1.X, p2.Y, 0);
-            points[2] = p2;
-            points[3] = new Point3d(p2.X, p1.Y, 0);
-            ObjectId result = Draw.Pline(points);
-            result.QOpenForWrite<Polyline>(pl => pl.Closed = true);
-            return result;
+            return NoDraw.Rectang(point1, point2).AddToCurrentSpace();
         }
 
         /// <summary>
-        /// 绘制正多边形
+        /// Draws a regular N-polygon.
         /// </summary>
-        /// <param name="n"></param>
-        /// <param name="center"></param>
-        /// <param name="end"></param>
-        /// <returns></returns>
+        /// <param name="n">The N.</param>
+        /// <param name="center">The center.</param>
+        /// <param name="end">One vertex.</param>
+        /// <returns>The object ID.</returns>
         public static ObjectId Polygon(int n, Point3d center, Point3d end)
         {
-            Point3d[] points = new Point3d[n];
             if (n < 3)
             {
                 return ObjectId.Null;
             }
-            else
-            {
-                points[0] = end;
-                //points[n] = end;
-                Vector3d X = end - center;
-                for (int i = 1; i < n; i++)
-                {
-                    X = X.RotateBy(Math.PI * 2.0 / (double)n, Vector3d.ZAxis);
-                    points[i] = new Point3d(center.X + X.X, center.Y + X.Y, center.Z + X.Z);
-                }
-                ObjectId result = Pline(points);
-                result.QOpenForWrite<Polyline>(pl => pl.Closed = true);
-                return result;
-            }
+
+            var direction = end - center;
+            var points = Enumerable
+                .Range(0, n)
+                .Select(index => center.Add(direction.RotateBy(2 * Math.PI / n * index, Vector3d.ZAxis)))
+                .ToArray();
+
+            var result = Draw.Pline(points);
+            result.QOpenForWrite<Polyline>(poly => poly.Closed = true);
+            return result;
         }
 
         /// <summary>
-        /// 绘制圆：圆心半径
+        /// Draws a circle from center and radius.
         /// </summary>
-        /// <param name="center"></param>
-        /// <param name="radius"></param>
-        /// <returns></returns>
+        /// <param name="center">The center.</param>
+        /// <param name="radius">The radius.</param>
+        /// <returns>The object ID.</returns>
         public static ObjectId Circle(Point3d center, double radius)
         {
-            return Draw.AddToCurrentSpace(new Circle(center, Vector3d.ZAxis, radius));
+            return NoDraw.Circle(center, radius).AddToCurrentSpace();
         }
 
         /// <summary>
-        /// 绘制圆：两点
+        /// Draws a circle from diameter ends.
         /// </summary>
-        /// <param name="p1"></param>
-        /// <param name="p2"></param>
-        /// <returns></returns>
-        public static ObjectId Circle(Point3d p1, Point3d p2)
+        /// <param name="point1">The point 1.</param>
+        /// <param name="point2">The point 2.</param>
+        /// <returns>The object ID.</returns>
+        public static ObjectId Circle(Point3d point1, Point3d point2)
         {
-            return Circle(Point3d.Origin + 0.5 * ((p1 - Point3d.Origin) + (p2 - Point3d.Origin)), 0.5 * p1.DistanceTo(p2));
+            return NoDraw.Circle(point1, point2).AddToCurrentSpace();
         }
 
         /// <summary>
-        /// 绘制圆：三点
+        /// Draws a circle from 3 points.
         /// </summary>
-        /// <param name="p1"></param>
-        /// <param name="p2"></param>
-        /// <param name="p3"></param>
-        /// <returns></returns>
-        public static ObjectId Circle(Point3d p1, Point3d p2, Point3d p3)
+        /// <param name="point1">The point 1.</param>
+        /// <param name="point2">The point 2.</param>
+        /// <param name="point3">The point 3.</param>
+        /// <returns>The object ID.</returns>
+        public static ObjectId Circle(Point3d point1, Point3d point2, Point3d point3)
         {
-            CircularArc2d geo = new CircularArc2d(new Point2d(p1.X, p1.Y), new Point2d(p2.X, p2.Y), new Point2d(p3.X, p3.Y));
-            return Circle(new Point3d(geo.Center.X, geo.Center.Y, 0), geo.Radius);
+            return NoDraw.Circle(point1, point2, point3).AddToCurrentSpace();
         }
 
-        //public static void Circle(Line l1, Line l2, double radius)
+        /// <summary>
+        /// Draws a circle from a geometry circle.
+        /// </summary>
+        /// <param name="circle">The geometry circle.</param>
+        /// <returns>The object ID.</returns>
+        public static ObjectId Circle(CircularArc3d circle)
+        {
+            return NoDraw.Circle(circle).AddToCurrentSpace();
+        }
+
+        /// <summary>
+        /// Draws a circle from a geometry circle.
+        /// </summary>
+        /// <param name="circle">The geometry circle.</param>
+        /// <returns>The object ID.</returns>
+        public static ObjectId Circle(CircularArc2d circle)
+        {
+            return NoDraw.Circle(circle).AddToCurrentSpace();
+        }
+
+        //public ObjectId void Circle(Line l1, Line l2, double radius)
         //{
         //}
 
-        //public static void Circle(Line l1, Line l2, Line l3)
+        //public ObjectId void Circle(Line l1, Line l2, Line l3)
         //{
         //}
 
         /// <summary>
-        /// 绘制椭圆
+        /// Draws an ellipse by center, endX, and radiusY.
         /// </summary>
-        /// <param name="center"></param>
-        /// <param name="endX"></param>
-        /// <param name="radiusY"></param>
-        /// <returns></returns>
+        /// <remarks>
+        /// The ellipse will be drawn on the XY plane.
+        /// </remarks>
+        /// <param name="center">The center.</param>
+        /// <param name="endX">The intersection point of the ellipse and its X axis.</param>
+        /// <param name="radiusY">The Y radius.</param>
+        /// <returns>The object ID.</returns>
         public static ObjectId Ellipse(Point3d center, Point3d endX, double radiusY)
         {
-            double radiusRatio = center.DistanceTo(endX) / radiusY;
-            Vector3d axisX = endX - center;
-            if (center.DistanceTo(endX) > radiusY)
-            {
-                radiusRatio = radiusY / center.DistanceTo(endX);
-            }
-            else
-            {
-                axisX = axisX.RotateBy(Math.PI / 2.0, Vector3d.ZAxis);
-                axisX = axisX.MultiplyBy(radiusY / center.DistanceTo(endX));
-            }
-            return Draw.AddToCurrentSpace(new Ellipse(center, Vector3d.ZAxis, axisX, radiusRatio, 0, 2 * Math.PI));
+            return NoDraw.Ellipse(center, endX, radiusY).AddToCurrentSpace();
         }
 
         #endregion
@@ -547,53 +513,34 @@ namespace AutoCADCommands
             }
         }
 
-        // 20110907
         /// <summary>
-        /// 绘制单行文字
+        /// Draws a DT.
         /// </summary>
-        /// <param name="text"></param>
-        /// <param name="height"></param>
-        /// <param name="pos"></param>
-        /// <param name="rotation"></param>
-        /// <param name="centerAligned"></param>
-        /// <param name="textStyle"></param>
-        /// <returns></returns>
-        public static ObjectId Text(string text, double height, Point3d pos, double rotation = 0, bool centerAligned = false, string textStyle = Consts.TextStyleName)
+        /// <param name="text">The text.</param>
+        /// <param name="height">The height.</param>
+        /// <param name="position">The position.</param>
+        /// <param name="rotation">The rotation.</param>
+        /// <param name="centerAligned">Whether to center align.</param>
+        /// <param name="textStyle">The text style name.</param>
+        /// <returns>The object ID.</returns>
+        public static ObjectId Text(string text, double height, Point3d position, double rotation = 0, bool centerAligned = false, string textStyle = Consts.TextStyleName)
         {
-            var textStyleId = DbHelper.GetTextStyleId(textStyle);
-            var style = textStyleId.QOpenForRead<TextStyleTableRecord>();
-            DBText txt = new DBText { TextString = text, Position = pos, Rotation = rotation, TextStyleId = textStyleId, Height = height, Oblique = style.ObliquingAngle, WidthFactor = style.XScale };
-            if (centerAligned)
-            {
-                txt.HorizontalMode = TextHorizontalMode.TextCenter;
-                txt.VerticalMode = TextVerticalMode.TextVerticalMid;
-            }
-            ObjectId id = Draw.AddToCurrentSpace(txt);
-            return id;
+            return NoDraw.Text(text, height, position, rotation, centerAligned, textStyle).AddToCurrentSpace();
         }
 
         /// <summary>
-        /// 绘制多行文字
+        /// Draws an MT.
         /// </summary>
-        /// <param name="text"></param>
-        /// <param name="height"></param>
-        /// <param name="pos"></param>
-        /// <param name="rotation"></param>
-        /// <param name="centerAligned"></param>
-        /// <param name="width"></param>
-        /// <param name="textStyle"></param>
-        /// <returns></returns>
-        public static ObjectId MText(string text, double height, Point3d pos, double rotation = 0, bool centerAligned = false, double width = 0, string textStyle = Consts.TextStyleName)
+        /// <param name="text">The text.</param>
+        /// <param name="height">The height.</param>
+        /// <param name="position">The position.</param>
+        /// <param name="rotation">The rotation.</param>
+        /// <param name="centerAligned">Whether to center align.</param>
+        /// <param name="width">The width.</param>
+        /// <returns>The object ID.</returns>
+        public static ObjectId MText(string text, double height, Point3d position, double rotation = 0, bool centerAligned = false, double width = 0)
         {
-            var textStyleId = DbHelper.GetTextStyleId(textStyle);
-            MText mt = new MText { Contents = text, TextHeight = height, Location = pos, Rotation = rotation, TextStyleId = textStyleId, Width = width };
-            ObjectId id = Draw.AddToCurrentSpace(mt);
-            if (centerAligned)
-            {
-                Point3d center = id.GetCenter();
-                id.Move(mt.Location - center);
-            }
-            return id;
+            return NoDraw.MText(text, height, position, rotation, centerAligned, width).AddToCurrentSpace();
         }
 
         /// <summary>
@@ -634,79 +581,57 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 插入块参照
+        /// Inserts block reference.
         /// </summary>
         /// <param name="blockName"></param>
-        /// <param name="p"></param>
+        /// <param name="position"></param>
         /// <param name="rotation"></param>
         /// <param name="scale"></param>
         /// <returns></returns>
-        public static ObjectId Insert(string blockName, Point3d p, double rotation = 0, double scale = 1)
+        public static ObjectId Insert(string blockName, Point3d position, double rotation = 0, double scale = 1)
         {
-            return Draw.AddToCurrentSpace(new BlockReference(p, DbHelper.GetBlockId(blockName))
-            {
-                Rotation = rotation,
-                ScaleFactors = new Scale3d(scale)
-            });
+            return NoDraw
+                .Insert(
+                    DbHelper.GetBlockId(blockName),
+                    position,
+                    rotation,
+                    scale)
+                .AddToCurrentSpace();
         }
 
         /// <summary>
-        /// 定义块：若干实体
+        /// Defines a block given entities.
         /// </summary>
-        /// <param name="entIds"></param>
+        /// <param name="entityIds"></param>
         /// <param name="blockName"></param>
         /// <returns></returns>
-        public static ObjectId Block(IEnumerable<ObjectId> entIds, string blockName)
+        public static ObjectId Block(IEnumerable<ObjectId> entityIds, string blockName)
         {
-            return Draw.Block(entIds, blockName, entIds.GetCenter());
+            return Draw.Block(
+                entityIds,
+                blockName,
+                basePoint: entityIds.GetCenter());
         }
 
         /// <summary>
-        /// 定义块：若干实体，可指定基点
+        /// Defines a block given entities.
         /// </summary>
-        /// <param name="entIds"></param>
+        /// <param name="entityIds"></param>
         /// <param name="blockName"></param>
         /// <param name="basePoint"></param>
         /// <param name="overwrite"></param>
         /// <returns></returns>
-        public static ObjectId Block(IEnumerable<ObjectId> entIds, string blockName, Point3d basePoint, bool overwrite = true)
+        public static ObjectId Block(IEnumerable<ObjectId> entityIds, string blockName, Point3d basePoint, bool overwrite = true)
         {
-            Database db = HostApplicationServices.WorkingDatabase;
-            Editor ed = Application.DocumentManager.MdiActiveDocument.Editor;
-            ObjectId result = ObjectId.Null;
-            using (Transaction trans = db.TransactionManager.StartTransaction())
-            {
-                BlockTable bt = trans.GetObject(db.BlockTableId, OpenMode.ForWrite) as BlockTable;
-                if (bt.Has(blockName))
-                {
-                    BlockTableRecord old = trans.GetObject(bt[blockName], OpenMode.ForWrite) as BlockTableRecord;
-
-                    if (!overwrite)
-                    {
-                        Interaction.Write($"{blockName} already exists and was not overwritten.");
-                        return old.Id;
-                    }
-                    old.Erase();
-                }
-
-                BlockTableRecord block = new BlockTableRecord();
-                block.Name = blockName;
-                foreach (var ent in entIds)
-                {
-                    Entity entObj = trans.GetObject(ent, OpenMode.ForRead) as Entity;
-                    entObj = entObj.Clone() as Entity;
-                    entObj.TransformBy(Matrix3d.Displacement(-basePoint.GetAsVector()));
-                    block.AppendEntity(entObj);
-                }
-                result = bt.Add(block);
-                trans.AddNewlyCreatedDBObject(block, true);
-                trans.Commit();
-            }
-            return result;
+            return Draw.Block(
+                entityIds.QOpenForRead<Entity>(),
+                blockName,
+                basePoint,
+                overwrite);
         }
 
         /// <summary>
-        /// Creates a block given entities. 
+        /// Defines a block given entities. 
         /// </summary>
         /// <param name="entities"></param>
         /// <param name="blockName"></param>
@@ -715,41 +640,41 @@ namespace AutoCADCommands
         /// <returns></returns>
         public static ObjectId Block(IEnumerable<Entity> entities, string blockName, Point3d basePoint, bool overwrite = true)
         {
-            Database db = HostApplicationServices.WorkingDatabase;
-            Editor ed = Application.DocumentManager.MdiActiveDocument.Editor;
-            ObjectId result = ObjectId.Null;
-            using (Transaction trans = db.TransactionManager.StartTransaction())
+            var db = HostApplicationServices.WorkingDatabase;
+            using (var trans = db.TransactionManager.StartTransaction())
             {
-                BlockTable bt = trans.GetObject(db.BlockTableId, OpenMode.ForWrite) as BlockTable;
-                if (bt.Has(blockName))
+                var blockTable = trans.GetObject(db.BlockTableId, OpenMode.ForRead) as BlockTable;
+                if (blockTable.Has(blockName))
                 {
-                    BlockTableRecord old = trans.GetObject(bt[blockName], OpenMode.ForWrite) as BlockTableRecord;
-
+                    var oldBlock = trans.GetObject(blockTable[blockName], OpenMode.ForRead) as BlockTableRecord;
                     if (!overwrite)
                     {
-                        Interaction.Write($"{blockName} already exists and was not overwritten.");
-                        return old.Id;
+                        Interaction.Write($"Block '{blockName}' already exists and was not overwritten.");
+                        return oldBlock.Id;
                     }
-                    old.Erase();
+
+                    blockTable.UpgradeOpen();
+                    oldBlock.UpgradeOpen();
+                    oldBlock.Erase();
                 }
 
-                BlockTableRecord block = new BlockTableRecord();
-                block.Name = blockName;
-                foreach (var ent in entities)
+                var block = new BlockTableRecord
                 {
-                    if (!ent.IsWriteEnabled)
-                    {
-                        ent.UpgradeOpen();
-                    }
-                    var entObj = ent.Clone() as Entity;
-                    entObj.TransformBy(Matrix3d.Displacement(-basePoint.GetAsVector()));
-                    block.AppendEntity(entObj);
+                    Name = blockName
+                };
+
+                foreach (var entity in entities)
+                {
+                    var copy = entity.Clone() as Entity;
+                    copy.TransformBy(Matrix3d.Displacement(-basePoint.GetAsVector()));
+                    block.AppendEntity(copy);
                 }
-                result = bt.Add(block);
+
+                var result = blockTable.Add(block);
                 trans.AddNewlyCreatedDBObject(block, true);
                 trans.Commit();
+                return result;
             }
-            return result;
         }
 
         /// <summary>
@@ -765,10 +690,8 @@ namespace AutoCADCommands
         /// <returns></returns>
         public static ObjectId CreateBlockAndInsertReference(IEnumerable<Entity> entities, string blockName, Point3d blockBasePoint, Point3d blockReferencePoint, double rotation = 0, double scale = 1, bool overwrite = true)
         {
-            var blockId = Block(entities, blockName, blockBasePoint, overwrite);
-            var blockReference = NoDraw.Insert(blockId, blockReferencePoint, rotation, scale);
-
-            return blockReference.AddToCurrentSpace();
+            Draw.Block(entities, blockName, blockBasePoint, overwrite);
+            return Draw.Insert(blockName, blockReferencePoint, rotation, scale);
         }
 
         /// <summary>
@@ -1093,39 +1016,39 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 创建圆：圆心半径
+        /// Creates a circle from center and radius.
         /// </summary>
-        /// <param name="center"></param>
-        /// <param name="radius"></param>
-        /// <returns></returns>
+        /// <param name="center">The center.</param>
+        /// <param name="radius">The radius.</param>
+        /// <returns>The result.</returns>
         public static Circle Circle(Point3d center, double radius)
         {
             return new Circle(center, Vector3d.ZAxis, radius);
         }
 
         /// <summary>
-        /// 创建圆：两点
+        /// Creates a circle from diameter ends.
         /// </summary>
-        /// <param name="p1"></param>
-        /// <param name="p2"></param>
-        /// <returns></returns>
-        public static Circle Circle(Point3d p1, Point3d p2)
+        /// <param name="point1">The point 1.</param>
+        /// <param name="point2">The point 2.</param>
+        /// <returns>The result.</returns>
+        public static Circle Circle(Point3d point1, Point3d point2)
         {
             return NoDraw.Circle(
-                center: Point3d.Origin + 0.5 * ((p1 - Point3d.Origin) + (p2 - Point3d.Origin)),
-                radius: 0.5 * p1.DistanceTo(p2));
+                center: Point3d.Origin + 0.5 * ((point1 - Point3d.Origin) + (point2 - Point3d.Origin)),
+                radius: 0.5 * point1.DistanceTo(point2));
         }
 
         /// <summary>
-        /// 创建圆：三点
+        /// Creates a circle from 3 points.
         /// </summary>
-        /// <param name="p1"></param>
-        /// <param name="p2"></param>
-        /// <param name="p3"></param>
-        /// <returns></returns>
-        public static Circle Circle(Point3d p1, Point3d p2, Point3d p3)
+        /// <param name="point1">The point 1.</param>
+        /// <param name="point2">The point 2.</param>
+        /// <param name="point3">The point 3.</param>
+        /// <returns>The result.</returns>
+        public static Circle Circle(Point3d point1, Point3d point2, Point3d point3)
         {
-            var geo = new CircularArc3d(p1, p2, p3);
+            var geo = new CircularArc3d(point1, point2, point3);
             return NoDraw.Circle(geo);
         }
 
@@ -1150,135 +1073,245 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 创建多段线 newly 20140717
+        /// Creates an ellipse by center, endX, and radiusY.
         /// </summary>
-        /// <param name="points"></param>
-        /// <returns></returns>
+        /// <remarks>
+        /// The ellipse will be created on the XY plane.
+        /// </remarks>
+        /// <param name="center">The center.</param>
+        /// <param name="endX">The intersection point of the ellipse and its X axis.</param>
+        /// <param name="radiusY">The Y radius.</param>
+        /// <returns>The result.</returns>
+        public static Ellipse Ellipse(Point3d center, Point3d endX, double radiusY)
+        {
+            var radiusRatio = center.DistanceTo(endX) / radiusY;
+            var axisX = endX - center;
+            if (center.DistanceTo(endX) > radiusY)
+            {
+                radiusRatio = radiusY / center.DistanceTo(endX);
+            }
+            else
+            {
+                axisX = axisX.RotateBy(Math.PI / 2.0, Vector3d.ZAxis);
+                axisX = axisX.MultiplyBy(radiusY / center.DistanceTo(endX));
+            }
+
+            return new Ellipse(
+                center: center,
+                unitNormal: Vector3d.ZAxis,
+                majorAxis: axisX,
+                radiusRatio: radiusRatio,
+                startAngle: 0,
+                endAngle: 2 * Math.PI);
+        }
+
+        /// <summary>
+        /// Creates a polyline by a sequence of points.
+        /// </summary>
+        /// <param name="points">The points.</param>
+        /// <returns>The result.</returns>
         public static Polyline Pline(params Point3d[] points)
         {
-            return Pline(points.ToList());
+            return NoDraw.Pline(points.ToList());
         }
 
         /// <summary>
-        /// 创建多段线
+        /// Creates a polyline by a sequence of points and a global width.
         /// </summary>
-        /// <param name="points"></param>
-        /// <returns></returns>
-        public static Polyline Pline(IEnumerable<Point3d> points)
+        /// <param name="points">The points.</param>
+        /// <param name="globalWidth">The global width. Default is 0.</param>
+        /// <returns>The result.</returns>
+        public static Polyline Pline(IEnumerable<Point3d> points, double globalWidth = 0)
         {
-            return Pline(points, 0);
+            return NoDraw.Pline(
+                vertices: points.Select(point => (point, 0d)).ToList(),
+                globalWidth: globalWidth);
         }
 
         /// <summary>
-        /// 创建多段线
+        /// Creates a polyline by a sequence of vertices (position + bulge).
         /// </summary>
-        /// <param name="points"></param>
-        /// <param name="globalWidth"></param>
-        /// <returns></returns>
-        public static Polyline Pline(IEnumerable<Point3d> points, double globalWidth)
+        /// <param name="vertices">The vertices.</param>
+        /// <param name="globalWidth">The global width. Default is 0.</param>
+        /// <returns>The result.</returns>
+        public static Polyline Pline(List<(Point3d, double)> vertices, double globalWidth = 0)
         {
-            var pairs = new List<(Point3d, double)>();
-            points.ToList().ForEach(x => pairs.Add((x, 0)));
-            return Pline(pairs, globalWidth);
-        }
+            var poly = new Polyline();
+            Enumerable
+                .Range(0, vertices.Count)
+                .ToList().ForEach(index => poly.AddVertexAt(
+                    index: index,
+                    pt: vertices[index].Item1.ToPoint2d(),
+                    bulge: vertices[index].Item2,
+                    startWidth: globalWidth,
+                    endWidth: globalWidth));
 
-        /// <summary>
-        /// 创建多段线
-        /// </summary>
-        /// <param name="pointBulgePairs"></param>
-        /// <param name="globalWidth"></param>
-        /// <returns></returns>
-        public static Polyline Pline(List<(Point3d, double)> pointBulgePairs, double globalWidth)
-        {
-            Polyline poly = new Polyline();
-            Enumerable.Range(0, pointBulgePairs.Count).ToList().ForEach(x =>
-                poly.AddVertexAt(x, new Point2d(pointBulgePairs[x].Item1.X, pointBulgePairs[x].Item1.Y), pointBulgePairs[x].Item2, globalWidth, globalWidth)
-                );
             return poly;
         }
 
         /// <summary>
-        /// 创建矩形
+        /// Creates a spline by fit points.
         /// </summary>
-        /// <param name="p1"></param>
-        /// <param name="p2"></param>
-        /// <returns></returns>
-        public static Polyline Rectang(Point3d p1, Point3d p2)
+        /// <param name="points">The points to fit.</param>
+        /// <returns>The result.</returns>
+        public static Spline SplineFit(Point3d[] points)
         {
-            Point3d[] points = new Point3d[4];
-            points[0] = p1;
-            points[1] = new Point3d(p1.X, p2.Y, 0);
-            points[2] = p2;
-            points[3] = new Point3d(p2.X, p1.Y, 0);
-            Polyline result = Pline(points);
+            return new Spline(
+                point: new Point3dCollection(points),
+                order: 3,
+                fitTolerance: Consts.Epsilon);
+        }
+
+        /// <summary>
+        /// Creates a spline by control points.
+        /// </summary>
+        /// <param name="points">The control points.</param>
+        /// <param name="closed">Whether to close the spline.</param>
+        /// <returns>The result.</returns>
+        public static Spline SplineCV(Point3d[] points, bool closed = false)
+        {
+            var controlPoints = new Point3dCollection(points);
+            DoubleCollection knots;
+            DoubleCollection weights;
+            if (!closed)
+            {
+                knots = new DoubleCollection(Enumerable.Range(0, points.Length - 2).Select(index => (double)index).ToArray());
+                knots.Insert(0, 0);
+                knots.Insert(0, 0);
+                knots.Insert(0, 0);
+                knots.Add(points.Length - 3);
+                knots.Add(points.Length - 3);
+                knots.Add(points.Length - 3);
+                weights = new DoubleCollection(Enumerable.Repeat(1, points.Length).Select(index => (double)index).ToArray());
+            }
+            else
+            {
+                controlPoints.Add(points[0]);
+                controlPoints.Add(points[1]);
+                controlPoints.Add(points[2]);
+                knots = new DoubleCollection(Enumerable.Range(0, points.Length + 7).Select(index => (double)index).ToArray());
+                weights = new DoubleCollection(Enumerable.Repeat(1, points.Length + 3).Select(index => (double)index).ToArray());
+            }
+
+            return new Spline(
+                degree: 3,
+                rational: true,
+                closed: closed,
+                periodic: closed,
+                controlPoints: controlPoints,
+                knots: knots,
+                weights: weights,
+                controlPointTolerance: 0,
+                knotTolerance: 0);
+        }
+
+        /// <summary>
+        /// Creates a rectangle.
+        /// </summary>
+        /// <param name="point1">The point 1.</param>
+        /// <param name="point2">The point 2.</param>
+        /// <returns>The result.</returns>
+        public static Polyline Rectang(Point3d point1, Point3d point2)
+        {
+            var result = NoDraw.Pline(new[]
+            {
+                point1,
+                new Point3d(point1.X, point2.Y, 0),
+                point2,
+                new Point3d(point2.X, point1.Y, 0)
+            });
             result.Closed = true;
             return result;
         }
 
         /// <summary>
-        /// 创建单行文字
+        /// Creates a DT.
         /// </summary>
-        /// <param name="text"></param>
-        /// <param name="height"></param>
-        /// <param name="pos"></param>
-        /// <param name="rotation"></param>
-        /// <param name="centerAligned"></param>
-        /// <param name="textStyle"></param>
-        /// <returns></returns>
-        public static DBText Text(string text, double height, Point3d pos, double rotation = 0, bool centerAligned = false, string textStyle = Consts.TextStyleName)
+        /// <param name="text">The text.</param>
+        /// <param name="height">The height.</param>
+        /// <param name="position">The position.</param>
+        /// <param name="rotation">The rotation.</param>
+        /// <param name="centerAligned">Whether to center align.</param>
+        /// <param name="textStyle">The text style name.</param>
+        /// <returns>The result.</returns>
+        public static DBText Text(string text, double height, Point3d position, double rotation = 0, bool centerAligned = false, string textStyle = Consts.TextStyleName)
         {
             var textStyleId = DbHelper.GetTextStyleId(textStyle);
             var style = textStyleId.QOpenForRead<TextStyleTableRecord>();
-            DBText txt = new DBText { TextString = text, Position = pos, Rotation = rotation, TextStyleId = textStyleId, Height = height, Oblique = style.ObliquingAngle, WidthFactor = style.XScale };
-            if (centerAligned) // todo: centerAligned=true会使DT消失
+            var dbText = new DBText
             {
-                txt.HorizontalMode = TextHorizontalMode.TextCenter;
-                txt.VerticalMode = TextVerticalMode.TextVerticalMid;
+                TextString = text,
+                Position = position,
+                Rotation = rotation,
+                TextStyleId = textStyleId,
+                Height = height,
+                Oblique = style.ObliquingAngle,
+                WidthFactor = style.XScale
+            };
+
+            if (centerAligned) // todo: centerAligned=true makes DT vanished
+            {
+                dbText.HorizontalMode = TextHorizontalMode.TextCenter;
+                dbText.VerticalMode = TextVerticalMode.TextVerticalMid;
             }
-            return txt;
+
+            return dbText;
         }
 
         /// <summary>
-        /// 创建多行文字
+        /// Creates an MT.
         /// </summary>
-        /// <param name="text"></param>
-        /// <param name="height"></param>
-        /// <param name="pos"></param>
-        /// <param name="rotation"></param>
-        /// <param name="centerAligned"></param>
-        /// <param name="width"></param>
-        /// <returns></returns>
-        public static MText MText(string text, double height, Point3d pos, double rotation = 0, bool centerAligned = false, double width = 0)
+        /// <param name="text">The text.</param>
+        /// <param name="height">The height.</param>
+        /// <param name="position">The position.</param>
+        /// <param name="rotation">The rotation.</param>
+        /// <param name="centerAligned">Whether to center align.</param>
+        /// <param name="width">The width.</param>
+        /// <returns>The result.</returns>
+        public static MText MText(string text, double height, Point3d position, double rotation = 0, bool centerAligned = false, double width = 0)
         {
-            MText mt = new MText { Contents = text, TextHeight = height, Location = pos, Rotation = rotation, Width = width };
+            var mText = new MText
+            {
+                Contents = text,
+                TextHeight = height,
+                Location = position,
+                Rotation = rotation,
+                Width = width
+            };
+
             if (centerAligned)
             {
-                Point3d center = mt.GetCenter();
-                mt.Move(mt.Location - center);
+                mText.Move(mText.Location - mText.GetCenter());
             }
-            return mt;
+
+            return mText;
         }
 
         /// <summary>
-        /// 创建点
+        /// Creates a point.
         /// </summary>
-        /// <param name="p"></param>
-        /// <returns></returns>
-        public static DBPoint Point(Point3d p)
+        /// <param name="position">The position.</param>
+        /// <returns>The result.</returns>
+        public static DBPoint Point(Point3d position)
         {
-            return new DBPoint(p);
+            return new DBPoint(position);
         }
 
         /// <summary>
-        /// 创建块参照
+        /// Creates a block reference.
         /// </summary>
-        /// <param name="blockTableRecordId"></param>
-        /// <param name="pos"></param>
-        /// <param name="rotation"></param>
-        /// <returns></returns>
-        public static BlockReference Insert(ObjectId blockTableRecordId, Point3d pos, double rotation = 0, double scale = 1)
+        /// <param name="blockTableRecordId">The block table record ID.</param>
+        /// <param name="position">The position.</param>
+        /// <param name="rotation">The rotation.</param>
+        /// <param name="scale">The scale.</param>
+        /// <returns>The result.</returns>
+        public static BlockReference Insert(ObjectId blockTableRecordId, Point3d position, double rotation = 0, double scale = 1)
         {
-            return new BlockReference(pos, blockTableRecordId) { Rotation = rotation, ScaleFactors = new Scale3d(scale) };
+            return new BlockReference(position, blockTableRecordId)
+            {
+                Rotation = rotation,
+                ScaleFactors = new Scale3d(scale)
+            };
         }
     }
 
