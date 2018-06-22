@@ -716,7 +716,7 @@ namespace AutoCADCommands
             var id = Interaction.GetEntity("\nPolyline");
             var poly = id.QOpenForRead<Polyline>();
             double value = Interaction.GetValue("\nOffset");
-            poly.OffsetPoly(Enumerable.Range(0, poly.NumberOfVertices).Select(x => value).ToArray()).AddToModelSpace();
+            poly.OffsetPoly(Enumerable.Range(0, poly.NumberOfVertices).Select(x => value).ToArray()).AddToCurrentSpace();
         }
 
         [CommandMethod("TestSelection")]

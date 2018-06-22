@@ -1,13 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
-using Autodesk.AutoCAD.ApplicationServices;
+﻿using Autodesk.AutoCAD.ApplicationServices;
 using Autodesk.AutoCAD.DatabaseServices;
 using Autodesk.AutoCAD.EditorInput;
 using Autodesk.AutoCAD.Geometry;
-using Autodesk.AutoCAD.Runtime;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace AutoCADCommands
 {
@@ -19,72 +16,79 @@ namespace AutoCADCommands
         #region point
 
         /// <summary>
-        /// 绘制点
+        /// Draws a point.
         /// </summary>
-        /// <param name="p"></param>
-        /// <returns></returns>
-        public static ObjectId Point(Point3d p)
+        /// <param name="position">The position.</param>
+        /// <returns>The object ID.</returns>
+        public static ObjectId Point(Point3d position)
         {
-            return Draw.AddToCurrentSpace(new DBPoint(p));
+            return Draw.AddToCurrentSpace(new DBPoint(position));
         }
 
         /// <summary>
-        /// 绘制定数等分点
+        /// Draws 'divide' entities.
         /// </summary>
-        /// <param name="cv"></param>
-        /// <param name="n"></param>
-        /// <param name="obj"></param>
+        /// <param name="curve">The curve.</param>
+        /// <param name="number">The number of curve segments.</param>
+        /// <param name="entity">The entity to draw with. Either DBPoint or BlockReference.</param>
         /// <returns></returns>
-        public static ObjectId[] Divide(Curve cv, int n, Entity obj)
+        public static ObjectId[] Divide(Curve curve, int number, Entity entity)
         {
-            double start = cv.GetDistAtParam(cv.StartParam);
-            double end = cv.GetDistAtParam(cv.EndParam);
-            double delta = (end - start) / n;
-            var inserts = Enumerable.Range(1, n - 1).Select(x => start + x * delta).ToList();
-            var objs = inserts.Select(x =>
-            {
-                var objNew = obj.Clone() as Entity;
-                if (objNew is DBPoint)
+            double start = curve.GetDistAtParam(curve.StartParam);
+            double end = curve.GetDistAtParam(curve.EndParam);
+            double interval = (end - start) / number;
+
+            return Enumerable
+                .Range(1, number - 1)
+                .Select(n =>
                 {
-                    (objNew as DBPoint).Position = cv.GetPointAtParam(x);
-                }
-                else if (objNew is BlockReference)
-                {
-                    (objNew as BlockReference).Position = cv.GetPointAtParam(x);
-                }
-                return objNew;
-            }).ToArray();
-            return objs.AddToCurrentSpace();
+                    var parameter = start + n * interval;
+                    var objNew = entity.Clone() as Entity;
+                    if (objNew is DBPoint)
+                    {
+                        (objNew as DBPoint).Position = curve.GetPointAtParam(parameter);
+                    }
+                    else if (objNew is BlockReference)
+                    {
+                        (objNew as BlockReference).Position = curve.GetPointAtParam(parameter);
+                    }
+
+                    return objNew;
+                })
+                .AddToCurrentSpace();
         }
 
         /// <summary>
-        /// 绘制定距等分点
+        /// Draws 'measure' entities.
         /// </summary>
-        /// <param name="cv"></param>
-        /// <param name="length"></param>
-        /// <param name="obj"></param>
+        /// <param name="curve">The curve.</param>
+        /// <param name="interval">The length of curve segments.</param>
+        /// <param name="entity">The entity to draw with. Either DBPoint or BlockReference.</param>
         /// <returns></returns>
-        public static ObjectId[] Measure(Curve cv, double length, Entity obj)
+        public static ObjectId[] Measure(Curve curve, double interval, Entity entity)
         {
-            double start = cv.GetDistAtParam(cv.StartParam);
-            double end = cv.GetDistAtParam(cv.EndParam);
-            double m = (end - start) / length;
-            int n = Convert.ToInt32(m);
-            var inserts = Enumerable.Range(1, n).Select(x => start + x * length).ToList();
-            var objs = inserts.Select(x =>
-            {
-                var objNew = obj.Clone() as Entity;
-                if (objNew is DBPoint)
+            double start = curve.GetDistAtParam(curve.StartParam);
+            double end = curve.GetDistAtParam(curve.EndParam);
+            int number = (int)Math.Floor((end - start) / interval);
+
+            return Enumerable
+                .Range(1, number - 1)
+                .Select(n =>
                 {
-                    (objNew as DBPoint).Position = cv.GetPointAtParam(x);
-                }
-                else if (objNew is BlockReference)
-                {
-                    (objNew as BlockReference).Position = cv.GetPointAtParam(x);
-                }
-                return objNew;
-            }).ToArray();
-            return objs.AddToCurrentSpace();
+                    var parameter = start + n * interval;
+                    var objNew = entity.Clone() as Entity;
+                    if (objNew is DBPoint)
+                    {
+                        (objNew as DBPoint).Position = curve.GetPointAtParam(parameter);
+                    }
+                    else if (objNew is BlockReference)
+                    {
+                        (objNew as BlockReference).Position = curve.GetPointAtParam(parameter);
+                    }
+
+                    return objNew;
+                })
+                .AddToCurrentSpace();
         }
 
         #endregion
@@ -641,11 +645,11 @@ namespace AutoCADCommands
         /// </summary>
         /// <param name="points"></param>
         /// <returns></returns>
-        public static ObjectId Wipeout(IEnumerable<Point3d> points)
+        public static ObjectId Wipeout(params Point3d[] points)
         {
-            Wipeout wipe = new Autodesk.AutoCAD.DatabaseServices.Wipeout();
+            var wipe = new Wipeout();
             wipe.SetFrom(new Point2dCollection(points.Select(x => x.ToPoint2d()).ToArray()), Vector3d.ZAxis);
-            ObjectId result = Draw.AddToCurrentSpace(wipe);
+            var result = Draw.AddToCurrentSpace(wipe);
             result.Draworder(DraworderOperation.MoveToTop);
             return result;
         }
@@ -657,8 +661,8 @@ namespace AutoCADCommands
         /// <returns></returns>
         public static ObjectId Wipeout(ObjectId entId)
         {
-            Extents3d extent = entId.QSelect(x => x.GeometricExtents);
-            return Wipeout(extent);
+            var extent = entId.QOpenForRead<Entity>().GeometricExtents;
+            return Draw.Wipeout(extent);
         }
 
         /// <summary>
@@ -668,9 +672,9 @@ namespace AutoCADCommands
         /// <returns></returns>
         public static ObjectId Wipeout(Extents3d extent)
         {
-            Point3d a = new Point3d(extent.MinPoint.X, extent.MaxPoint.Y, 0);
-            Point3d b = new Point3d(extent.MaxPoint.X, extent.MinPoint.Y, 0);
-            return Wipeout(new Point3d[] { extent.MinPoint, a, extent.MaxPoint, b, extent.MinPoint });
+            var a = new Point3d(extent.MinPoint.X, extent.MaxPoint.Y, 0);
+            var b = new Point3d(extent.MaxPoint.X, extent.MinPoint.Y, 0);
+            return Wipeout(extent.MinPoint, a, extent.MaxPoint, b, extent.MinPoint);
         }
 
         /// <summary>
@@ -698,7 +702,7 @@ namespace AutoCADCommands
         /// <returns></returns>
         public static ObjectId Block(IEnumerable<ObjectId> entIds, string blockName)
         {
-            return Block(entIds, blockName, entIds.GetCenter());
+            return Draw.Block(entIds, blockName, entIds.GetCenter());
         }
 
         /// <summary>
@@ -808,7 +812,7 @@ namespace AutoCADCommands
             var blockId = Block(entities, blockName, blockBasePoint, overwrite);
             var blockReference = NoDraw.Insert(blockId, blockReferencePoint, rotation, scale);
 
-            return AddToModelSpace(blockReference);
+            return blockReference.AddToCurrentSpace();
         }
 
         /// <summary>
@@ -943,10 +947,11 @@ namespace AutoCADCommands
         #region helpers
 
         /// <summary>
-        /// 添加到模型空间
+        /// Adds an entity to the model space.
         /// </summary>
         /// <param name="ent"></param>
         /// <returns></returns>
+        [Obsolete("Most of the time you should call AddToCurrentSpace().")]
         public static ObjectId AddToModelSpace(this Entity ent)
         {
             ObjectId id;
@@ -961,43 +966,57 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 添加到当前空间
+        /// Adds an entity to current space.
         /// </summary>
-        /// <param name="ent"></param>
-        /// <returns></returns>
-        public static ObjectId AddToCurrentSpace(this Entity ent)
+        /// <param name="entity">The entity to add.</param>
+        /// <param name="db">The database.</param>
+        /// <returns>The objected IDs.</returns>
+        public static ObjectId AddToCurrentSpace(this Entity entity, Database db = null)
         {
-            ObjectId id;
-            Database db = HostApplicationServices.WorkingDatabase;
-            using (Transaction trans = db.TransactionManager.StartTransaction())
+            if (db == null)
             {
-                id = ((BlockTableRecord)trans.GetObject(db.CurrentSpaceId, OpenMode.ForWrite, false)).AppendEntity(ent);
-                trans.AddNewlyCreatedDBObject(ent, true);
-                trans.Commit();
+                db = HostApplicationServices.WorkingDatabase;
             }
-            return id;
+
+            using (var trans = db.TransactionManager.StartTransaction())
+            {
+                var currentSpace = (BlockTableRecord)trans.GetObject(db.CurrentSpaceId, OpenMode.ForWrite, false);
+                var id = currentSpace.AppendEntity(entity);
+                trans.AddNewlyCreatedDBObject(entity, true);
+                trans.Commit();
+                return id;
+            }
         }
 
         /// <summary>
-        /// 添加到当前空间
+        /// Adds entities to current space.
         /// </summary>
-        /// <param name="ents"></param>
-        /// <returns></returns>
-        public static ObjectId[] AddToCurrentSpace(this IEnumerable<Entity> ents)
+        /// <param name="entities">The entities to add.</param>
+        /// <param name="db">The database.</param>
+        /// <returns>The objected IDs.</returns>
+        public static ObjectId[] AddToCurrentSpace(this IEnumerable<Entity> entities, Database db = null)
         {
-            Database db = HostApplicationServices.WorkingDatabase;
-            List<ObjectId> ids = new List<ObjectId>();
-            using (Transaction trans = db.TransactionManager.StartTransaction())
+            if (db == null)
             {
-                foreach (var ent in ents)
-                {
-                    ObjectId id = ((BlockTableRecord)trans.GetObject(db.CurrentSpaceId, OpenMode.ForWrite, false)).AppendEntity(ent);
-                    trans.AddNewlyCreatedDBObject(ent, true);
-                    ids.Add(id);
-                }
-                trans.Commit();
+                db = HostApplicationServices.WorkingDatabase;
             }
-            return ids.ToArray();
+
+            using (var trans = db.TransactionManager.StartTransaction())
+            {
+                var currentSpace = (BlockTableRecord)trans.GetObject(db.CurrentSpaceId, OpenMode.ForWrite, false);
+                var ids = entities
+                    .ToArray() // Truly get entities before moving on.
+                    .Select(entity =>
+                    {
+                        var id = currentSpace.AppendEntity(entity);
+                        trans.AddNewlyCreatedDBObject(entity, true);
+                        return id;
+                    })
+                    .ToArray();
+
+                trans.Commit();
+                return ids;
+            }
         }
 
         #endregion

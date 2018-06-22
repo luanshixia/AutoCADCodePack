@@ -562,12 +562,7 @@ namespace AutoCADCommands
         /// <returns>The result extents.</returns>
         public static Extents3d GetExtents(this IEnumerable<ObjectId> entIds)
         {
-            var extent = entIds.First().QSelect(x => x.GeometricExtents);
-            foreach (var id in entIds)
-            {
-                extent.AddExtents(id.QSelect(x => x.GeometricExtents));
-            }
-            return extent;
+            return Algorithms.GetExtents(entIds.QOpenForRead<Entity>());
         }
 
         /// <summary>
@@ -768,8 +763,7 @@ namespace AutoCADCommands
         /// <returns>The center.</returns>
         public static Point3d GetCenter(this ObjectId entId)
         {
-            var extent = entId.QSelect(x => x.GeometricExtents);
-            return extent.GetCenter();
+            return entId.QOpenForRead<Entity>().GeometricExtents.GetCenter();
         }
 
         /// <summary>
@@ -779,8 +773,7 @@ namespace AutoCADCommands
         /// <returns>The center.</returns>
         public static Point3d GetCenter(this Entity ent)
         {
-            var extent = ent.GeometricExtents;
-            return extent.GetCenter();
+            return ent.GeometricExtents.GetCenter();
         }
 
         /// <summary>
