@@ -1,6 +1,5 @@
 ﻿using Autodesk.AutoCAD.ApplicationServices;
 using Autodesk.AutoCAD.DatabaseServices;
-using Autodesk.AutoCAD.EditorInput;
 using Autodesk.AutoCAD.Geometry;
 using System;
 using System.Collections.Generic;
@@ -349,49 +348,53 @@ namespace AutoCADCommands
         #region complex
 
         /// <summary>
-        /// 绘制图案填充：根据种子点
+        /// Draws hatch by seed.
         /// </summary>
-        /// <param name="hatchName"></param>
-        /// <param name="seed"></param>
+        /// <param name="hatchName">The hatch name.</param>
+        /// <param name="seed">The seed.</param>
         public static ObjectId Hatch(string hatchName, Point3d seed)
         {
-            ObjectId loop = Draw.Boundary(seed, BoundaryType.Polyline);
-            ObjectId result = Draw.Hatch(new ObjectId[] { loop }, hatchName);
+            var loop = Draw.Boundary(seed, BoundaryType.Polyline);
+            var result = Draw.Hatch(new[] { loop }, hatchName);
             loop.Erase(); // newly 20140521
             return result;
         }
 
         /// <summary>
-        /// 绘制图案填充：根据实体
+        /// Draws hatch by entities.
         /// </summary>
-        /// <param name="hatchName"></param>
-        /// <param name="ents"></param>
-        public static ObjectId Hatch(string hatchName, Entity[] ents)
+        /// <param name="hatchName">The hatch name.</param>
+        /// <param name="entities">The entities.</param>
+        public static ObjectId Hatch(string hatchName, Entity[] entities)
         {
-            // step1 取相交点
-            Point3dCollection points = new Point3dCollection();
-            for (int i = 0; i < ents.Length; i++)
+            // Step1 - find intersections
+            var points = new Point3dCollection();
+            for (int i = 0; i < entities.Length; i++)
             {
-                for (int j = i + 1; j < ents.Length; j++)
+                for (int j = i + 1; j < entities.Length; j++)
                 {
-                    ents[i].IntersectWith3264(ents[j], Intersect.OnBothOperands, points);
+                    entities[i].IntersectWith3264(entities[j], Intersect.OnBothOperands, points);
                 }
             }
-            // step2 点排序
-            var pts = points.Cast<Point3d>().ToList();
-            var centroid = new Point3d(pts.Average(p => p.X), pts.Average(p => p.Y), pts.Average(p => p.Z));
-            pts = pts.OrderBy(p =>
-            {
-                var dir = p - centroid;
-                var angle = (p - centroid).GetAngleTo(Vector3d.XAxis);
-                if (dir.Y < 0)
+
+            // Step2 - sort points
+            var pointList = points.Cast<Point3d>().ToList();
+            var centroid = new Point3d(pointList.Average(p => p.X), pointList.Average(p => p.Y), pointList.Average(p => p.Z));
+            pointList = pointList
+                .OrderBy(point =>
                 {
-                    angle = Math.PI * 2 - angle;
-                }
-                return angle;
-            }).ToList();
-            // step3 
-            return Draw.Hatch(pts, hatchName);
+                    var dir = point - centroid;
+                    var angle = (point - centroid).GetAngleTo(Vector3d.XAxis);
+                    if (dir.Y < 0)
+                    {
+                        angle = Math.PI * 2 - angle;
+                    }
+                    return angle;
+                })
+                .ToList();
+
+            // Step2 - draw
+            return Draw.Hatch(pointList, hatchName);
         }
 
         /// <summary>
@@ -405,12 +408,12 @@ namespace AutoCADCommands
         /// <returns></returns>
         public static ObjectId Hatch(ObjectId[] loopIds, string hatchName = "SOLID", double scale = 1, double angle = 0, bool associative = false)
         {
-            Database db = HostApplicationServices.WorkingDatabase;
+            var db = HostApplicationServices.WorkingDatabase;
             using (Transaction trans = db.TransactionManager.StartTransaction())
             {
-                Hatch hatch = new Hatch();
-                BlockTableRecord space = trans.GetObject(db.CurrentSpaceId, OpenMode.ForWrite) as BlockTableRecord;
-                ObjectId result = space.AppendEntity(hatch);
+                var hatch = new Hatch();
+                var space = trans.GetObject(db.CurrentSpaceId, OpenMode.ForWrite) as BlockTableRecord;
+                var result = space.AppendEntity(hatch);
                 trans.AddNewlyCreatedDBObject(hatch, true);
 
                 hatch.SetDatabaseDefaults();
@@ -419,7 +422,7 @@ namespace AutoCADCommands
                 hatch.Associative = associative;
                 hatch.PatternScale = scale;
                 hatch.SetHatchPattern(HatchPatternType.PreDefined, hatchName);
-                hatch.PatternAngle = angle; // 按.NET设计规范，属性必须能被以任意顺序设置。然而此处PatternAngle则必须在SetHatchPattern调用后设置，显然AutoCAD API的设计是不合理的。
+                hatch.PatternAngle = angle; // PatternAngle has to be after SetHatchPattern(). This is AutoCAD .NET SDK violating Framework Design Guidelines, which requires properties to be set in arbitrary order.
                 hatch.HatchStyle = HatchStyle.Outer;
                 loopIds.ToList().ForEach(loop => hatch.AppendLoop(HatchLoopTypes.External, new ObjectIdCollection(new ObjectId[] { loop })));
                 hatch.EvaluateHatch(true);
@@ -451,11 +454,11 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 绘制边界
+        /// Draws boundary.
         /// </summary>
-        /// <param name="seed"></param>
-        /// <param name="type"></param>
-        /// <returns></returns>
+        /// <param name="seed">The seed.</param>
+        /// <param name="type">The boundary type.</param>
+        /// <returns>The object ID.</returns>
         public static ObjectId Boundary(Point3d seed, BoundaryType type)
         {
             var loop = Application.DocumentManager.MdiActiveDocument.Editor.TraceBoundary(seed, false);
@@ -463,7 +466,7 @@ namespace AutoCADCommands
             {
                 if (type == BoundaryType.Polyline)
                 {
-                    Polyline poly = loop[0] as Polyline;
+                    var poly = loop[0] as Polyline;
                     if (poly.Closed)
                     {
                         poly.AddVertexAt(poly.NumberOfVertices, poly.StartPoint.ToPoint2d(), 0, 0, 0);
@@ -478,39 +481,30 @@ namespace AutoCADCommands
                     {
                         return Draw.AddToCurrentSpace(region[0] as Region);
                     }
-                    else
-                    {
-                        return ObjectId.Null;
-                    }
                 }
             }
-            else
-            {
-                return ObjectId.Null;
-            }
+
+            return ObjectId.Null;
         }
 
         /// <summary>
-        /// 绘制面域
+        /// Draws a region.
         /// </summary>
-        /// <param name="curveId"></param>
-        /// <returns></returns>
+        /// <param name="curveId">The boundary curve.</param>
+        /// <returns>The object ID.</returns>
         public static ObjectId Region(ObjectId curveId)
         {
-            Curve cv = curveId.QOpenForRead<Curve>();
-            if (cv == null)
+            var curve = curveId.QOpenForRead<Curve>();
+            if (curve != null)
             {
-                return ObjectId.Null;
+                var region = Autodesk.AutoCAD.DatabaseServices.Region.CreateFromCurves(new DBObjectCollection { curve });
+                if (region.Count > 0)
+                {
+                    return Draw.AddToCurrentSpace(region[0] as Region);
+                }
             }
-            var region = Autodesk.AutoCAD.DatabaseServices.Region.CreateFromCurves(new DBObjectCollection { cv });
-            if (region.Count > 0)
-            {
-                return Draw.AddToCurrentSpace(region[0] as Region);
-            }
-            else
-            {
-                return ObjectId.Null;
-            }
+
+            return ObjectId.Null;
         }
 
         /// <summary>
@@ -544,40 +538,43 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 绘制消隐：点列
+        /// Draws wipeout from a sequence of points.
         /// </summary>
-        /// <param name="points"></param>
-        /// <returns></returns>
+        /// <param name="points">The points.</param>
+        /// <returns>The object ID.</returns>
         public static ObjectId Wipeout(params Point3d[] points)
         {
             var wipe = new Wipeout();
-            wipe.SetFrom(new Point2dCollection(points.Select(x => x.ToPoint2d()).ToArray()), Vector3d.ZAxis);
+            wipe.SetFrom(
+                points: new Point2dCollection(points.Select(x => x.ToPoint2d()).ToArray()),
+                normal: Vector3d.ZAxis);
+
             var result = Draw.AddToCurrentSpace(wipe);
             result.Draworder(DraworderOperation.MoveToTop);
             return result;
         }
 
         /// <summary>
-        /// 绘制消隐：实体
+        /// Draws wipeout from an entity.
         /// </summary>
-        /// <param name="entId"></param>
-        /// <returns></returns>
-        public static ObjectId Wipeout(ObjectId entId)
+        /// <param name="entityId">The entity ID.</param>
+        /// <returns>The object ID.</returns>
+        public static ObjectId Wipeout(ObjectId entityId)
         {
-            var extent = entId.QOpenForRead<Entity>().GeometricExtents;
+            var extent = entityId.QOpenForRead<Entity>().GeometricExtents;
             return Draw.Wipeout(extent);
         }
 
         /// <summary>
-        /// 绘制消隐：范围
+        /// Draws wipeout from extents.
         /// </summary>
-        /// <param name="extent"></param>
-        /// <returns></returns>
-        public static ObjectId Wipeout(Extents3d extent)
+        /// <param name="extents">The extents.</param>
+        /// <returns>The object ID.</returns>
+        public static ObjectId Wipeout(Extents3d extents)
         {
-            var a = new Point3d(extent.MinPoint.X, extent.MaxPoint.Y, 0);
-            var b = new Point3d(extent.MaxPoint.X, extent.MinPoint.Y, 0);
-            return Wipeout(extent.MinPoint, a, extent.MaxPoint, b, extent.MinPoint);
+            var a = new Point3d(extents.MinPoint.X, extents.MaxPoint.Y, 0);
+            var b = new Point3d(extents.MaxPoint.X, extents.MinPoint.Y, 0);
+            return Draw.Wipeout(extents.MinPoint, a, extents.MaxPoint, b, extents.MinPoint);
         }
 
         /// <summary>
