@@ -1,13 +1,8 @@
-﻿using System;
+﻿using Autodesk.AutoCAD.DatabaseServices;
+using Autodesk.AutoCAD.Geometry;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-
-using Autodesk.AutoCAD.ApplicationServices;
-using Autodesk.AutoCAD.DatabaseServices;
-using Autodesk.AutoCAD.EditorInput;
-using Autodesk.AutoCAD.Geometry;
-using Autodesk.AutoCAD.Runtime;
 
 namespace AutoCADCommands
 {
@@ -78,11 +73,11 @@ namespace AutoCADCommands
         public static void EnsureLayerOn(string layerName)
         {
             var id = GetLayerId(layerName);
-            id.QOpenForWrite<LayerTableRecord>(l =>
+            id.QOpenForWrite<LayerTableRecord>(layer =>
             {
-                l.IsFrozen = false;
-                l.IsHidden = false;
-                l.IsOff = false;
+                layer.IsFrozen = false;
+                layer.IsHidden = false;
+                layer.IsOff = false;
             });
         }
 
@@ -93,7 +88,7 @@ namespace AutoCADCommands
         /// <returns>结果</returns>
         public static ObjectId GetBlockId(string blockName)
         {
-            return GetBlockId(HostApplicationServices.WorkingDatabase, blockName);
+            return DbHelper.GetBlockId(HostApplicationServices.WorkingDatabase, blockName);
         }
 
         /// <summary>
@@ -104,44 +99,41 @@ namespace AutoCADCommands
         /// <returns>结果</returns>
         public static ObjectId GetBlockId(Database db, string blockName)
         {
-            using (Transaction trans = HostApplicationServices.WorkingDatabase.TransactionManager.StartTransaction())
+            using (var trans = db.TransactionManager.StartTransaction())
             {
-                BlockTable blkTab = (BlockTable)trans.GetObject(db.BlockTableId, OpenMode.ForRead);
-                if (blkTab.Has(blockName))
+                var blockTable = (BlockTable)trans.GetObject(db.BlockTableId, OpenMode.ForRead);
+                if (blockTable.Has(blockName))
                 {
-                    return blkTab[blockName];
+                    return blockTable[blockName];
                 }
-                else
-                {
-                    return ObjectId.Null;
-                }
+
+                return ObjectId.Null;
             }
         }
 
         /// <summary>
-        /// 获取所有块表记录ID newly 20140521
+        /// Gets all block table record IDs.
         /// </summary>
-        /// <returns>ID数组</returns>
+        /// <returns>The object ID array.</returns>
         public static ObjectId[] GetAllBlockIds()
         {
-            using (Transaction trans = HostApplicationServices.WorkingDatabase.TransactionManager.StartTransaction())
-            {
-                BlockTable layerTable = (BlockTable)trans.GetObject(HostApplicationServices.WorkingDatabase.BlockTableId, OpenMode.ForRead);
-                return layerTable.Cast<ObjectId>().ToArray();
-            }
+            return HostApplicationServices.WorkingDatabase.BlockTableId
+                .QOpenForRead<BlockTable>()
+                .Cast<ObjectId>()
+                .ToArray();
         }
 
         /// <summary>
-        /// 获取所有块定义名称 newly 20140521
+        /// Gets all block names.
         /// </summary>
-        /// <returns>块名称</returns>
+        /// <returns>The block name array.</returns>
         public static string[] GetAllBlockNames()
         {
-            using (Transaction trans = HostApplicationServices.WorkingDatabase.TransactionManager.StartTransaction())
-            {
-                BlockTable layerTable = (BlockTable)trans.GetObject(HostApplicationServices.WorkingDatabase.BlockTableId, OpenMode.ForRead);
-                return layerTable.Cast<ObjectId>().Select(x => x.QOpenForRead<BlockTableRecord>().Name).ToArray();
-            }
+            return DbHelper
+                .GetAllBlockIds()
+                .QOpenForRead<BlockTableRecord>()
+                .Select(block => block.Name)
+                .ToArray();
         }
 
         /// <summary>
@@ -151,18 +143,16 @@ namespace AutoCADCommands
         /// <returns>结果</returns>
         public static ObjectId GetLinetypeId(string linetypeName)
         {
-            Database db = HostApplicationServices.WorkingDatabase;
-            using (Transaction trans = db.TransactionManager.StartTransaction())
+            var db = HostApplicationServices.WorkingDatabase;
+            using (var trans = db.TransactionManager.StartTransaction())
             {
-                LinetypeTable oltTab = (LinetypeTable)trans.GetObject(db.LinetypeTableId, OpenMode.ForRead);
-                if (oltTab.Has(linetypeName))
+                var linetypeTable = (LinetypeTable)trans.GetObject(db.LinetypeTableId, OpenMode.ForRead);
+                if (linetypeTable.Has(linetypeName))
                 {
-                    return oltTab[linetypeName];
+                    return linetypeTable[linetypeName];
                 }
-                else
-                {
-                    return db.ContinuousLinetype;
-                }
+
+                return db.ContinuousLinetype;
             }
         }
 
@@ -174,30 +164,26 @@ namespace AutoCADCommands
         /// <returns>结果</returns>
         public static ObjectId GetTextStyleId(string textStyleName, bool createIfNotExist = false)
         {
-            Database db = HostApplicationServices.WorkingDatabase;
-            using (Transaction trans = db.TransactionManager.StartTransaction())
+            var db = HostApplicationServices.WorkingDatabase;
+            using (var trans = db.TransactionManager.StartTransaction())
             {
-                TextStyleTable tsTab = (TextStyleTable)trans.GetObject(db.TextStyleTableId, OpenMode.ForRead);
-                if (tsTab.Has(textStyleName))
+                var textStyleTable = (TextStyleTable)trans.GetObject(db.TextStyleTableId, OpenMode.ForRead);
+                if (textStyleTable.Has(textStyleName))
                 {
-                    return tsTab[textStyleName];
+                    return textStyleTable[textStyleName];
                 }
-                else
+
+                if (createIfNotExist)
                 {
-                    if (createIfNotExist)
-                    {
-                        tsTab.UpgradeOpen();
-                        TextStyleTableRecord tstr = new TextStyleTableRecord { Name = textStyleName };
-                        var result = tsTab.Add(tstr);
-                        trans.AddNewlyCreatedDBObject(tstr, true);
-                        trans.Commit();
-                        return result;
-                    }
-                    else
-                    {
-                        return db.Textstyle;
-                    }
+                    textStyleTable.UpgradeOpen();
+                    var textStyleTableRecord = new TextStyleTableRecord { Name = textStyleName };
+                    var result = textStyleTable.Add(textStyleTableRecord);
+                    trans.AddNewlyCreatedDBObject(textStyleTableRecord, true);
+                    trans.Commit();
+                    return result;
                 }
+
+                return db.Textstyle;
             }
         }
 
@@ -208,17 +194,16 @@ namespace AutoCADCommands
         /// <returns>样式ID</returns>
         public static ObjectId GetDimstyleId(string dimstyle)
         {
-            using (Transaction trans = HostApplicationServices.WorkingDatabase.TransactionManager.StartTransaction())
+            var db = HostApplicationServices.WorkingDatabase;
+            using (Transaction trans = db.TransactionManager.StartTransaction())
             {
-                DimStyleTable dsTable = (DimStyleTable)trans.GetObject(HostApplicationServices.WorkingDatabase.DimStyleTableId, OpenMode.ForRead);
-                if (dsTable.Has(dimstyle))
+                var dimStyleTable = (DimStyleTable)trans.GetObject(db.DimStyleTableId, OpenMode.ForRead);
+                if (dimStyleTable.Has(dimstyle))
                 {
-                    return dsTable[dimstyle];
+                    return dimStyleTable[dimstyle];
                 }
-                else
-                {
-                    return HostApplicationServices.WorkingDatabase.Dimstyle;
-                }
+
+                return HostApplicationServices.WorkingDatabase.Dimstyle;
             }
         }
 
@@ -266,7 +251,7 @@ namespace AutoCADCommands
             }
             else
             {
-                return new ObjectId[0];
+                return Array.Empty<ObjectId>();
             }
         }
 
@@ -313,14 +298,14 @@ namespace AutoCADCommands
         /// <returns></returns>
         public static string GetFirstXData(this DBObject dbo, string appName)
         {
-            ResultBuffer xdataForApp = dbo.GetXDataForApplication(appName);
+            var xdataForApp = dbo.GetXDataForApplication(appName);
             if (xdataForApp == null)
             {
                 return string.Empty;
             }
             foreach (var value in xdataForApp.AsArray())
             {
-                if (value.TypeCode != 1001)
+                if (value.TypeCode != (int)DxfCode.ExtendedDataRegAppName)
                 {
                     return value.Value.ToString();
                 }
@@ -336,14 +321,14 @@ namespace AutoCADCommands
         /// <returns></returns>
         public static object GetFirstXDataT(this DBObject dbo, string appName)
         {
-            ResultBuffer xdataForApp = dbo.GetXDataForApplication(appName);
+            var xdataForApp = dbo.GetXDataForApplication(appName);
             if (xdataForApp == null)
             {
                 return null;
             }
             foreach (var value in xdataForApp.AsArray())
             {
-                if (value.TypeCode != 1001)
+                if (value.TypeCode != (int)DxfCode.ExtendedDataRegAppName)
                 {
                     return value.Value;
                 }
@@ -359,8 +344,11 @@ namespace AutoCADCommands
         /// <param name="value"></param>
         public static void SetFirstXData(this DBObject dbo, string appName, string value)
         {
-            TypedValue[] newXData = new TypedValue[] { new TypedValue(1001, appName), new TypedValue(1000, value) };
-            dbo.XData = new ResultBuffer(newXData);
+            dbo.XData = new ResultBuffer(new[]
+            {
+                new TypedValue((int)DxfCode.ExtendedDataRegAppName, appName),
+                new TypedValue((int)DxfCode.ExtendedDataAsciiString, value)
+            });
         }
 
         /// <summary>
@@ -371,21 +359,19 @@ namespace AutoCADCommands
         /// <param name="value"></param>
         public static void SetFirstXDataT(this DBObject dbo, string appName, object value) // newly 20111207
         {
-            int nDCode = 1000;
-            if (value is Int16)
+            var typeCode = value is Int16
+                ? (int)DxfCode.ExtendedDataInteger16
+                : value is Int32
+                    ? (int)DxfCode.ExtendedDataInteger32
+                    : value is Double
+                        ? (int)DxfCode.ExtendedDataReal
+                        : (int)DxfCode.ExtendedDataAsciiString;
+
+            dbo.XData = new ResultBuffer(new[]
             {
-                nDCode = (int)DxfCode.ExtendedDataInteger16;
-            }
-            else if (value is int)
-            {
-                nDCode = (int)DxfCode.ExtendedDataInteger32;
-            }
-            else if (value is double)
-            {
-                nDCode = (int)DxfCode.ExtendedDataReal;
-            }
-            TypedValue[] newXData = new TypedValue[] { new TypedValue(1001, appName), new TypedValue(nDCode, value) };
-            dbo.XData = new ResultBuffer(newXData);
+                new TypedValue((int)DxfCode.ExtendedDataRegAppName, appName),
+                new TypedValue(typeCode, value)
+            });
         }
 
         /// <summary>
@@ -507,7 +493,7 @@ namespace AutoCADCommands
             }
             foreach (TypedValue tValue in resBuf.AsArray())
             {
-                if (tValue.TypeCode == 1000)
+                if (tValue.TypeCode == (int)DxfCode.ExtendedDataAsciiString)
                 {
                     return tValue.Value.ToString();
                 }
@@ -765,20 +751,13 @@ namespace AutoCADCommands
         /// </remarks>
         public static void InitializeDatabase(Database db = null)
         {
-            if (db == null)
-            {
-                db = HostApplicationServices.WorkingDatabase;
-            }
-
-            var appNames = new[]
+            DbHelper.AffirmRegApp(db ?? HostApplicationServices.WorkingDatabase, new[]
             {
                 Consts.AppNameForCode,
                 Consts.AppNameForID,
                 Consts.AppNameForName,
                 Consts.AppNameForTags
-            };
-
-            AffirmRegApp(db, appNames);
+            });
         }
     }
 }

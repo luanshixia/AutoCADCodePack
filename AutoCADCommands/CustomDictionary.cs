@@ -81,7 +81,7 @@ namespace AutoCADCommands
                 }
                 var entry = new Xrecord
                 {
-                    Data = new ResultBuffer(new TypedValue(1000, value))
+                    Data = new ResultBuffer(new TypedValue((int)DxfCode.ExtendedDataAsciiString, value))
                 };
                 var entryId = dict.SetAt(key, entry);
                 trans.AddNewlyCreatedDBObject(entry, true);

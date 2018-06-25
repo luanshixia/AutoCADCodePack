@@ -71,13 +71,13 @@ namespace AutoCADCommands
             foreach (var position in positions)
             {
                 var newEntity = entity.Clone() as Entity;
-                if (newEntity is DBPoint)
+                if (newEntity is DBPoint point)
                 {
-                    (newEntity as DBPoint).Position = position;
+                    point.Position = position;
                 }
-                else if (newEntity is BlockReference)
+                else if (newEntity is BlockReference insert)
                 {
-                    (newEntity as BlockReference).Position = position;
+                    insert.Position = position;
                 }
 
                 yield return newEntity;
@@ -352,6 +352,7 @@ namespace AutoCADCommands
         /// </summary>
         /// <param name="hatchName">The hatch name.</param>
         /// <param name="seed">The seed.</param>
+        /// <returns>The object ID.</returns>
         public static ObjectId Hatch(string hatchName, Point3d seed)
         {
             var loop = Draw.Boundary(seed, BoundaryType.Polyline);
@@ -365,6 +366,7 @@ namespace AutoCADCommands
         /// </summary>
         /// <param name="hatchName">The hatch name.</param>
         /// <param name="entities">The entities.</param>
+        /// <returns>The object ID.</returns>
         public static ObjectId Hatch(string hatchName, Entity[] entities)
         {
             // Step1 - find intersections
@@ -379,7 +381,11 @@ namespace AutoCADCommands
 
             // Step2 - sort points
             var pointList = points.Cast<Point3d>().ToList();
-            var centroid = new Point3d(pointList.Average(p => p.X), pointList.Average(p => p.Y), pointList.Average(p => p.Z));
+            var centroid = new Point3d(
+                pointList.Average(p => p.X),
+                pointList.Average(p => p.Y),
+                pointList.Average(p => p.Z));
+
             pointList = pointList
                 .OrderBy(point =>
                 {
@@ -398,14 +404,14 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 绘制图案填充：根据闭合区域
+        /// Draws hatch by closed area.
         /// </summary>
-        /// <param name="loopIds"></param>
-        /// <param name="hatchName"></param>
-        /// <param name="scale"></param>
-        /// <param name="angle"></param>
-        /// <param name="associative"></param>
-        /// <returns></returns>
+        /// <param name="loopIds">The loop IDs.</param>
+        /// <param name="hatchName">The hatch name.</param>
+        /// <param name="scale">The scale.</param>
+        /// <param name="angle">The angle.</param>
+        /// <param name="associative">Whether it is associative.</param>
+        /// <returns>The object ID.</returns>
         public static ObjectId Hatch(ObjectId[] loopIds, string hatchName = "SOLID", double scale = 1, double angle = 0, bool associative = false)
         {
             var db = HostApplicationServices.WorkingDatabase;
@@ -424,7 +430,10 @@ namespace AutoCADCommands
                 hatch.SetHatchPattern(HatchPatternType.PreDefined, hatchName);
                 hatch.PatternAngle = angle; // PatternAngle has to be after SetHatchPattern(). This is AutoCAD .NET SDK violating Framework Design Guidelines, which requires properties to be set in arbitrary order.
                 hatch.HatchStyle = HatchStyle.Outer;
-                loopIds.ToList().ForEach(loop => hatch.AppendLoop(HatchLoopTypes.External, new ObjectIdCollection(new ObjectId[] { loop })));
+                loopIds.ToList().ForEach(loop => hatch.AppendLoop(
+                    HatchLoopTypes.External,
+                    new ObjectIdCollection(new[] { loop })));
+
                 hatch.EvaluateHatch(true);
 
                 trans.Commit();
@@ -433,13 +442,13 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 绘制图案填充：根据点列
+        /// Draws hatch by a sequence of points.
         /// </summary>
-        /// <param name="points"></param>
-        /// <param name="hatchName"></param>
-        /// <param name="scale"></param>
-        /// <param name="angle"></param>
-        /// <returns></returns>
+        /// <param name="points">The points.</param>
+        /// <param name="hatchName">The hatch name.</param>
+        /// <param name="scale">The scale.</param>
+        /// <param name="angle">The angle.</param>
+        /// <returns>The object ID.</returns>
         public static ObjectId Hatch(IEnumerable<Point3d> points, string hatchName = "SOLID", double scale = 1, double angle = 0)
         {
             var pts = points.ToList();
@@ -447,8 +456,8 @@ namespace AutoCADCommands
             {
                 pts.Add(pts.First());
             }
-            ObjectId loop = Draw.Pline(pts);
-            ObjectId result = Draw.Hatch(new ObjectId[] { loop }, hatchName, scale, angle);
+            var loop = Draw.Pline(pts);
+            var result = Draw.Hatch(new[] { loop }, hatchName, scale, angle);
             loop.Erase();
             return result;
         }
@@ -580,11 +589,11 @@ namespace AutoCADCommands
         /// <summary>
         /// Inserts block reference.
         /// </summary>
-        /// <param name="blockName"></param>
-        /// <param name="position"></param>
-        /// <param name="rotation"></param>
-        /// <param name="scale"></param>
-        /// <returns></returns>
+        /// <param name="blockName">The block name.</param>
+        /// <param name="position">The insert position.</param>
+        /// <param name="rotation">The rotation.</param>
+        /// <param name="scale">The scale.</param>
+        /// <returns>The object ID.</returns>
         public static ObjectId Insert(string blockName, Point3d position, double rotation = 0, double scale = 1)
         {
             return NoDraw
@@ -599,9 +608,9 @@ namespace AutoCADCommands
         /// <summary>
         /// Defines a block given entities.
         /// </summary>
-        /// <param name="entityIds"></param>
-        /// <param name="blockName"></param>
-        /// <returns></returns>
+        /// <param name="entityIds">The entity IDs.</param>
+        /// <param name="blockName">The block name.</param>
+        /// <returns>The block table record ID.</returns>
         public static ObjectId Block(IEnumerable<ObjectId> entityIds, string blockName)
         {
             return Draw.Block(
@@ -613,11 +622,11 @@ namespace AutoCADCommands
         /// <summary>
         /// Defines a block given entities.
         /// </summary>
-        /// <param name="entityIds"></param>
-        /// <param name="blockName"></param>
-        /// <param name="basePoint"></param>
-        /// <param name="overwrite"></param>
-        /// <returns></returns>
+        /// <param name="entityIds">The entity IDs.</param>
+        /// <param name="blockName">The block name.</param>
+        /// <param name="basePoint">The base point.</param>
+        /// <param name="overwrite">Whether to overwrite.</param>
+        /// <returns>The block table record ID.</returns>
         public static ObjectId Block(IEnumerable<ObjectId> entityIds, string blockName, Point3d basePoint, bool overwrite = true)
         {
             return Draw.Block(
@@ -630,11 +639,11 @@ namespace AutoCADCommands
         /// <summary>
         /// Defines a block given entities. 
         /// </summary>
-        /// <param name="entities"></param>
-        /// <param name="blockName"></param>
-        /// <param name="basePoint"></param>
-        /// <param name="overwrite"></param>
-        /// <returns></returns>
+        /// <param name="entities">The entities.</param>
+        /// <param name="blockName">The block name.</param>
+        /// <param name="basePoint">The base point.</param>
+        /// <param name="overwrite">Whether to overwrite.</param>
+        /// <returns>The block table record ID.</returns>
         public static ObjectId Block(IEnumerable<Entity> entities, string blockName, Point3d basePoint, bool overwrite = true)
         {
             var db = HostApplicationServices.WorkingDatabase;
@@ -677,92 +686,90 @@ namespace AutoCADCommands
         /// <summary>
         /// Creates a block and then inserts a reference to the model space.
         /// </summary>
-        /// <param name="entities"></param>
-        /// <param name="blockName"></param>
-        /// <param name="blockBasePoint"></param>
-        /// <param name="blockReferencePoint"></param>
-        /// <param name="rotation"></param>
-        /// <param name="scale"></param>
-        /// <param name="overwrite"></param>
-        /// <returns></returns>
-        public static ObjectId CreateBlockAndInsertReference(IEnumerable<Entity> entities, string blockName, Point3d blockBasePoint, Point3d blockReferencePoint, double rotation = 0, double scale = 1, bool overwrite = true)
+        /// <param name="entities">The entities.</param>
+        /// <param name="blockName">The block name.</param>
+        /// <param name="blockBasePoint">The block base point.</param>
+        /// <param name="insertPosition">The insert position.</param>
+        /// <param name="rotation">The rotation.</param>
+        /// <param name="scale">The scale.</param>
+        /// <param name="overwrite">Whether to overwrite.</param>
+        /// <returns>The insert object ID.</returns>
+        public static ObjectId CreateBlockAndInsertReference(IEnumerable<Entity> entities, string blockName, Point3d blockBasePoint, Point3d insertPosition, double rotation = 0, double scale = 1, bool overwrite = true)
         {
             Draw.Block(entities, blockName, blockBasePoint, overwrite);
-            return Draw.Insert(blockName, blockReferencePoint, rotation, scale);
+            return Draw.Insert(blockName, insertPosition, rotation, scale);
         }
 
         /// <summary>
-        /// 定义块：从另一DWG中获取
+        /// Defines a block by copying from another DWG.
         /// </summary>
-        /// <param name="blockName"></param>
-        /// <param name="sourceDwg"></param>
-        /// <returns></returns>
+        /// <param name="blockName">The block name.</param>
+        /// <param name="sourceDwg">The source DWG.</param>
+        /// <returns>The block table record ID.</returns>
         public static ObjectId BlockInDwg(string blockName, string sourceDwg)
         {
-            ObjectId result = ObjectId.Null;
-            Database db = HostApplicationServices.WorkingDatabase;
-            using (Transaction trans = db.TransactionManager.StartTransaction())
+            var db = HostApplicationServices.WorkingDatabase;
+            using (var trans = db.TransactionManager.StartTransaction())
             {
-                BlockTable blkTab = (BlockTable)trans.GetObject(db.BlockTableId, OpenMode.ForRead);
-                if (blkTab.Has(blockName))
+                var blockTable = (BlockTable)trans.GetObject(db.BlockTableId, OpenMode.ForRead);
+                if (blockTable.Has(blockName))
                 {
-                    return blkTab[blockName];
+                    return blockTable[blockName];
                 }
-                else
+
+                var sourceDb = new Database(false, false);
+                sourceDb.ReadDwgFile(sourceDwg, FileOpenMode.OpenForReadAndAllShare, true, string.Empty);
+                var blockId = DbHelper.GetBlockId(sourceDb, blockName);
+                if (blockId == ObjectId.Null)
                 {
-                    Database sourceDb = new Database(false, false);
-                    sourceDb.ReadDwgFile(sourceDwg, FileOpenMode.OpenForReadAndAllShare, true, string.Empty);
-                    ObjectId bId = DbHelper.GetBlockId(sourceDb, blockName);
-                    if (bId == ObjectId.Null)
-                    {
-                        result = ObjectId.Null;
-                    }
-                    else
-                    {
-                        Database tempDb = sourceDb.Wblock(bId);
-                        result = db.Insert(blockName, tempDb, false);
-                    }
-                    trans.Commit();
-                    return result;
+                    return ObjectId.Null;
                 }
+
+                var tempDb = sourceDb.Wblock(blockId);
+                var result = db.Insert(blockName, tempDb, false);
+                trans.Commit();
+                return result;
             }
         }
 
         /// <summary>
-        /// 定义块：以另一DWG整个作为
+        /// Defines a block by taking another DWG as a whole.
         /// </summary>
-        /// <param name="blockName"></param>
-        /// <param name="sourceDwg"></param>
-        /// <returns></returns>
+        /// <param name="blockName">The block name.</param>
+        /// <param name="sourceDwg">The source DWG.</param>
+        /// <returns>The block table record ID.</returns>
         public static ObjectId BlockOfDwg(string blockName, string sourceDwg)
         {
-            Database sourceDb = new Database(false, false);
-            sourceDb.ReadDwgFile(sourceDwg, FileOpenMode.OpenForReadAndAllShare, true, "");
+            var sourceDb = new Database(false, false);
+            sourceDb.ReadDwgFile(sourceDwg, FileOpenMode.OpenForReadAndAllShare, true, string.Empty);
             return HostApplicationServices.WorkingDatabase.Insert(blockName, sourceDb, false);
         }
 
         /// <summary>
-        /// 绘制表格
+        /// Draws a table.
         /// </summary>
-        /// <param name="pos"></param>
-        /// <param name="title"></param>
-        /// <param name="contents"></param>
-        /// <param name="rowHeight"></param>
-        /// <param name="columnWidth"></param>
-        /// <param name="textHeight"></param>
-        /// <param name="textStyle"></param>
-        /// <returns></returns>
-        public static ObjectId Table(Point3d pos, string title, List<List<string>> contents, double rowHeight, double columnWidth, double textHeight, string textStyle = Consts.TextStyleName)
+        /// <param name="position">The position.</param>
+        /// <param name="title">The title.</param>
+        /// <param name="contents">The contents.</param>
+        /// <param name="rowHeight">The row height.</param>
+        /// <param name="columnWidth">The column width.</param>
+        /// <param name="textHeight">The text height.</param>
+        /// <param name="textStyle">The text style.</param>
+        /// <returns>The object ID.</returns>
+        public static ObjectId Table(Point3d position, string title, List<List<string>> contents, double rowHeight, double columnWidth, double textHeight, string textStyle = Consts.TextStyleName)
         {
-            Table tb = new Table();
-            tb.TableStyle = HostApplicationServices.WorkingDatabase.Tablestyle;
-            int numRow = contents.Count + 1;
+            var tb = new Table
+            {
+                TableStyle = HostApplicationServices.WorkingDatabase.Tablestyle,
+                Position = position
+            };
+
+            var numRow = contents.Count + 1;
             tb.InsertRows(0, rowHeight, numRow);
-            int numCol = contents.Max(row => row.Count);
+            var numCol = contents.Max(row => row.Count);
             tb.InsertColumns(0, columnWidth, numCol);
             tb.DeleteRows(numRow, 1);
             tb.DeleteColumns(numCol, 1);
-            tb.Position = pos;
             tb.SetRowHeight(rowHeight);
             tb.SetColumnWidth(columnWidth);
             tb.Cells.TextHeight = textHeight;
@@ -770,9 +777,9 @@ namespace AutoCADCommands
 
             tb.MergeCells(CellRange.Create(tb, 0, 0, 0, numCol - 1));
             tb.Cells[0, 0].TextString = title;
-            for (int i = 0; i < tb.Rows.Count - 1; i++)
+            for (var i = 0; i < tb.Rows.Count - 1; i++)
             {
-                for (int j = 0; j < tb.Columns.Count; j++)
+                for (var j = 0; j < tb.Columns.Count; j++)
                 {
                     if (j < contents[i].Count)
                     {
@@ -786,17 +793,17 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 绘制多边形网格
+        /// Draws a polygon mesh.
         /// </summary>
-        /// <param name="points"></param>
-        /// <param name="m"></param>
-        /// <param name="n"></param>
-        /// <param name="mClosed"></param>
-        /// <param name="nClosed"></param>
-        /// <returns></returns>
+        /// <param name="points">The points.</param>
+        /// <param name="m">The m value.</param>
+        /// <param name="n">The n value.</param>
+        /// <param name="mClosed">Whether to close mesh in m dimension.</param>
+        /// <param name="nClosed">Whether to close mesh in n dimension.</param>
+        /// <returns>The object ID.</returns>
         public static ObjectId PolygonMesh(List<Point3d> points, int m, int n, bool mClosed = false, bool nClosed = false)
         {
-            PolygonMesh mesh = new PolygonMesh(PolyMeshType.SimpleMesh, m, n, new Point3dCollection(points.ToArray()), mClosed, nClosed);
+            var mesh = new PolygonMesh(PolyMeshType.SimpleMesh, m, n, new Point3dCollection(points.ToArray()), mClosed, nClosed);
             return mesh.AddToCurrentSpace();
         }
 
@@ -805,16 +812,16 @@ namespace AutoCADCommands
         #region dimensions
 
         /// <summary>
-        /// 线性标注
+        /// Draws a linear dimension.
         /// </summary>
-        /// <param name="start">起点</param>
-        /// <param name="end">终点</param>
-        /// <param name="dim">标注点</param>
-        /// <returns>标注ID</returns>
+        /// <param name="start">The start.</param>
+        /// <param name="end">The end.</param>
+        /// <param name="dim">The dim.</param>
+        /// <returns>The object ID.</returns>
         public static ObjectId Dimlin(Point3d start, Point3d end, Point3d dim)
         {
             double dist = start.DistanceTo(end);
-            AlignedDimension ad = new AlignedDimension(start, end, dim, dist.ToString(), HostApplicationServices.WorkingDatabase.Dimstyle);
+            var ad = new AlignedDimension(start, end, dim, dist.ToString(), HostApplicationServices.WorkingDatabase.Dimstyle);
             return Draw.AddToCurrentSpace(ad);
         }
 
@@ -849,11 +856,7 @@ namespace AutoCADCommands
         /// <returns>The objected IDs.</returns>
         public static ObjectId AddToCurrentSpace(this Entity entity, Database db = null)
         {
-            if (db == null)
-            {
-                db = HostApplicationServices.WorkingDatabase;
-            }
-
+            db = db ?? HostApplicationServices.WorkingDatabase;
             using (var trans = db.TransactionManager.StartTransaction())
             {
                 var currentSpace = (BlockTableRecord)trans.GetObject(db.CurrentSpaceId, OpenMode.ForWrite, false);
@@ -872,11 +875,7 @@ namespace AutoCADCommands
         /// <returns>The objected IDs.</returns>
         public static ObjectId[] AddToCurrentSpace(this IEnumerable<Entity> entities, Database db = null)
         {
-            if (db == null)
-            {
-                db = HostApplicationServices.WorkingDatabase;
-            }
-
+            db = db ?? HostApplicationServices.WorkingDatabase;
             using (var trans = db.TransactionManager.StartTransaction())
             {
                 var currentSpace = (BlockTableRecord)trans.GetObject(db.CurrentSpaceId, OpenMode.ForWrite, false);
@@ -1320,175 +1319,170 @@ namespace AutoCADCommands
         #region geometric
 
         /// <summary>
-        /// 移动
+        /// Moves an entity.
         /// </summary>
-        /// <param name="entId"></param>
-        /// <param name="vector"></param>
-        public static void Move(this ObjectId entId, Vector3d vector)
+        /// <param name="entityId">The entity ID.</param>
+        /// <param name="displacement">The displacement.</param>
+        public static void Move(this ObjectId entityId, Vector3d displacement)
         {
-            using (Transaction trans = HostApplicationServices.WorkingDatabase.TransactionManager.StartTransaction())
+            using (var trans = HostApplicationServices.WorkingDatabase.TransactionManager.StartTransaction())
             {
-                var entObj = trans.GetObject(entId, OpenMode.ForWrite) as Entity;
-                entObj.TransformBy(Matrix3d.Displacement(vector));
+                var entity = trans.GetObject(entityId, OpenMode.ForWrite) as Entity;
+                entity.TransformBy(Matrix3d.Displacement(displacement));
                 trans.Commit();
             }
         }
 
         /// <summary>
-        /// 移动
+        /// Moves an entity.
         /// </summary>
-        /// <param name="ent"></param>
-        /// <param name="vector"></param>
-        public static void Move(this Entity ent, Vector3d vector)
+        /// <param name="entity">The entity.</param>
+        /// <param name="displacement">The displacement.</param>
+        public static void Move(this Entity entity, Vector3d displacement)
         {
-            ent.TransformBy(Matrix3d.Displacement(vector));
+            entity.TransformBy(Matrix3d.Displacement(displacement));
         }
 
         /// <summary>
-        /// 复制（基于位移向量）
+        /// Copies an entity given a list of displacement.
         /// </summary>
-        /// <param name="entId"></param>
-        /// <param name="vectors"></param>
-        /// <returns></returns>
-        public static ObjectId[] Copy(this ObjectId entId, IEnumerable<Vector3d> vectors)
+        /// <param name="entityId">The entity ID.</param>
+        /// <param name="displacements">The displacements.</param>
+        /// <returns>The object IDs.</returns>
+        public static ObjectId[] Copy(this ObjectId entityId, IEnumerable<Vector3d> displacements)
         {
-            using (Transaction trans = HostApplicationServices.WorkingDatabase.TransactionManager.StartTransaction())
+            var db = HostApplicationServices.WorkingDatabase;
+            using (var trans = db.TransactionManager.StartTransaction())
             {
-                var entObj = trans.GetObject(entId, OpenMode.ForWrite) as Entity;
-                var copies = vectors.Select(x =>
-                {
-                    var copy = entObj.Clone() as Entity;
-                    copy.TransformBy(Matrix3d.Displacement(x));
-                    return copy;
-                });
+                var entity = trans.GetObject(entityId, OpenMode.ForWrite) as Entity;
+                var currentSpace = (BlockTableRecord)trans.GetObject(db.CurrentSpaceId, OpenMode.ForWrite, false);
+                var copyIds = displacements
+                    .Select(x =>
+                    {
+                        var copy = entity.Clone() as Entity;
+                        copy.TransformBy(Matrix3d.Displacement(x));
+                        var id = currentSpace.AppendEntity(copy);
+                        trans.AddNewlyCreatedDBObject(copy, true);
+                        return id;
+                    })
+                    .ToArray();
+
                 trans.Commit();
-                return copies.Select(x => Draw.AddToCurrentSpace(x)).ToArray();
+                return copyIds;
             }
         }
 
         /// <summary>
-        /// 复制（基于基点和新点）
+        /// Copies an entity given a base point and a list of new points.
         /// </summary>
-        /// <param name="entId"></param>
-        /// <param name="basePoint"></param>
-        /// <param name="newPoints"></param>
-        /// <returns></returns>
-        public static ObjectId[] Copy(this ObjectId entId, Point3d basePoint, IEnumerable<Point3d> newPoints)
+        /// <param name="entityId">The entity ID.</param>
+        /// <param name="basePoint">The base point.</param>
+        /// <param name="newPoints">The new points.</param>
+        /// <returns>The object IDs.</returns>
+        public static ObjectId[] Copy(this ObjectId entityId, Point3d basePoint, IEnumerable<Point3d> newPoints)
         {
-            return entId.Copy(newPoints.Select(x => x - basePoint));
+            return entityId.Copy(newPoints.Select(newPoint => newPoint - basePoint));
         }
 
         /// <summary>
-        /// 旋转
+        /// Rotates an entity.
         /// </summary>
-        /// <param name="entId"></param>
-        /// <param name="basePoint"></param>
-        /// <param name="angle"></param>
-        public static void Rotate(this ObjectId entId, Point3d basePoint, double angle)
+        /// <param name="entityId">The entity ID.</param>
+        /// <param name="basePoint">The base point.</param>
+        /// <param name="angle">The angle.</param>
+        /// <param name="axis">The axis. Default is the Z axis.</param>
+        public static void Rotate(this ObjectId entityId, Point3d basePoint, double angle, Vector3d? axis = null)
         {
-            using (Transaction trans = HostApplicationServices.WorkingDatabase.TransactionManager.StartTransaction())
+            using (var trans = HostApplicationServices.WorkingDatabase.TransactionManager.StartTransaction())
             {
-                var entObj = trans.GetObject(entId, OpenMode.ForWrite) as Entity;
-                entObj.TransformBy(Matrix3d.Rotation(angle, Vector3d.ZAxis, basePoint));
-                trans.Commit();
-            }
-        }
-
-        /// <summary>
-        /// 缩放
-        /// </summary>
-        /// <param name="entId"></param>
-        /// <param name="basePoint"></param>
-        /// <param name="scale"></param>
-        public static void Scale(this ObjectId entId, Point3d basePoint, double scale)
-        {
-            using (Transaction trans = HostApplicationServices.WorkingDatabase.TransactionManager.StartTransaction())
-            {
-                var entObj = trans.GetObject(entId, OpenMode.ForWrite) as Entity;
-                entObj.TransformBy(Matrix3d.Scaling(scale, basePoint));
+                var entity = trans.GetObject(entityId, OpenMode.ForWrite) as Entity;
+                entity.TransformBy(Matrix3d.Rotation(angle, axis ?? Vector3d.ZAxis, basePoint));
                 trans.Commit();
             }
         }
 
         /// <summary>
-        /// 偏移
+        /// Scales an entity.
         /// </summary>
-        /// <param name="curveId"></param>
-        /// <param name="amount"></param>
-        /// <param name="side"></param>
-        /// <returns></returns>
-        public static ObjectId Offset(this ObjectId curveId, double amount, Point3d side)
+        /// <param name="entityId">The entity ID.</param>
+        /// <param name="basePoint">The base point.</param>
+        /// <param name="scale">The scale.</param>
+        public static void Scale(this ObjectId entityId, Point3d basePoint, double scale)
         {
-            using (Transaction trans = HostApplicationServices.WorkingDatabase.TransactionManager.StartTransaction())
+            using (var trans = HostApplicationServices.WorkingDatabase.TransactionManager.StartTransaction())
             {
-                var cvObj = trans.GetObject(curveId, OpenMode.ForRead) as Curve;
-                var cv1 = cvObj.GetOffsetCurves(-amount)[0] as Curve;
-                var cv2 = cvObj.GetOffsetCurves(amount)[0] as Curve;
-                if (cv1.GetDistToPoint(side) < cv2.GetDistToPoint(side))
-                {
-                    return Draw.AddToCurrentSpace(cv1);
-                }
-                else
-                {
-                    return Draw.AddToCurrentSpace(cv2);
-                }
+                var entity = trans.GetObject(entityId, OpenMode.ForWrite) as Entity;
+                entity.TransformBy(Matrix3d.Scaling(scale, basePoint));
+                trans.Commit();
             }
         }
 
         /// <summary>
-        /// 镜像
+        /// Offsets a curve.
         /// </summary>
-        /// <param name="entId"></param>
-        /// <param name="axis"></param>
-        /// <param name="copy"></param>
-        /// <returns></returns>
-        public static ObjectId Mirror(this ObjectId entId, Line axis, bool copy = true)
+        /// <param name="curveId">The curve ID.</param>
+        /// <param name="distance">The offset distance.</param>
+        /// <param name="side">A point to indicate which side.</param>
+        /// <returns>The objecct ID.</returns>
+        public static ObjectId Offset(this ObjectId curveId, double distance, Point3d side)
         {
-            using (Transaction trans = HostApplicationServices.WorkingDatabase.TransactionManager.StartTransaction())
-            {
-                var entObj = trans.GetObject(entId, OpenMode.ForRead) as Entity;
-                Line3d axisLine = new Line3d(axis.StartPoint, axis.EndPoint);
-                var mirror = entObj.Clone() as Entity;
-                mirror.TransformBy(Matrix3d.Mirroring(axisLine));
-                if (!copy)
-                {
-                    entObj.UpgradeOpen();
-                    entObj.Erase();
-                    trans.Commit();
-                }
-                return Draw.AddToCurrentSpace(mirror);
-            }
+            var curve = curveId.QOpenForRead<Curve>();
+            var curve1 = curve.GetOffsetCurves(-distance)[0] as Curve;
+            var curve2 = curve.GetOffsetCurves(distance)[0] as Curve;
+            return Draw.AddToCurrentSpace(curve1.GetDistToPoint(side) < curve2.GetDistToPoint(side)
+                ? curve1
+                : curve2);
         }
 
         /// <summary>
-        /// 打断
+        /// Mirrors an entity.
         /// </summary>
-        /// <param name="curveId"></param>
-        /// <param name="p1"></param>
-        /// <param name="p2"></param>
-        /// <returns></returns>
-        public static ObjectId[] Break(this ObjectId curveId, Point3d p1, Point3d p2)
+        /// <param name="entityId">The entity ID.</param>
+        /// <param name="axis">The axis.</param>
+        /// <param name="copy">Whether to copy.</param>
+        /// <returns>The object ID.</returns>
+        public static ObjectId Mirror(this ObjectId entityId, Line axis, bool copy = true)
         {
-            using (Transaction trans = HostApplicationServices.WorkingDatabase.TransactionManager.StartTransaction())
+            var entity = entityId.QOpenForRead<Entity>();
+            var axisLine = new Line3d(axis.StartPoint, axis.EndPoint);
+            var mirror = entity.Clone() as Entity;
+            mirror.TransformBy(Matrix3d.Mirroring(axisLine));
+            if (!copy)
             {
-                var cvObj = trans.GetObject(curveId, OpenMode.ForRead) as Curve;
-                double param1 = cvObj.GetParamAtPointX(p1);
-                double param2 = cvObj.GetParamAtPointX(p2);
-                DBObjectCollection splits = cvObj.GetSplitCurves(new DoubleCollection(new double[] { param1, param2 }));
+                entityId.Erase();
+            }
+            return Draw.AddToCurrentSpace(mirror);
+        }
+
+        /// <summary>
+        /// Breaks a curve.
+        /// </summary>
+        /// <param name="curveId">The curve ID.</param>
+        /// <param name="point1">The point 1.</param>
+        /// <param name="point2">The point 2.</param>
+        /// <returns>The object IDs.</returns>
+        public static ObjectId[] Break(this ObjectId curveId, Point3d point1, Point3d point2)
+        {
+            using (var trans = HostApplicationServices.WorkingDatabase.TransactionManager.StartTransaction())
+            {
+                var curve = trans.GetObject(curveId, OpenMode.ForRead) as Curve;
+                var param1 = curve.GetParamAtPointX(point1);
+                var param2 = curve.GetParamAtPointX(point2);
+                var splits = curve.GetSplitCurves(new DoubleCollection(new[] { param1, param2 }));
                 var breaks = splits.Cast<Entity>();
                 return new[] { breaks.First().ObjectId, breaks.Last().ObjectId };
             }
         }
 
         /// <summary>
-        /// 打断于点
+        /// Breaks a curve at point.
         /// </summary>
-        /// <param name="curveId"></param>
-        /// <param name="p"></param>
-        /// <returns></returns>
-        public static ObjectId[] Break(this ObjectId curveId, Point3d p)
+        /// <param name="curveId">The curve ID.</param>
+        /// <param name="position">The position.</param>
+        /// <returns>The object IDs.</returns>
+        public static ObjectId[] Break(this ObjectId curveId, Point3d position)
         {
-            return curveId.Break(p, p);
+            return curveId.Break(position, position);
         }
 
         #endregion
@@ -1496,66 +1490,69 @@ namespace AutoCADCommands
         #region database
 
         /// <summary>
-        /// 炸开
+        /// Explodes an entity.
         /// </summary>
-        /// <param name="entId"></param>
-        /// <returns></returns>
-        public static ObjectId[] Explode(this ObjectId entId)
+        /// <param name="entityId">The entity ID.</param>
+        /// <returns>The object IDs.</returns>
+        public static ObjectId[] Explode(this ObjectId entityId)
         {
-            using (Transaction trans = HostApplicationServices.WorkingDatabase.TransactionManager.StartTransaction())
-            {
-                var entObj = trans.GetObject(entId, OpenMode.ForWrite) as Entity;
-                DBObjectCollection results = new DBObjectCollection();
-                entObj.Explode(results);
-                var ids = results.Cast<Entity>().Select(x => Draw.AddToCurrentSpace(x)).ToArray();
-                entObj.Erase();
-                trans.Commit();
-                return ids;
-            }
+            var entity = entityId.QOpenForRead<Entity>();
+            var results = new DBObjectCollection();
+            entity.Explode(results);
+            entityId.Erase();
+            return results
+                .Cast<Entity>()
+                .Select(newEntity => newEntity.AddToCurrentSpace())
+                .ToArray(); ;
         }
 
         /// <summary>
-        /// 删除
+        /// Erases an entity.
         /// </summary>
-        /// <param name="entId"></param>
-        public static void Erase(this ObjectId entId)
+        /// <param name="entityId">The entity ID.</param>
+        public static void Erase(this ObjectId entityId)
         {
-            using (Transaction trans = HostApplicationServices.WorkingDatabase.TransactionManager.StartTransaction())
+            using (var trans = HostApplicationServices.WorkingDatabase.TransactionManager.StartTransaction())
             {
-                var entObj = trans.GetObject(entId, OpenMode.ForWrite);
-                entObj.Erase();
+                var entity = trans.GetObject(entityId, OpenMode.ForWrite);
+                entity.Erase();
                 trans.Commit();
             }
         }
 
         /// <summary>
-        /// 删除组和组中的实体
+        /// Deletes a group and erases the entities.
         /// </summary>
-        /// <param name="groupId">组ID</param>
+        /// <param name="groupId">The group ID.</param>
         public static void EraseGroup(this ObjectId groupId)
         {
-            DbHelper.GetEntityIdsInGroup(groupId).Cast<ObjectId>().QForEach(x => x.Erase());
+            DbHelper
+                .GetEntityIdsInGroup(groupId)
+                .Cast<ObjectId>()
+                .QForEach(x => x.Erase());
+
             groupId.QOpenForWrite(x => x.Erase());
         }
 
         /// <summary>
-        /// 编组
+        /// Groups entities.
         /// </summary>
-        /// <param name="entIds"></param>
-        /// <param name="name"></param>
-        /// <returns></returns>
-        public static ObjectId Group(this IEnumerable<ObjectId> entIds, string name = "*", bool selectable = true)
+        /// <param name="entityIds">The entity IDs.</param>
+        /// <param name="name">The group name.</param>
+        /// <param name="selectable">Whether to allow select.</param>
+        /// <returns>The group ID.</returns>
+        public static ObjectId Group(this IEnumerable<ObjectId> entityIds, string name = "*", bool selectable = true)
         {
-            Database db = HostApplicationServices.WorkingDatabase;
-            using (Transaction trans = db.TransactionManager.StartTransaction())
+            var db = HostApplicationServices.WorkingDatabase;
+            using (var trans = db.TransactionManager.StartTransaction())
             {
-                DBDictionary groupDict = (DBDictionary)trans.GetObject(db.GroupDictionaryId, OpenMode.ForWrite);
-                Group group = new Group(name, selectable);
-                foreach (var id in entIds)
+                var groupDict = (DBDictionary)trans.GetObject(db.GroupDictionaryId, OpenMode.ForWrite);
+                var group = new Group(name, selectable);
+                foreach (var id in entityIds)
                 {
                     group.Append(id);
                 }
-                ObjectId result = groupDict.SetAt(name, group);
+                var result = groupDict.SetAt(name, group);
                 trans.AddNewlyCreatedDBObject(group, true); // false with no commit?
                 trans.Commit();
                 return result;
@@ -1563,52 +1560,53 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 添加到组
+        /// Appends entities to group.
         /// </summary>
-        /// <param name="groupId"></param>
-        /// <param name="entIds"></param>
-        public static void AppendToGroup(ObjectId groupId, IEnumerable<ObjectId> entIds)
+        /// <param name="groupId">The group ID.</param>
+        /// <param name="entityIds">The entity IDs.</param>
+        public static void AppendToGroup(ObjectId groupId, params ObjectId[] entityIds)
         {
-            using (Transaction trans = HostApplicationServices.WorkingDatabase.TransactionManager.StartTransaction())
+            using (var trans = HostApplicationServices.WorkingDatabase.TransactionManager.StartTransaction())
             {
-                Group group = trans.GetObject(groupId, OpenMode.ForWrite) as Group;
+                var group = trans.GetObject(groupId, OpenMode.ForWrite) as Group;
                 if (group != null)
                 {
-                    group.Append(new ObjectIdCollection(entIds.ToArray()));
+                    group.Append(new ObjectIdCollection(entityIds));
                 }
                 trans.Commit();
             }
         }
 
         /// <summary>
-        /// 解组
+        /// Ungroups a group.
         /// </summary>
-        /// <param name="groupId"></param>
+        /// <param name="groupId">The group ID.</param>
         public static void Ungroup(ObjectId groupId)
         {
             var groupDictId = HostApplicationServices.WorkingDatabase.GroupDictionaryId;
-            groupDictId.QOpenForWrite<DBDictionary>(x => x.Remove(groupId));
+            groupDictId.QOpenForWrite<DBDictionary>(groupDict => groupDict.Remove(groupId));
             groupId.Erase();
         }
 
         /// <summary>
-        /// 解组（实体）
+        /// Ungroups a group by entities.
         /// </summary>
-        /// <param name="entIds"></param>
-        /// <returns></returns>
-        public static int Ungroup(IEnumerable<ObjectId> entIds)
+        /// <param name="entityIds">The entity IDs.</param>
+        /// <returns>The number of groups ungrouped.</returns>
+        public static int Ungroup(IEnumerable<ObjectId> entityIds)
         {
             var groupDict = HostApplicationServices.WorkingDatabase.GroupDictionaryId.QOpenForRead<DBDictionary>();
-            int count = 0;
+            var count = 0;
             foreach (var entry in groupDict)
             {
                 var group = entry.Value.QOpenForRead<Group>();
-                if (entIds.Any(x => group.Has(x.QOpenForRead<Entity>())))
+                if (entityIds.Any(entityId => group.Has(entityId.QOpenForRead<Entity>())))
                 {
-                    Ungroup(entry.Value);
+                    Modify.Ungroup(entry.Value);
                     count++;
                 }
             }
+
             return count;
         }
 
@@ -1616,85 +1614,46 @@ namespace AutoCADCommands
 
         #region feature
 
-        /// <summary>
-        /// 阵列
-        /// </summary>
-        /// <param name="ent"></param>
-        /// <param name="arrayOpt"></param>
-        public static void Array(Entity ent, string arrayOpt)
-        {
-        }
+        //public static void Array(Entity entity, string arrayOpt)
+        //{
+        //}
+
+        //public static void Fillet(Curve cv1, Curve cv2, string bevelOpt)
+        //{
+        //}
+
+        //public static void Chamfer(Curve cv1, Curve cv2, string bevelOpt)
+        //{
+        //}
+
+        //public static void Trim(Curve[] baseCurves, Curve cv, Point3d[] p)
+        //{
+        //}
+
+        //public static void Extend(Curve[] baseCurves, Curve cv, Point3d[] p)
+        //{
+        //}
 
         /// <summary>
-        /// 块阵列
+        /// Sets draworder.
         /// </summary>
-        /// <param name="record"></param>
-        /// <param name="arrayOpt"></param>
-        public static void Array(BlockTableRecord record, string arrayOpt)
+        /// <param name="entityId">The entity ID.</param>
+        /// <param name="operation">The operation.</param>
+        public static void Draworder(this ObjectId entityId, DraworderOperation operation)
         {
-        }
-
-        /// <summary>
-        /// 圆角
-        /// </summary>
-        /// <param name="cv1"></param>
-        /// <param name="cv2"></param>
-        /// <param name="bevelOpt"></param>
-        public static void Fillet(Curve cv1, Curve cv2, string bevelOpt)
-        {
-        }
-
-        /// <summary>
-        /// 倒角
-        /// </summary>
-        /// <param name="cv1"></param>
-        /// <param name="cv2"></param>
-        /// <param name="bevelOpt"></param>
-        public static void Chamfer(Curve cv1, Curve cv2, string bevelOpt)
-        {
-        }
-
-        /// <summary>
-        /// 修剪
-        /// </summary>
-        /// <param name="baseCurves"></param>
-        /// <param name="cv"></param>
-        /// <param name="p"></param>
-        public static void Trim(Curve[] baseCurves, Curve cv, Point3d[] p)
-        {
-        }
-
-        /// <summary>
-        /// 延伸
-        /// </summary>
-        /// <param name="baseCurves"></param>
-        /// <param name="cv"></param>
-        /// <param name="p"></param>
-        public static void Extend(Curve[] baseCurves, Curve cv, Point3d[] p)
-        {
-        }
-
-        // 20110712修改
-        /// <summary>
-        /// 绘图顺序
-        /// </summary>
-        /// <param name="entId"></param>
-        /// <param name="operation"></param>
-        public static void Draworder(this ObjectId entId, DraworderOperation operation)
-        {
-            HostApplicationServices.WorkingDatabase.BlockTableId.QOpenForWrite<BlockTable>(bt =>
+            HostApplicationServices.WorkingDatabase.BlockTableId.QOpenForWrite<BlockTable>(blockTable =>
             {
-                bt[BlockTableRecord.ModelSpace].QOpenForWrite<BlockTableRecord>(btr =>
+                blockTable[BlockTableRecord.ModelSpace].QOpenForWrite<BlockTableRecord>(blockTableRecord =>
                 {
-                    btr.DrawOrderTableId.QOpenForWrite<DrawOrderTable>(dot =>
+                    blockTableRecord.DrawOrderTableId.QOpenForWrite<DrawOrderTable>(drawOrderTable =>
                     {
                         switch (operation)
                         {
                             case DraworderOperation.MoveToTop:
-                                dot.MoveToTop(new ObjectIdCollection { entId });
+                                drawOrderTable.MoveToTop(new ObjectIdCollection { entityId });
                                 break;
                             case DraworderOperation.MoveToBottom:
-                                dot.MoveToBottom(new ObjectIdCollection { entId });
+                                drawOrderTable.MoveToBottom(new ObjectIdCollection { entityId });
                                 break;
                             default:
                                 break;
@@ -1705,25 +1664,25 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 绘图顺序
+        /// Sets draworder.
         /// </summary>
-        /// <param name="entIds"></param>
-        /// <param name="operation"></param>
-        public static void Draworder(this IEnumerable<ObjectId> entIds, DraworderOperation operation)
+        /// <param name="entityIds">The entity IDs.</param>
+        /// <param name="operation">The operation.</param>
+        public static void Draworder(this IEnumerable<ObjectId> entityIds, DraworderOperation operation)
         {
-            HostApplicationServices.WorkingDatabase.BlockTableId.QOpenForWrite<BlockTable>(bt =>
+            HostApplicationServices.WorkingDatabase.BlockTableId.QOpenForWrite<BlockTable>(blockTable =>
             {
-                bt[BlockTableRecord.ModelSpace].QOpenForWrite<BlockTableRecord>(btr =>
+                blockTable[BlockTableRecord.ModelSpace].QOpenForWrite<BlockTableRecord>(blockTableRecord =>
                 {
-                    btr.DrawOrderTableId.QOpenForWrite<DrawOrderTable>(dot =>
+                    blockTableRecord.DrawOrderTableId.QOpenForWrite<DrawOrderTable>(drawOrderTable =>
                     {
                         switch (operation)
                         {
                             case DraworderOperation.MoveToTop:
-                                dot.MoveToTop(new ObjectIdCollection(entIds.ToArray()));
+                                drawOrderTable.MoveToTop(new ObjectIdCollection(entityIds.ToArray()));
                                 break;
                             case DraworderOperation.MoveToBottom:
-                                dot.MoveToBottom(new ObjectIdCollection(entIds.ToArray()));
+                                drawOrderTable.MoveToBottom(new ObjectIdCollection(entityIds.ToArray()));
                                 break;
                             default:
                                 break;
@@ -1738,19 +1697,19 @@ namespace AutoCADCommands
         #region property
 
         /// <summary>
-        /// 设置文字样式
+        /// Updates a text style.
         /// </summary>
-        /// <param name="name">样式名</param>
-        /// <param name="fontFamily">字体名。e.g."宋体""@宋体"</param>
-        /// <param name="textHeight">字高</param>
-        /// <param name="italicAngle">斜角</param>
-        /// <param name="xScale">宽度因子</param>
-        /// <param name="vertical">是否竖排</param>
-        /// <param name="bigFont">大字体</param>
-        /// <returns>文字样式ID</returns>
-        public static ObjectId TextStyle(string fontFamily, double textHeight, double italicAngle = 0, double xScale = 1, bool vertical = false, string bigFont = "", string textStyle = Consts.TextStyleName)
+        /// <param name="fontFamily">The font family. e.g."宋体""@宋体"</param>
+        /// <param name="textHeight">The text height.</param>
+        /// <param name="italicAngle">The italic angle.</param>
+        /// <param name="xScale">The X scale.</param>
+        /// <param name="vertical">Use vertical.</param>
+        /// <param name="bigFont">Use big font.</param>
+        /// <param name="textStyleName">The text style name.</param>
+        /// <returns>The text style ID.</returns>
+        public static ObjectId TextStyle(string fontFamily, double textHeight, double italicAngle = 0, double xScale = 1, bool vertical = false, string bigFont = "", string textStyleName = Consts.TextStyleName)
         {
-            ObjectId result = DbHelper.GetTextStyleId(textStyle, true);
+            var result = DbHelper.GetTextStyleId(textStyleName, true);
             result.QOpenForWrite<TextStyleTableRecord>(tstr =>
             {
                 tstr.Font = new Autodesk.AutoCAD.GraphicsInterface.FontDescriptor(fontFamily, false, false, 0, 34);
@@ -1760,110 +1719,120 @@ namespace AutoCADCommands
                 tstr.IsVertical = vertical;
                 tstr.BigFontFileName = bigFont;
             });
+
             return result;
         }
 
         /// <summary>
-        /// 设置图层
+        /// Sets layer.
         /// </summary>
-        /// <param name="entId"></param>
-        /// <param name="layer"></param>
-        public static void SetLayer(this ObjectId entId, string layer)
+        /// <param name="entityId">The entity ID.</param>
+        /// <param name="layer">The layer name.</param>
+        public static void SetLayer(this ObjectId entityId, string layer)
         {
-            entId.QOpenForWrite<Entity>(ent =>
+            entityId.QOpenForWrite<Entity>(entity =>
             {
-                ent.LayerId = DbHelper.GetLayerId(layer);
+                entity.LayerId = DbHelper.GetLayerId(layer);
             });
         }
 
         /// <summary>
-        /// 设置线型
+        /// Sets line type.
         /// </summary>
-        /// <param name="id"></param>
-        /// <param name="linetype"></param>
-        /// <param name="linetypeScale"></param>
-        public static void SetLinetype(this ObjectId id, string linetype, double linetypeScale = 1)
+        /// <param name="entityId">The entity ID.</param>
+        /// <param name="linetype">The line type.</param>
+        /// <param name="linetypeScale">The scale.</param>
+        public static void SetLinetype(this ObjectId entityId, string linetype, double linetypeScale = 1)
         {
-            id.QOpenForWrite<Entity>(ent =>
+            entityId.QOpenForWrite<Entity>(entity =>
             {
-                ent.LinetypeId = DbHelper.GetLinetypeId(linetype);
-                ent.LinetypeScale = linetypeScale;
+                entity.LinetypeId = DbHelper.GetLinetypeId(linetype);
+                entity.LinetypeScale = linetypeScale;
             });
         }
 
         /// <summary>
-        /// 设置标注样式，无此样式则设为默认样式
+        /// Sets dimension style.
         /// </summary>
-        /// <param name="dimId">标注ID</param>
-        /// <param name="dimstyle">样式名</param>
+        /// <param name="dimId">The dimension ID.</param>
+        /// <param name="dimstyle">The style name.</param>
         public static void SetDimstyle(this ObjectId dimId, string dimstyle)
         {
-            ObjectId dimstyleId = DbHelper.GetDimstyleId(dimstyle);
-            using (Transaction trans = HostApplicationServices.WorkingDatabase.TransactionManager.StartTransaction())
+            var dimstyleId = DbHelper.GetDimstyleId(dimstyle);
+            using (var trans = HostApplicationServices.WorkingDatabase.TransactionManager.StartTransaction())
             {
-                Dimension dim = trans.GetObject(dimId, OpenMode.ForWrite) as Dimension;
+                var dim = trans.GetObject(dimId, OpenMode.ForWrite) as Dimension;
                 dim.DimensionStyle = dimstyleId;
                 trans.Commit();
             }
         }
 
         /// <summary>
-        /// 设置多行文字样式，无此样式则设为默认样式
+        /// Sets text style for DT, MT, or DIM.
         /// </summary>
-        /// <param name="mtId">多行文字ID</param>
-        /// <param name="textstyle">样式名</param>
-        public static void SetTextStyle(this ObjectId mtId, string textstyle)
+        /// <param name="entityId">The entity ID.</param>
+        /// <param name="textStyleName">The text style name.</param>
+        public static void SetTextStyle(this ObjectId entityId, string textStyleName)
         {
-            ObjectId textstyleId = DbHelper.GetTextStyleId(textstyle);
-            using (Transaction trans = HostApplicationServices.WorkingDatabase.TransactionManager.StartTransaction())
+            var textStyleId = DbHelper.GetTextStyleId(textStyleName);
+            entityId.QOpenForWrite<Entity>(entity =>
             {
-                MText mt = trans.GetObject(mtId, OpenMode.ForWrite) as MText;
-                mt.TextStyleId = textstyleId;
-                trans.Commit();
-            }
+                if (entity is MText mText)
+                {
+                    mText.TextStyleId = textStyleId;
+                }
+                else if (entity is DBText text)
+                {
+                    text.TextStyleId = textStyleId;
+                }
+                else if (entity is Dimension dimension)
+                {
+                    dimension.TextStyleId = textStyleId;
+                }
+            });
         }
 
         #endregion
     }
 
     /// <summary>
-    /// Boundary trace entity type
+    /// Boundary trace entity type.
     /// </summary>
     public enum BoundaryType
     {
         /// <summary>
-        /// Trace with polyline
+        /// Trace with polyline.
         /// </summary>
         Polyline = 0,
         /// <summary>
-        /// Trace with region
+        /// Trace with region.
         /// </summary>
         Region = 1
     }
 
     /// <summary>
-    /// Draworder type
+    /// Draworder type.
     /// </summary>
     public enum DraworderOperation
     {
         /// <summary>
-        /// 无
+        /// No operation.
         /// </summary>
         None = 0,
         /// <summary>
-        /// 上移
+        /// Move above.
         /// </summary>
         MoveAbove = 1,
         /// <summary>
-        /// 下移
+        /// Move below.
         /// </summary>
         MoveBelow = 2,
         /// <summary>
-        /// 前置
+        /// Move to top.
         /// </summary>
         MoveToTop = 3,
         /// <summary>
-        /// 后置
+        /// Move to bottom.
         /// </summary>
         MoveToBottom = 4
     }
