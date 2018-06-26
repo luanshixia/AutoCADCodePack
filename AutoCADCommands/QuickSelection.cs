@@ -288,7 +288,7 @@ namespace AutoCADCommands
         public static ObjectId[] SelectAll(string dxfType)
         {
             var ed = Application.DocumentManager.MdiActiveDocument.Editor;
-            var selRes = ed.SelectAll(new SelectionFilter(new[] { new TypedValue(0, dxfType) }));
+            var selRes = ed.SelectAll(new SelectionFilter(new[] { new TypedValue((int)DxfCode.Start, dxfType) }));
             if (selRes.Status == PromptStatus.OK)
             {
                 return selRes.Value.GetObjectIds();

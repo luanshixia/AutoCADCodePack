@@ -558,22 +558,22 @@ namespace AutoCADCommands
         /// <summary>
         /// Gets entity extents.
         /// </summary>
-        /// <param name="entIds">The entity IDs.</param>
+        /// <param name="entityIds">The entity IDs.</param>
         /// <returns>The result extents.</returns>
-        public static Extents3d GetExtents(this IEnumerable<ObjectId> entIds)
+        public static Extents3d GetExtents(this IEnumerable<ObjectId> entityIds)
         {
-            return Algorithms.GetExtents(entIds.QOpenForRead<Entity>());
+            return Algorithms.GetExtents(entityIds.QOpenForRead<Entity>());
         }
 
         /// <summary>
         /// Gets entity extents.
         /// </summary>
-        /// <param name="ents">The entities.</param>
+        /// <param name="entities">The entities.</param>
         /// <returns>The result extents.</returns>
-        public static Extents3d GetExtents(this IEnumerable<Entity> ents)
+        public static Extents3d GetExtents(this IEnumerable<Entity> entities)
         {
-            var extent = ents.First().GeometricExtents;
-            foreach (var ent in ents)
+            var extent = entities.First().GeometricExtents;
+            foreach (var ent in entities)
             {
                 extent.AddExtents(ent.GeometricExtents);
             }
@@ -1529,11 +1529,11 @@ namespace AutoCADCommands
         /// <summary>
         /// Intersects entities.
         /// </summary>
-        /// <param name="ent">The entity.</param>
+        /// <param name="entity">The entity.</param>
         /// <param name="entOther">The other entity.</param>
         /// <param name="intersectType">The type.</param>
         /// <param name="points">The intersection points output.</param>
-        internal static void IntersectWith3264(this Entity ent, Entity entOther, Intersect intersectType, Point3dCollection points)
+        internal static void IntersectWith3264(this Entity entity, Entity entOther, Intersect intersectType, Point3dCollection points)
         {
             // NOTE: Use runtime binding for difference between 32- and 64-bit APIs.
             var methodInfo = typeof(Entity).GetMethod("IntersectWith",
@@ -1543,20 +1543,20 @@ namespace AutoCADCommands
                 methodInfo = typeof(Entity).GetMethod("IntersectWith",
                 new Type[] { typeof(Entity), typeof(Intersect), typeof(Point3dCollection), typeof(int), typeof(int) });
             }
-            methodInfo.Invoke(ent, new object[] { entOther, intersectType, points, 0, 0 });
+            methodInfo.Invoke(entity, new object[] { entOther, intersectType, points, 0, 0 });
         }
 
         /// <summary>
         /// Intersects entities.
         /// </summary>
-        /// <param name="ent">The entity.</param>
+        /// <param name="entity">The entity.</param>
         /// <param name="entOther">The other entity.</param>
         /// <param name="intersectType">The type.</param>
         /// <returns>The intersection points.</returns>
-        public static List<Point3d> Intersect(this Entity ent, Entity entOther, Intersect intersectType)
+        public static List<Point3d> Intersect(this Entity entity, Entity entOther, Intersect intersectType)
         {
             var points = new Point3dCollection();
-            Algorithms.IntersectWith3264(ent, entOther, intersectType, points);
+            Algorithms.IntersectWith3264(entity, entOther, intersectType, points);
             return points.Cast<Point3d>().ToList();
         }
 

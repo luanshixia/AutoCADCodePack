@@ -7,6 +7,7 @@ using Autodesk.Windows;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using Application = Autodesk.AutoCAD.ApplicationServices.Application;
 using ColorDialog = Autodesk.AutoCAD.Windows.ColorDialog;
@@ -20,7 +21,7 @@ namespace AutoCADCommands
     public class Interaction
     {
         /// <summary>
-        /// 获取活动Editor
+        /// Gets the MDI active docutment's editor.
         /// </summary>
         public static Editor ActiveEditor
         {
@@ -31,574 +32,515 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 输出命令行信息
+        /// Writes message.
         /// </summary>
-        /// <param name="message">信息</param>
+        /// <param name="message">The message.</param>
         public static void Write(string message)
         {
-            Editor ed = Application.DocumentManager.MdiActiveDocument.Editor;
+            var ed = Application.DocumentManager.MdiActiveDocument.Editor;
             ed.WriteMessage(message);
         }
 
         /// <summary>
-        /// 输出命令行信息
+        /// Writes message.
         /// </summary>
-        /// <param name="message">信息</param>
-        /// <param name="args">参数</param>
+        /// <param name="message">The message.</param>
+        /// <param name="args">The arguments.</param>
         public static void Write(string message, params object[] args)
         {
-            Editor ed = Application.DocumentManager.MdiActiveDocument.Editor;
+            var ed = Application.DocumentManager.MdiActiveDocument.Editor;
             ed.WriteMessage(message, args);
         }
 
         /// <summary>
-        /// 输出命令行信息
+        /// Writes message line.
         /// </summary>
-        /// <param name="message">信息</param>
+        /// <param name="message">The message.</param>
         public static void WriteLine(string message)
         {
-            Editor ed = Application.DocumentManager.MdiActiveDocument.Editor;
+            var ed = Application.DocumentManager.MdiActiveDocument.Editor;
             ed.WriteMessage("\n");
             ed.WriteMessage(message);
         }
 
         /// <summary>
-        /// 输出命令行信息
+        /// Writes message line.
         /// </summary>
-        /// <param name="message">信息</param>
-        /// <param name="args">参数</param>
+        /// <param name="message">The message.</param>
+        /// <param name="args">The arguments.</param>
         public static void WriteLine(string message, params object[] args)
         {
-            Editor ed = Application.DocumentManager.MdiActiveDocument.Editor;
+            var ed = Application.DocumentManager.MdiActiveDocument.Editor;
             ed.WriteMessage("\n");
             ed.WriteMessage(message, args);
         }
 
         /// <summary>
-        /// 获取字符串
+        /// Gets string.
         /// </summary>
-        /// <param name="message">提示</param>
-        /// <returns>字符串</returns>
+        /// <param name="message">The message.</param>
+        /// <returns>The string.</returns>
         public static string GetString(string message)
         {
-            Editor ed = Application.DocumentManager.MdiActiveDocument.Editor;
-            PromptResult res = ed.GetString(message);
+            var ed = Application.DocumentManager.MdiActiveDocument.Editor;
+            var res = ed.GetString(message);
             if (res.Status == PromptStatus.OK)
             {
                 return res.StringResult;
             }
-            else
-            {
-                return null;
-            }
+
+            return null;
         }
 
         /// <summary>
-        /// 获取字符串
+        /// Gets string.
         /// </summary>
-        /// <param name="message">提示</param>
-        /// <param name="defaultValue">默认值</param>
-        /// <returns>字符串</returns>
+        /// <param name="message">The message.</param>
+        /// <param name="defaultValue">The default value.</param>
+        /// <returns>The string.</returns>
         public static string GetString(string message, string defaultValue)
         {
-            Editor ed = Application.DocumentManager.MdiActiveDocument.Editor;
-            PromptResult res = ed.GetString(new PromptStringOptions(message) { DefaultValue = defaultValue });
+            var ed = Application.DocumentManager.MdiActiveDocument.Editor;
+            var res = ed.GetString(new PromptStringOptions(message) { DefaultValue = defaultValue });
             if (res.Status == PromptStatus.OK)
             {
                 return res.StringResult;
             }
-            else
-            {
-                return null;
-            }
+
+            return null;
         }
 
         /// <summary>
-        /// 获取关键字
+        /// Gets keywords.
         /// </summary>
-        /// <param name="message">提示</param>
-        /// <param name="keys">关键字数组</param>
-        /// <param name="defaultIndex">默认选项</param>
-        /// <returns>用户选择的关键字</returns>
-        public static string GetKeywords(string message, string[] keys, int defaultIndex = 0)
+        /// <param name="message">The message.</param>
+        /// <param name="keywords">The keywords.</param>
+        /// <param name="defaultIndex">The default index.</param>
+        /// <returns>The keyword result.</returns>
+        public static string GetKeywords(string message, string[] keywords, int defaultIndex = 0)
         {
-            Editor ed = Application.DocumentManager.MdiActiveDocument.Editor;
+            var ed = Application.DocumentManager.MdiActiveDocument.Editor;
             var opt = new PromptKeywordOptions(message)
             {
                 AllowNone = true
             }; // mod 20140527
-            keys.ToList().ForEach(k => opt.Keywords.Add(k));
-            opt.Keywords.Default = keys[defaultIndex];
-            PromptResult res = ed.GetKeywords(opt);
+
+            keywords.ToList().ForEach(key => opt.Keywords.Add(key));
+            opt.Keywords.Default = keywords[defaultIndex];
+
+            var res = ed.GetKeywords(opt);
             if (res.Status == PromptStatus.OK)
             {
                 return res.StringResult;
             }
-            else
-            {
-                return null;
-            }
+
+            return null;
         }
 
         /// <summary>
-        /// 获取数值
+        /// Gets numeric value.
         /// </summary>
-        /// <param name="message">提示</param>
-        /// <param name="defaultValue">默认值</param>
-        /// <returns>数值</returns>
+        /// <param name="message">The message.</param>
+        /// <param name="defaultValue">The default value.</param>
+        /// <returns>The value.</returns>
         public static double GetValue(string message, double? defaultValue = null)
         {
-            Editor ed = Application.DocumentManager.MdiActiveDocument.Editor;
-            PromptDoubleResult res = defaultValue == null
+            var ed = Application.DocumentManager.MdiActiveDocument.Editor;
+            var res = defaultValue == null
                 ? ed.GetDouble(new PromptDoubleOptions(message) { AllowNone = true })
                 : ed.GetDouble(new PromptDoubleOptions(message) { DefaultValue = defaultValue.Value, AllowNone = true });
+
             if (res.Status == PromptStatus.OK)
             {
                 return res.Value;
             }
-            else
-            {
-                return double.NaN;
-            }
+
+            return double.NaN;
         }
 
         /// <summary>
-        /// 获取距离
+        /// Gets distance.
         /// </summary>
-        /// <param name="message">提示</param>
-        /// <returns>距离</returns>
+        /// <param name="message">The message.</param>
+        /// <returns>The distance.</returns>
         public static double GetDistance(string message)
         {
-            Editor ed = Application.DocumentManager.MdiActiveDocument.Editor;
-            PromptDoubleResult res = ed.GetDistance(message);
+            var ed = Application.DocumentManager.MdiActiveDocument.Editor;
+            var res = ed.GetDistance(message);
             if (res.Status == PromptStatus.OK)
             {
                 return res.Value;
             }
-            else
-            {
-                return double.NaN;
-            }
+
+            return double.NaN;
         }
 
         /// <summary>
-        /// 获取角度
+        /// Gets angle.
         /// </summary>
-        /// <param name="message">提示</param>
-        /// <returns>角度</returns>
+        /// <param name="message">The message.</param>
+        /// <returns>The angle.</returns>
         public static double GetAngle(string message)
         {
-            Editor ed = Application.DocumentManager.MdiActiveDocument.Editor;
-            PromptDoubleResult res = ed.GetAngle(message);
+            var ed = Application.DocumentManager.MdiActiveDocument.Editor;
+            var res = ed.GetAngle(message);
             if (res.Status == PromptStatus.OK)
             {
                 return res.Value;
             }
-            else
-            {
-                return double.NaN;
-            }
+
+            return double.NaN;
         }
 
         /// <summary>
-        /// 获取点
+        /// Gets point.
         /// </summary>
-        /// <param name="message">提示</param>
-        /// <returns>点</returns>
+        /// <param name="message">The message.</param>
+        /// <returns>The point.</returns>
         public static Point3d GetPoint(string message)
         {
-            Editor ed = Application.DocumentManager.MdiActiveDocument.Editor;
-            PromptPointOptions opt = new PromptPointOptions(message)
+            var ed = Application.DocumentManager.MdiActiveDocument.Editor;
+            var opt = new PromptPointOptions(message)
             {
                 AllowNone = true
             };
-            PromptPointResult res = ed.GetPoint(opt);
+
+            var res = ed.GetPoint(opt);
             if (res.Status == PromptStatus.OK)
             {
                 return res.Value;
             }
-            else
-            {
-                return Algorithms.NullPoint3d;
-            }
+
+            return Algorithms.NullPoint3d;
         }
 
         /// <summary>
-        /// 可视化获取直线段终点
+        /// Gets another point of a line.
         /// </summary>
-        /// <param name="message">提示</param>
-        /// <param name="startPoint">起点</param>
-        /// <returns>终点</returns>
+        /// <param name="message">The message.</param>
+        /// <param name="startPoint">The first point.</param>
+        /// <returns>The point.</returns>
         public static Point3d GetLineEndPoint(string message, Point3d startPoint)
         {
-            Editor ed = Application.DocumentManager.MdiActiveDocument.Editor;
-            LineJig jig = new LineJig(startPoint, message);
-            PromptResult res = ed.Drag(jig);
+            var ed = Application.DocumentManager.MdiActiveDocument.Editor;
+            var jig = new LineJig(startPoint, message);
+            var res = ed.Drag(jig);
             if (res.Status == PromptStatus.OK)
             {
                 return jig.EndPoint;
             }
-            else
-            {
-                return Algorithms.NullPoint3d;
-            }
+
+            return Algorithms.NullPoint3d;
         }
 
         /// <summary>
-        /// 获取对角点
+        /// Get corner point.
         /// </summary>
-        /// <param name="message">提示</param>
-        /// <param name="basePoint">第一点</param>
-        /// <returns>对角点</returns>
+        /// <param name="message">The message.</param>
+        /// <param name="basePoint">The first point.</param>
+        /// <returns>The point.</returns>
         public static Point3d GetCorner(string message, Point3d basePoint)
         {
-            Editor ed = Application.DocumentManager.MdiActiveDocument.Editor;
-            PromptCornerOptions opt = new PromptCornerOptions(message, basePoint) { AllowNone = true }; // mod 20140527
-            PromptPointResult res = ed.GetCorner(opt);
+            var ed = Application.DocumentManager.MdiActiveDocument.Editor;
+            var opt = new PromptCornerOptions(message, basePoint) { AllowNone = true }; // mod 20140527
+            var res = ed.GetCorner(opt);
             if (res.Status == PromptStatus.OK)
             {
                 return res.Value;
             }
-            else
-            {
-                return Algorithms.NullPoint3d;
-            }
+
+            return Algorithms.NullPoint3d;
         }
 
         /// <summary>
-        /// 获取二维范围
+        /// Gets 2-d extents.
         /// </summary>
-        /// <param name="message">提示</param>
-        /// <returns>二维范围</returns>
+        /// <param name="message">The message.</param>
+        /// <returns>The extents.</returns>
         public static Extents3d? GetExtents(string message)
         {
-            Editor ed = Application.DocumentManager.MdiActiveDocument.Editor;
-            PromptPointResult res = ed.GetPoint(message);
+            var ed = Application.DocumentManager.MdiActiveDocument.Editor;
+            var res = ed.GetPoint(message);
             if (res.Status != PromptStatus.OK)
             {
                 return null;
             }
-            Point3d p1 = res.Value;
+
+            var p1 = res.Value;
             res = ed.GetCorner(message, p1);
             if (res.Status != PromptStatus.OK)
             {
                 return null;
             }
-            Point3d p2 = res.Value;
-            return new Extents3d(new Point3d(Math.Min(p1.X, p2.X), Math.Min(p1.Y, p2.Y), 0), new Point3d(Math.Max(p1.X, p2.X), Math.Max(p1.Y, p2.Y), 0));
+
+            var p2 = res.Value;
+            return new Extents3d(
+                new Point3d(Math.Min(p1.X, p2.X), Math.Min(p1.Y, p2.Y), 0), 
+                new Point3d(Math.Max(p1.X, p2.X), Math.Max(p1.Y, p2.Y), 0));
         }
 
         /// <summary>
-        /// 获取实体
+        /// Gets entity.
         /// </summary>
-        /// <param name="message">提示</param>
-        /// <returns>实体ID</returns>
+        /// <param name="message">The message.</param>
+        /// <returns>The entity ID.</returns>
         public static ObjectId GetEntity(string message)
         {
-            Editor ed = Application.DocumentManager.MdiActiveDocument.Editor;
-            PromptEntityResult res = ed.GetEntity(message);
+            var ed = Application.DocumentManager.MdiActiveDocument.Editor;
+            var res = ed.GetEntity(message);
             if (res.Status == PromptStatus.OK)
             {
                 return res.ObjectId;
             }
-            else
-            {
-                return ObjectId.Null;
-            }
+
+            return ObjectId.Null;
         }
 
         /// <summary>
-        /// 获取实体
+        /// Gets entity.
         /// </summary>
-        /// <param name="message">提示</param>
-        /// <param name="allowedType">允许类型</param>
-        /// <param name="exactMatch">是否严格匹配</param>
-        /// <returns>实体ID</returns>
+        /// <param name="message">The message.</param>
+        /// <param name="allowedType">The allowed entity type.</param>
+        /// <param name="exactMatch">Use exact match.</param>
+        /// <returns>The entity ID.</returns>
         public static ObjectId GetEntity(string message, Type allowedType, bool exactMatch = true) // newly 20130514
         {
-            Editor ed = Application.DocumentManager.MdiActiveDocument.Editor;
-            PromptEntityOptions opt = new PromptEntityOptions(message);
-            opt.SetRejectMessage("请选择" + allowedType.Name); // Must use this first
+            var ed = Application.DocumentManager.MdiActiveDocument.Editor;
+            var opt = new PromptEntityOptions(message);
+            opt.SetRejectMessage("Allowed type: " + allowedType.Name); // Must call this first
             opt.AddAllowedClass(allowedType, exactMatch);
-            PromptEntityResult res = ed.GetEntity(opt);
+            var res = ed.GetEntity(opt);
             if (res.Status == PromptStatus.OK)
             {
                 return res.ObjectId;
             }
-            else
-            {
-                return ObjectId.Null;
-            }
+
+            return ObjectId.Null;
         }
 
         /// <summary>
-        /// 获取实体和点选位置
+        /// Gets entity and pick position.
         /// </summary>
-        /// <param name="message">提示</param>
-        /// <returns>实体ID和点选位置</returns>
-        public static Tuple<ObjectId, Point3d> GetPick(string message)
+        /// <param name="message">The message.</param>
+        /// <returns>The entity ID and the pick position.</returns>
+        public static (ObjectId, Point3d)? GetPick(string message)
         {
-            Editor ed = Application.DocumentManager.MdiActiveDocument.Editor;
-            PromptEntityResult res = ed.GetEntity(message);
+            var ed = Application.DocumentManager.MdiActiveDocument.Editor;
+            var res = ed.GetEntity(message);
             if (res.Status == PromptStatus.OK)
             {
-                return new Tuple<ObjectId, Point3d>(res.ObjectId, res.PickedPoint);
+                return (res.ObjectId, res.PickedPoint);
             }
-            else
-            {
-                return null;
-            }
+
+            return null;
         }
 
         /// <summary>
-        /// 获取多个实体
+        /// Gets multiple entities.
         /// </summary>
-        /// <param name="message">提示</param>
-        /// <returns>实体ID数组</returns>
+        /// <param name="message">The message.</param>
+        /// <returns>The entity IDs.</returns>
         public static ObjectId[] GetSelection(string message)
         {
-            Editor ed = Application.DocumentManager.MdiActiveDocument.Editor;
-            PromptSelectionOptions opt = new PromptSelectionOptions { MessageForAdding = message };
+            var ed = Application.DocumentManager.MdiActiveDocument.Editor;
+            var opt = new PromptSelectionOptions { MessageForAdding = message };
             ed.WriteMessage(message);
-            PromptSelectionResult res = ed.GetSelection(opt);
+            var res = ed.GetSelection(opt);
             if (res.Status == PromptStatus.OK)
             {
                 return res.Value.GetObjectIds();
             }
-            else
-            {
-                return new ObjectId[0];
-            }
+
+            return Array.Empty<ObjectId>();
         }
 
         /// <summary>
-        /// 按过滤器获取多个实体
+        /// Gets multiple entities.
         /// </summary>
-        /// <param name="message">提示</param>
-        /// <param name="filter">过滤器，结构同TypedValue</param>
-        /// <returns>实体ID数组</returns>
-        public static ObjectId[] GetSelection(string message, List<(int, object)> filter)
+        /// <param name="message">The message.</param>
+        /// <param name="filter">The filter.</param>
+        /// <returns>The entity IDs.</returns>
+        public static ObjectId[] GetSelection(string message, params (int, object)[] filter)
         {
-            Editor ed = Application.DocumentManager.MdiActiveDocument.Editor;
-            PromptSelectionOptions opt = new PromptSelectionOptions { MessageForAdding = message };
+            var ed = Application.DocumentManager.MdiActiveDocument.Editor;
+            var opt = new PromptSelectionOptions { MessageForAdding = message };
             ed.WriteMessage(message);
-            PromptSelectionResult res = ed.GetSelection(opt, new SelectionFilter(filter.Select(x => new TypedValue(x.Item1, x.Item2)).ToArray()));
+            var res = ed.GetSelection(opt, new SelectionFilter(filter.Select(x => new TypedValue(x.Item1, x.Item2)).ToArray()));
             if (res.Status == PromptStatus.OK)
             {
                 return res.Value.GetObjectIds();
             }
-            else
-            {
-                return new ObjectId[0];
-            }
+
+            return Array.Empty<ObjectId>();
         }
 
         /// <summary>
-        /// 获取指定类型的多个实体
+        /// Gets multiple entities.
         /// </summary>
-        /// <param name="message">提示</param>
-        /// <param name="allowedType">允许实体类型，用逗号分隔。例："*LINE,ARC,CIRCLE"</param>
-        /// <returns>实体ID数组</returns>
+        /// <param name="message">The message.</param>
+        /// <param name="allowedType">The allowed types. e.g. "*LINE,ARC,CIRCLE"</param>
+        /// <returns>The entity IDs.</returns>
         public static ObjectId[] GetSelection(string message, string allowedType)
         {
-            Editor ed = Application.DocumentManager.MdiActiveDocument.Editor;
-            PromptSelectionOptions opt = new PromptSelectionOptions { MessageForAdding = message };
-            ed.WriteMessage(message);
-            PromptSelectionResult res = ed.GetSelection(opt, new SelectionFilter(new TypedValue[] { new TypedValue(0, allowedType) }));
-            if (res.Status == PromptStatus.OK)
-            {
-                return res.Value.GetObjectIds();
-            }
-            else
-            {
-                return new ObjectId[0];
-            }
+            return Interaction.GetSelection(message, ((int)DxfCode.Start, allowedType));
         }
 
         /// <summary>
-        /// 窗选式空间查询
+        /// Gets multiple entities by window.
         /// </summary>
-        /// <param name="pt1">角点1</param>
-        /// <param name="pt2">角点2</param>
-        /// <param name="allowedType">允许类型</param>
-        /// <returns>选择集</returns>
+        /// <param name="pt1">The corner 1.</param>
+        /// <param name="pt2">The corner 2.</param>
+        /// <param name="allowedType">The allowed types.</param>
+        /// <returns>The selection.</returns>
         public static ObjectId[] GetWindowSelection(Point3d pt1, Point3d pt2, string allowedType = "*")
         {
-            Editor ed = Application.DocumentManager.MdiActiveDocument.Editor;
-            PromptSelectionResult res = ed.SelectWindow(pt1, pt2, new SelectionFilter(new TypedValue[] { new TypedValue(0, allowedType) }));
+            var ed = Application.DocumentManager.MdiActiveDocument.Editor;
+            var res = ed.SelectWindow(pt1, pt2, new SelectionFilter(new[] { new TypedValue((int)DxfCode.Start, allowedType) }));
             if (res.Status == PromptStatus.OK)
             {
                 return res.Value.GetObjectIds();
             }
-            else
-            {
-                return new ObjectId[0];
-            }
+
+            return Array.Empty<ObjectId>();
         }
 
         /// <summary>
-        /// 叉选式空间查询
+        /// Gets multiple entities by crossing.
         /// </summary>
-        /// <param name="pt1">角点1</param>
-        /// <param name="pt2">角点2</param>
-        /// <param name="allowedType">允许类型</param>
-        /// <returns>选择集</returns>
+        /// <param name="pt1">The corner 1.</param>
+        /// <param name="pt2">The corner 2.</param>
+        /// <param name="allowedType">The allowed types.</param>
+        /// <returns>The selection.</returns>
         public static ObjectId[] GetCrossingSelection(Point3d pt1, Point3d pt2, string allowedType = "*")
         {
-            Editor ed = Application.DocumentManager.MdiActiveDocument.Editor;
-            PromptSelectionResult res = ed.SelectCrossingWindow(pt1, pt2, new SelectionFilter(new TypedValue[] { new TypedValue(0, allowedType) }));
+            var ed = Application.DocumentManager.MdiActiveDocument.Editor;
+            var res = ed.SelectCrossingWindow(pt1, pt2, new SelectionFilter(new[] { new TypedValue((int)DxfCode.Start, allowedType) }));
             if (res.Status == PromptStatus.OK)
             {
                 return res.Value.GetObjectIds();
             }
-            else
-            {
-                return new ObjectId[0];
-            }
+
+            return Array.Empty<ObjectId>();
         }
 
         /// <summary>
-        /// 获取命令前拾取集。注意：CommandMethod特性的CommadFlags要添加UserPickSet位域
+        /// Gets the pick set.
         /// </summary>
-        /// <returns>实体ID数组</returns>
+        /// <remarks>
+        /// Don't forget to add CommandFlags.UsePickSet to CommandMethod.
+        /// </remarks>
+        /// <returns>The selection.</returns>
         public static ObjectId[] GetPickSet()
         {
-            Editor ed = Application.DocumentManager.MdiActiveDocument.Editor;
-            PromptSelectionResult res = ed.SelectImplied();
+            var ed = Application.DocumentManager.MdiActiveDocument.Editor;
+            var res = ed.SelectImplied();
             if (res.Status == PromptStatus.OK)
             {
-                //ed.WriteMessage("已选择 {0} 个实体", res.Value.Count);
                 return res.Value.GetObjectIds();
             }
-            else
-            {
-                return new ObjectId[0];
-            }
+
+            return Array.Empty<ObjectId>();
         }
 
         /// <summary>
-        /// 设置命令前拾取集。
+        /// Sets the pick set.
         /// </summary>
-        /// <param name="ids">实体ID数组</param>
-        public static void SetPickSet(ObjectId[] ids)
+        /// <param name="entityIds">The entity IDs.</param>
+        public static void SetPickSet(ObjectId[] entityIds)
         {
-            Editor ed = Application.DocumentManager.MdiActiveDocument.Editor;
-            ed.SetImpliedSelection(ids);
+            var ed = Application.DocumentManager.MdiActiveDocument.Editor;
+            ed.SetImpliedSelection(entityIds);
         }
 
         /// <summary>
-        /// 获取用本CodePack中的绘图函数最后添加的实体
+        /// Gets the last added entity.
         /// </summary>
-        /// <returns>实体ID</returns>
+        /// <returns>The entity ID.</returns>
         public static ObjectId GetNewestEntity()
         {
-            Editor ed = Application.DocumentManager.MdiActiveDocument.Editor;
-            PromptSelectionResult res = ed.SelectLast();
+            var ed = Application.DocumentManager.MdiActiveDocument.Editor;
+            var res = ed.SelectLast();
             if (res.Status == PromptStatus.OK)
             {
                 return res.Value.GetObjectIds()[0];
             }
-            else
-            {
-                return ObjectId.Null;
-            }
+
+            return ObjectId.Null;
         }
 
         /// <summary>
-        /// 获取用本CodePack中的绘图函数最后一批添加的实体
+        /// Gets the last added entities.
         /// </summary>
-        /// <returns>实体ID数组</returns>
+        /// <returns>The entity IDs.</returns>
         public static ObjectId[] GetNewestEntities()
         {
-            Editor ed = Application.DocumentManager.MdiActiveDocument.Editor;
-            PromptSelectionResult res = ed.SelectLast();
+            var ed = Application.DocumentManager.MdiActiveDocument.Editor;
+            var res = ed.SelectLast();
             if (res.Status == PromptStatus.OK)
             {
                 return res.Value.GetObjectIds();
             }
-            else
-            {
-                return new ObjectId[0];
-            }
+
+            return Array.Empty<ObjectId>();
         }
 
-        [System.Runtime.InteropServices.DllImport("user32.dll")]
-        private static extern System.IntPtr SetFocus(System.IntPtr hwnd);
+        [DllImport("user32.dll")]
+        private static extern IntPtr SetFocus(IntPtr hwnd);
 
-        [System.Runtime.InteropServices.DllImport("user32.dll")]
-        private static extern System.IntPtr SetParent(System.IntPtr child, System.IntPtr parent);
+        [DllImport("user32.dll")]
+        private static extern IntPtr SetParent(IntPtr child, IntPtr parent);
 
         /// <summary>
-        /// 使活动文档窗口获取焦点
+        /// Sets focus to the active document.
         /// </summary>
         public static void SetActiveDocFocus()
         {
-            SetFocus(Application.DocumentManager.MdiActiveDocument.Window.Handle);
+            Interaction.SetFocus(Application.DocumentManager.MdiActiveDocument.Window.Handle);
         }
 
         /// <summary>
-        /// 设置当前图层
+        /// Sets the current layer.
         /// </summary>
-        /// <param name="layer">图层名</param>
-        public static void SetCurrentLayer(string layer)
+        /// <param name="layerName">The layer name.</param>
+        public static void SetCurrentLayer(string layerName)
         {
-            HostApplicationServices.WorkingDatabase.Clayer = DbHelper.GetLayerId(layer);
+            HostApplicationServices.WorkingDatabase.Clayer = DbHelper.GetLayerId(layerName);
         }
 
         /// <summary>
-        /// 发送命令行
+        /// Sends command to execute.
         /// </summary>
-        /// <param name="command">命令</param>
+        /// <param name="command">The command.</param>
         public static void Command(string command)
         {
             Application.DocumentManager.MdiActiveDocument.SendStringToExecute(command, false, false, false);
         }
 
         /// <summary>
-        /// 开启新命令 newly 20140731
+        /// Starts new command.
         /// </summary>
-        /// <param name="command">命令</param>
+        /// <param name="command">The command.</param>
         public static void StartCommand(string command)
         {
-            string esc = string.Empty;
-            string cmds = Application.GetSystemVariable("CMDNAMES").ToString();
-            if (cmds.Length > 0)
-            {
-                int cmdNum = cmds.Split('\'').Length;
-                for (int i = 0; i < cmdNum; i++)
-                {
-                    esc += '\x03';
-                }
-            }
-            Application.DocumentManager.MdiActiveDocument.SendStringToExecute(esc + command, true, false, true);
+            var existingCommands = Application.GetSystemVariable("CMDNAMES").ToString();
+            var escapes = existingCommands.Length > 0
+                ? string.Join(string.Empty, Enumerable.Repeat('\x03', existingCommands.Split('\'').Length))
+                : string.Empty;
+
+            Application.DocumentManager.MdiActiveDocument.SendStringToExecute(escapes + command, true, false, true);
         }
 
-#if R18
         /// <summary>
-        /// COM接口发送命令行
+        /// Shows a task dialog.
         /// </summary>
-        /// <param name="command"></param>
-        //public static void Command2(string command)
-        //{
-        //    //var doc = Application.DocumentManager.MdiActiveDocument.AcadDocument;
-        //    //System.Reflection.MethodInfo mi = doc.GetType().GetMethod("SendCommand", new Type[] { typeof(string) });
-        //    //mi.Invoke(doc, new object[] { command });
-        //    var doc = Application.DocumentManager.MdiActiveDocument.AcadDocument as Autodesk.AutoCAD.Interop.AcadDocument;
-        //    doc.SendCommand(command);
-        //}
-#endif
-
-        /// <summary>
-        /// 显示任务对话框
-        /// </summary>
-        /// <param name="mainInstruction">主说明</param>
-        /// <param name="yesChoice">是选项</param>
-        /// <param name="noChoice">否选项</param>
-        /// <param name="title">对话框标题</param>
-        /// <param name="content">内容</param>
-        /// <param name="footer">脚注</param>
-        /// <param name="expanded">详细说明</param>
-        /// <returns>用户选择</returns>
+        /// <param name="mainInstruction">The main instruction.</param>
+        /// <param name="yesChoice">The yes choice.</param>
+        /// <param name="noChoice">The no choice.</param>
+        /// <param name="title">The dialog title.</param>
+        /// <param name="content">The content.</param>
+        /// <param name="footer">The footer.</param>
+        /// <param name="expanded">The expanded text.</param>
+        /// <returns>The choice.</returns>
         public static bool TaskDialog(string mainInstruction, string yesChoice, string noChoice, string title = "AutoCAD", string content = "", string footer = "", string expanded = "")
         {
             var td = new TaskDialog
@@ -609,8 +551,8 @@ namespace AutoCADCommands
                 MainIcon = TaskDialogIcon.Information,
                 FooterIcon = TaskDialogIcon.Warning,
                 FooterText = footer,
-                CollapsedControlText = "详细信息",
-                ExpandedControlText = "详细信息",
+                CollapsedControlText = "Details",
+                ExpandedControlText = "Details",
                 ExpandedByDefault = false,
                 ExpandedText = expanded,
                 AllowDialogCancellation = false,
@@ -639,44 +581,44 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 高亮实体
+        /// Highlights entities.
         /// </summary>
-        /// <param name="entIds">实体集</param>
-        public static void HighlightObjects(IEnumerable<ObjectId> entIds)
+        /// <param name="entityIds">The entity IDs.</param>
+        public static void HighlightObjects(IEnumerable<ObjectId> entityIds)
         {
-            entIds.QForEach<Entity>(x => x.Highlight());
+            entityIds.QForEach<Entity>(x => x.Highlight());
         }
 
         /// <summary>
-        /// 取消高亮实体
+        /// Unhighlights entities.
         /// </summary>
-        /// <param name="entIds">实体集</param>
-        public static void UnhighlightObjects(IEnumerable<ObjectId> entIds)
+        /// <param name="entityIds">The entity IDs.</param>
+        public static void UnhighlightObjects(IEnumerable<ObjectId> entityIds)
         {
-            entIds.QForEach<Entity>(x => x.Unhighlight());
+            entityIds.QForEach<Entity>(x => x.Unhighlight());
         }
 
         /// <summary>
-        /// 缩放到实体
+        /// Zooms to entities' extents.
         /// </summary>
-        /// <param name="entIds">实体集</param>
-        public static void ZoomObjects(IEnumerable<ObjectId> entIds)
+        /// <param name="entityIds">The entity IDs.</param>
+        public static void ZoomObjects(IEnumerable<ObjectId> entityIds)
         {
-            var extent = entIds.GetExtents();
+            var extent = entityIds.GetExtents();
             Interaction.ZoomView(extent);
         }
 
         /// <summary>
-        /// 缩放到指定范围
+        /// Zooms to extents.
         /// </summary>
-        /// <param name="extent">范围</param>
-        public static void ZoomView(Extents3d extent)
+        /// <param name="extents">The extents.</param>
+        public static void ZoomView(Extents3d extents)
         {
-            Interaction.Zoom(extent.MinPoint, extent.MaxPoint, new Point3d(), 1);
+            Interaction.Zoom(extents.MinPoint, extents.MaxPoint, new Point3d(), 1);
         }
 
         /// <summary>
-        /// 范围缩放
+        /// Zooms to all entities' extents.
         /// </summary>
         public static void ZoomExtents()
         {
@@ -832,77 +774,71 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 可视化插入实体
+        /// Inserts entity.
         /// </summary>
-        /// <param name="ent">实体</param>
+        /// <param name="entity">The entity.</param>
         /// <param name="message">The message.</param>
-        /// <returns>实体ID</returns>
-        public static ObjectId InsertEntity(Entity ent, string message = "\nSpecify insert point")
+        /// <returns>The entity ID.</returns>
+        public static ObjectId InsertEntity(Entity entity, string message = "\nSpecify insert point")
         {
-            Editor ed = Application.DocumentManager.MdiActiveDocument.Editor;
-            PositionJig jig = new PositionJig(ent, message);
-            PromptResult res = ed.Drag(jig);
+            var ed = Application.DocumentManager.MdiActiveDocument.Editor;
+            var jig = new PositionJig(entity, message);
+            var res = ed.Drag(jig);
             if (res.Status == PromptStatus.OK)
             {
                 return jig.Ent.AddToCurrentSpace();
             }
-            else
-            {
-                return ObjectId.Null;
-            }
+
+            return ObjectId.Null;
         }
 
         /// <summary>
-        /// 可视化插入可缩放实体
+        /// Inserts scaling entity.
         /// </summary>
-        /// <param name="ent">实体</param>
-        /// <param name="basePoint">基点</param>
-        /// <param name="message">提示信息</param>
-        /// <returns>实体ID</returns>
-        public static ObjectId InsertScalingEntity(Entity ent, Point3d basePoint, string message = "\n指定对角点")
+        /// <param name="entity">The entity.</param>
+        /// <param name="basePoint">The base point.</param>
+        /// <param name="message">The message.</param>
+        /// <returns>The entity ID.</returns>
+        public static ObjectId InsertScalingEntity(Entity entity, Point3d basePoint, string message = "\nSpecify diagonal point")
         {
-            Editor ed = Application.DocumentManager.MdiActiveDocument.Editor;
-            ScaleJig jig = new ScaleJig(ent, basePoint, message);
-            PromptResult res = ed.Drag(jig);
+            var ed = Application.DocumentManager.MdiActiveDocument.Editor;
+            var jig = new ScaleJig(entity, basePoint, message);
+            var res = ed.Drag(jig);
             if (res.Status == PromptStatus.OK)
             {
                 return jig.Ent.AddToCurrentSpace();
             }
-            else
-            {
-                return ObjectId.Null;
-            }
+
+            return ObjectId.Null;
         }
 
         /// <summary>
-        /// 可视化插入可旋转实体
+        /// Inserts rotation entity.
         /// </summary>
-        /// <param name="ent">实体</param>
-        /// <param name="center">中心</param>
-        /// <param name="message">提示信息</param>
-        /// <returns>实体ID</returns>
-        public static ObjectId InsertRotationEntity(Entity ent, Point3d center, string message = "\n指定方向")
+        /// <param name="entity">The entity.</param>
+        /// <param name="center">The center.</param>
+        /// <param name="message">The message.</param>
+        /// <returns>The entity ID.</returns>
+        public static ObjectId InsertRotationEntity(Entity entity, Point3d center, string message = "\nSpecify direction")
         {
-            Editor ed = Application.DocumentManager.MdiActiveDocument.Editor;
-            RotationJig jig = new RotationJig(ent, center, message);
-            PromptResult res = ed.Drag(jig);
+            var ed = Application.DocumentManager.MdiActiveDocument.Editor;
+            var jig = new RotationJig(entity, center, message);
+            var res = ed.Drag(jig);
             if (res.Status == PromptStatus.OK)
             {
                 return jig.Ent.AddToCurrentSpace();
             }
-            else
-            {
-                return ObjectId.Null;
-            }
+
+            return ObjectId.Null;
         }
 
         /// <summary>
-        /// 操作系统保存文件对话框
+        /// Shows OS save file dialog.
         /// </summary>
-        /// <param name="title">标题</param>
-        /// <param name="fileName">文件名</param>
-        /// <param name="filter">类型过滤器</param>
-        /// <returns>文件名</returns>
+        /// <param name="title">The title.</param>
+        /// <param name="fileName">The file name.</param>
+        /// <param name="filter">The type filter.</param>
+        /// <returns>The file name result.</returns>
         public static string SaveFileDialogBySystem(string title, string fileName, string filter)
         {
             var sfd = new SaveFileDialog
@@ -916,19 +852,17 @@ namespace AutoCADCommands
             {
                 return sfd.FileName;
             }
-            else
-            {
-                return string.Empty;
-            }
+
+            return string.Empty;
         }
 
         /// <summary>
-        /// 操作系统打开文件对话框
+        /// Shows OS open file dialog.
         /// </summary>
-        /// <param name="title">标题</param>
-        /// <param name="fileName">文件名</param>
-        /// <param name="filter">类型过滤器</param>
-        /// <returns>文件名</returns>
+        /// <param name="title">The title.</param>
+        /// <param name="fileName">The file name.</param>
+        /// <param name="filter">The type filter.</param>
+        /// <returns>The file name result.</returns>
         public static string OpenFileDialogBySystem(string title, string fileName, string filter)
         {
             var ofd = new OpenFileDialog
@@ -942,22 +876,20 @@ namespace AutoCADCommands
             {
                 return ofd.FileName;
             }
-            else
-            {
-                return string.Empty;
-            }
+
+            return string.Empty;
         }
 
         /// <summary>
-        /// 文件夹对话框
+        /// The OS folder dialog.
         /// </summary>
-        /// <param name="instruction">提示</param>
-        /// <returns>文件夹名</returns>
-        public static string FolderDialog(string instruction)
+        /// <param name="description">The description.</param>
+        /// <returns>The folder result.</returns>
+        public static string FolderDialog(string description)
         {
             var fbd = new FolderBrowserDialog
             {
-                Description = instruction,
+                Description = description,
                 RootFolder = Environment.SpecialFolder.Desktop,
                 ShowNewFolderButton = true
             };
@@ -966,10 +898,8 @@ namespace AutoCADCommands
             {
                 return fbd.SelectedPath;
             }
-            else
-            {
-                return string.Empty;
-            }
+
+            return string.Empty;
         }
 
         // TODO: file dialog by AutoCAD
@@ -978,9 +908,9 @@ namespace AutoCADCommands
         //}
 
         /// <summary>
-        /// AutoCAD颜色对话框
+        /// Shows AutoCAD color dialog.
         /// </summary>
-        /// <returns>颜色</returns>
+        /// <returns>The color result.</returns>
         public static Color ColorDialog()
         {
             var cd = new ColorDialog();
@@ -988,17 +918,15 @@ namespace AutoCADCommands
             {
                 return cd.Color;
             }
-            else
-            {
-                return null;
-            }
+
+            return null;
         }
 
         /// <summary>
-        /// 获取用户交互创建的Polyline
+        /// Creates polyline interactively.
         /// </summary>
-        /// <param name="message">提示</param>
-        /// <returns>多段线</returns>
+        /// <param name="message">The message.</param>
+        /// <returns>The polyline result.</returns>
         public static Polyline GetPromptPolyline(string message) // newly 20130806
         {
             var point = Interaction.GetPoint(message);
@@ -1025,38 +953,47 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 多个实体，输入编号逐个查看
+        /// View entities interactively.
         /// </summary>
-        /// <param name="ids">实体ID数组</param>
-        /// <param name="action">动作</param>
-        public static void ZoomHighlightView(List<ObjectId> ids, Action<int> action = null) // newly 20130815
+        /// <param name="entityIds">The entity IDs.</param>
+        /// <param name="action">The action.</param>
+        public static void ZoomHighlightView(List<ObjectId> entityIds, Action<int> action = null) // newly 20130815
         {
-            if (ids.Count > 0)
+            if (entityIds.Count > 0)
             {
                 var highlightIds = new List<ObjectId>();
                 while (true)
                 {
-                    string input = Interaction.GetString("\n输入编号查看，按回车退出");
+                    string input = Interaction.GetString("\nType in a number to view, press ENTER to exit: ");
                     if (input == null)
                     {
                         break;
                     }
                     var index = Convert.ToInt32(input);
-                    if (index <= 0 || index > ids.Count)
+                    if (index <= 0 || index > entityIds.Count)
                     {
-                        Interaction.WriteLine("编号不在范围内。");
+                        Interaction.WriteLine("Invalid entity number.");
                         continue;
                     }
 
                     action?.Invoke(index);
                     highlightIds.Clear();
-                    highlightIds.Add(ids[index - 1]);
+                    highlightIds.Add(entityIds[index - 1]);
                     Interaction.ZoomObjects(highlightIds);
                     Interaction.HighlightObjects(highlightIds);
                 }
             }
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="TOptions"></typeparam>
+        /// <typeparam name="TResult"></typeparam>
+        /// <param name="options"></param>
+        /// <param name="entity"></param>
+        /// <param name="updateAction"></param>
+        /// <returns></returns>
         public static PromptResult StartDrag<TOptions, TResult>(TOptions options, Entity entity, Func<Entity, TResult, bool> updateAction)
             where TOptions : JigPromptOptions
             where TResult : PromptResult
@@ -1066,6 +1003,13 @@ namespace AutoCADCommands
             return ed.Drag(jig);
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="message"></param>
+        /// <param name="entity"></param>
+        /// <param name="updateAction"></param>
+        /// <returns></returns>
         public static PromptResult StartDrag(string message, Entity entity, Func<Entity, PromptPointResult, bool> updateAction)
         {
             var ed = Application.DocumentManager.MdiActiveDocument.Editor;
@@ -1074,6 +1018,14 @@ namespace AutoCADCommands
             return ed.Drag(jig);
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="TOptions"></typeparam>
+        /// <typeparam name="TResult"></typeparam>
+        /// <param name="options"></param>
+        /// <param name="updateAction"></param>
+        /// <returns></returns>
         public static PromptResult StartDrag<TOptions, TResult>(TOptions options, Func<TResult, Drawable> updateAction)
             where TOptions: JigPromptOptions
             where TResult: PromptResult
@@ -1083,6 +1035,12 @@ namespace AutoCADCommands
             return ed.Drag(jig);
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="message"></param>
+        /// <param name="updateAction"></param>
+        /// <returns></returns>
         public static PromptResult StartDrag(string message, Func<PromptPointResult, Drawable> updateAction)
         {
             var ed = Application.DocumentManager.MdiActiveDocument.Editor;
@@ -1151,10 +1109,10 @@ namespace AutoCADCommands
 
         public Entity Ent { get; }
 
-        public PositionJig(Entity ent, string message)
-            : base(ent)
+        public PositionJig(Entity entity, string message)
+            : base(entity)
         {
-            this.Ent = ent;
+            this.Ent = entity;
             this._message = message;
         }
 
@@ -1210,10 +1168,10 @@ namespace AutoCADCommands
 
         public Entity Ent { get; }
 
-        public ScaleJig(Entity ent, Point3d basePoint, string message)
-            : base(ent)
+        public ScaleJig(Entity entity, Point3d basePoint, string message)
+            : base(entity)
         {
-            this.Ent = ent;
+            this.Ent = entity;
             this._basePoint = basePoint;
             this._message = message;
             this._extents = Ent.GeometricExtents;
@@ -1286,8 +1244,8 @@ namespace AutoCADCommands
 
         public Entity Ent => base.Entity;
 
-        public RotationJig(Entity ent, Point3d center, string message)
-            : base(ent)
+        public RotationJig(Entity entity, Point3d center, string message)
+            : base(entity)
         {
             this._center = center;
             this._message = message;

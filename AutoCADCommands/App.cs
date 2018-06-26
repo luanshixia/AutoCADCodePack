@@ -344,7 +344,7 @@ namespace AutoCADCommands
     public static class Arx
     {
         [DllImport("acad.exe", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl, EntryPoint = "acedCmd")]
-        public static extern int acedCmd(System.IntPtr vlist);
+        public static extern int acedCmd(IntPtr vlist);
 
         [DllImport("acad.exe", CharSet = CharSet.Auto, CallingConvention = CallingConvention.Cdecl)]
         public static extern int ads_queueexpr(string strExpr);

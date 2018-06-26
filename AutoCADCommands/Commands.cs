@@ -1390,15 +1390,15 @@ namespace AutoCADCommands
         /// Rotates an entity.
         /// </summary>
         /// <param name="entityId">The entity ID.</param>
-        /// <param name="basePoint">The base point.</param>
+        /// <param name="center">The center.</param>
         /// <param name="angle">The angle.</param>
         /// <param name="axis">The axis. Default is the Z axis.</param>
-        public static void Rotate(this ObjectId entityId, Point3d basePoint, double angle, Vector3d? axis = null)
+        public static void Rotate(this ObjectId entityId, Point3d center, double angle, Vector3d? axis = null)
         {
             using (var trans = entityId.Database.TransactionManager.StartTransaction())
             {
                 var entity = trans.GetObject(entityId, OpenMode.ForWrite) as Entity;
-                entity.TransformBy(Matrix3d.Rotation(angle, axis ?? Vector3d.ZAxis, basePoint));
+                entity.TransformBy(Matrix3d.Rotation(angle, axis ?? Vector3d.ZAxis, center));
                 trans.Commit();
             }
         }

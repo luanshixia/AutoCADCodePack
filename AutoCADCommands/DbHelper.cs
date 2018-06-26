@@ -418,9 +418,11 @@ namespace AutoCADCommands
         [Obsolete("Legacy data store mechanism. Use FlexDataStore instead.")]
         public static void SetCode(this Entity entity, string code)
         {
-            entity.XData = new ResultBuffer(new TypedValue[]
-                { new TypedValue((int)DxfCode.ExtendedDataRegAppName, Consts.AppNameForCode),
-                  new TypedValue((int)DxfCode.ExtendedDataAsciiString, code) });
+            entity.XData = new ResultBuffer(new[]
+            {
+                new TypedValue((int)DxfCode.ExtendedDataRegAppName, Consts.AppNameForCode),
+                new TypedValue((int)DxfCode.ExtendedDataAsciiString, code)
+            });
         }
 
         [Obsolete("Legacy data store mechanism. Use FlexDataStore instead.")]
