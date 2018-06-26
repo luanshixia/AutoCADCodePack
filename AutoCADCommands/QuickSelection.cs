@@ -21,55 +21,23 @@ namespace AutoCADCommands
         /// </summary>
         /// <param name="ids">The object IDs.</param>
         /// <param name="filter">The filter.</param>
-        /// <param name="db">The database.</param>
-        /// <returns>Filtered IDs.</returns>
-        public static IEnumerable<ObjectId> QWhere(this IEnumerable<ObjectId> ids, Func<Entity, bool> filter, Database db)
-        {
-            return ids
-                .QOpenForRead<Entity>(db)
-                .Where(filter)
-                .Select(entity => entity.ObjectId);
-        }
-
-        /// <summary>
-        /// QLinq Where.
-        /// </summary>
-        /// <param name="ids">The object IDs.</param>
-        /// <param name="filter">The filter.</param>
         /// <returns>Filtered IDs.</returns>
         public static IEnumerable<ObjectId> QWhere(this IEnumerable<ObjectId> ids, Func<Entity, bool> filter)
         {
-            return ids.QWhere(filter, HostApplicationServices.WorkingDatabase);
-        }
-
-        [Obsolete("Use QOpenForRead().")]
-        public static ObjectId QPick(this IEnumerable<ObjectId> ids, Func<Entity, bool> filter, Database db)
-        {
-            // TODO: verify that the default works.
             return ids
-                .QOpenForRead<Entity>(db)
-                .FirstOrDefault()
-                .ObjectId;
+                .QOpenForRead<Entity>()
+                .Where(filter)
+                .Select(entity => entity.ObjectId);
         }
 
         [Obsolete("Use QOpenForRead().")]
         public static ObjectId QPick(this IEnumerable<ObjectId> ids, Func<Entity, bool> filter)
         {
-            return ids.QPick(filter, HostApplicationServices.WorkingDatabase);
-        }
-
-        /// <summary>
-        /// QLinq Select.
-        /// </summary>
-        /// <param name="ids">The object IDs.</param>
-        /// <param name="mapper">The mapper.</param>
-        /// <param name="db">The database.</param>
-        /// <returns>Mapped results.</returns>
-        public static IEnumerable<TResult> QSelect<TResult>(this IEnumerable<ObjectId> ids, Func<Entity, TResult> mapper, Database db)
-        {
+            // TODO: verify that the default works.
             return ids
-                .QOpenForRead<Entity>(db)
-                .Select(mapper);
+                .QOpenForRead<Entity>()
+                .FirstOrDefault()
+                .ObjectId;
         }
 
         /// <summary>
@@ -80,20 +48,16 @@ namespace AutoCADCommands
         /// <returns>Mapped results.</returns>
         public static IEnumerable<TResult> QSelect<TResult>(this IEnumerable<ObjectId> ids, Func<Entity, TResult> mapper)
         {
-            return ids.QSelect(mapper, HostApplicationServices.WorkingDatabase);
-        }
-
-        [Obsolete("Use QOpenForRead().")]
-        public static TResult QSelect<TResult>(this ObjectId entId, Func<Entity, TResult> mapper, Database db)
-        {
-            var ids = new List<ObjectId> { entId };
-            return ids.QSelect(mapper, db).First();
+            return ids
+                .QOpenForRead<Entity>()
+                .Select(mapper);
         }
 
         [Obsolete("Use QOpenForRead().")]
         public static TResult QSelect<TResult>(this ObjectId entId, Func<Entity, TResult> mapper)
         {
-            return entId.QSelect(mapper, HostApplicationServices.WorkingDatabase);
+            var ids = new List<ObjectId> { entId };
+            return ids.QSelect(mapper).First();
         }
 
         #endregion
@@ -103,62 +67,25 @@ namespace AutoCADCommands
         /// <summary>
         /// Opens object for read.
         /// </summary>
-        /// <param name="dboId">The object ID.</param>
-        /// <param name="db">The database.</param>
+        /// <param name="id">The object ID.</param>
         /// <returns>The opened object.</returns>
-        public static DBObject QOpenForRead(this ObjectId dboId, Database db)
+        public static DBObject QOpenForRead(this ObjectId id)
         {
-            using (var trans = db.TransactionManager.StartOpenCloseTransaction())
+            using (var trans = id.Database.TransactionManager.StartOpenCloseTransaction())
             {
-                return trans.GetObject(dboId, OpenMode.ForRead);
+                return trans.GetObject(id, OpenMode.ForRead);
             }
         }
 
         /// <summary>
         /// Opens object for read.
         /// </summary>
-        /// <param name="dboId">The object ID.</param>
-        /// <returns>The opened object.</returns>
-        public static DBObject QOpenForRead(this ObjectId dboId)
-        {
-            return dboId.QOpenForRead(HostApplicationServices.WorkingDatabase);
-        }
-
-        /// <summary>
-        /// Opens object for read.
-        /// </summary>
         /// <typeparam name="T">The type of object.</typeparam>
-        /// <param name="dboId">The object ID.</param>
-        /// <param name="db">The database.</param>
+        /// <param name="id">The object ID.</param>
         /// <returns>The opened object.</returns>
-        public static T QOpenForRead<T>(this ObjectId dboId, Database db) where T : DBObject // newly 20130122
+        public static T QOpenForRead<T>(this ObjectId id) where T : DBObject // newly 20130122
         {
-            return dboId.QOpenForRead(db) as T;
-        }
-
-        /// <summary>
-        /// Opens object for read.
-        /// </summary>
-        /// <typeparam name="T">The type of object.</typeparam>
-        /// <param name="dboId">The object ID.</param>
-        /// <returns>The opened object.</returns>
-        public static T QOpenForRead<T>(this ObjectId dboId) where T : DBObject // newly 20130122
-        {
-            return dboId.QOpenForRead(HostApplicationServices.WorkingDatabase) as T;
-        }
-
-        /// <summary>
-        /// Opens objects for read.
-        /// </summary>
-        /// <param name="ids">The object IDs.</param>
-        /// <param name="db">The database.</param>
-        /// <returns>The opened object.</returns>
-        public static DBObject[] QOpenForRead(this IEnumerable<ObjectId> ids, Database db) // newly 20120915
-        {
-            using (var trans = db.TransactionManager.StartTransaction())
-            {
-                return ids.Select(x => trans.GetObject(x, OpenMode.ForRead)).ToArray();
-            }
+            return id.QOpenForRead() as T;
         }
 
         /// <summary>
@@ -168,21 +95,9 @@ namespace AutoCADCommands
         /// <returns>The opened object.</returns>
         public static DBObject[] QOpenForRead(this IEnumerable<ObjectId> ids) // newly 20120915
         {
-            return ids.QOpenForRead(HostApplicationServices.WorkingDatabase);
-        }
-
-        /// <summary>
-        /// Opens objects for read.
-        /// </summary>
-        /// <typeparam name="T">The type of object.</typeparam>
-        /// <param name="ids">The object IDs.</param>
-        /// <param name="db">The database.</param>
-        /// <returns>The opened object.</returns>
-        public static T[] QOpenForRead<T>(this IEnumerable<ObjectId> ids, Database db) where T : DBObject // newly 20130122
-        {
-            using (var trans = db.TransactionManager.StartTransaction())
+            using (var trans = DbHelper.GetDatabase(ids).TransactionManager.StartTransaction())
             {
-                return ids.Select(x => trans.GetObject(x, OpenMode.ForRead) as T).ToArray();
+                return ids.Select(x => trans.GetObject(x, OpenMode.ForRead)).ToArray();
             }
         }
 
@@ -194,7 +109,10 @@ namespace AutoCADCommands
         /// <returns>The opened object.</returns>
         public static T[] QOpenForRead<T>(this IEnumerable<ObjectId> ids) where T : DBObject // newly 20130122
         {
-            return ids.QOpenForRead<T>(HostApplicationServices.WorkingDatabase);
+            using (var trans = DbHelper.GetDatabase(ids).TransactionManager.StartTransaction())
+            {
+                return ids.Select(x => trans.GetObject(x, OpenMode.ForRead) as T).ToArray();
+            }
         }
 
         #endregion
@@ -204,40 +122,13 @@ namespace AutoCADCommands
         /// <summary>
         /// Opens object for write.
         /// </summary>
-        /// <param name="dboId">The object ID.</param>
+        /// <param name="id">The object ID.</param>
         /// <param name="action">The action.</param>
-        /// <param name="db">The database.</param>
-        public static void QOpenForWrite(this ObjectId dboId, Action<DBObject> action, Database db)
+        public static void QOpenForWrite(this ObjectId id, Action<DBObject> action)
         {
-            using (var trans = db.TransactionManager.StartTransaction())
+            using (var trans = id.Database.TransactionManager.StartTransaction())
             {
-                action(trans.GetObject(dboId, OpenMode.ForWrite));
-                trans.Commit();
-            }
-        }
-
-        /// <summary>
-        /// Opens object for write.
-        /// </summary>
-        /// <param name="dboId">The object ID.</param>
-        /// <param name="action">The action.</param>
-        public static void QOpenForWrite(this ObjectId dboId, Action<DBObject> action)
-        {
-            dboId.QOpenForWrite(action, HostApplicationServices.WorkingDatabase);
-        }
-
-        /// <summary>
-        /// Opens object for write.
-        /// </summary>
-        /// <typeparam name="T">The type of object.</typeparam>
-        /// <param name="dboId">The object ID.</param>
-        /// <param name="action">The action.</param>
-        /// <param name="db">The database.</param>
-        public static void QOpenForWrite<T>(this ObjectId dboId, Action<T> action, Database db) where T : DBObject // newly 20130411
-        {
-            using (var trans = db.TransactionManager.StartTransaction())
-            {
-                action(trans.GetObject(dboId, OpenMode.ForWrite) as T);
+                action(trans.GetObject(id, OpenMode.ForWrite));
                 trans.Commit();
             }
         }
@@ -246,25 +137,13 @@ namespace AutoCADCommands
         /// Opens object for write.
         /// </summary>
         /// <typeparam name="T">The type of object.</typeparam>
-        /// <param name="dboId">The object ID.</param>
+        /// <param name="id">The object ID.</param>
         /// <param name="action">The action.</param>
-        public static void QOpenForWrite<T>(this ObjectId dboId, Action<T> action) where T : DBObject // newly 20130411
+        public static void QOpenForWrite<T>(this ObjectId id, Action<T> action) where T : DBObject // newly 20130411
         {
-            dboId.QOpenForWrite(action, HostApplicationServices.WorkingDatabase);
-        }
-
-        /// <summary>
-        /// Opens objects for write.
-        /// </summary>
-        /// <param name="ids">The object IDs.</param>
-        /// <param name="action">The action.</param>
-        /// <param name="db">The database.</param>
-        public static void QOpenForWrite(this IEnumerable<ObjectId> ids, Action<DBObject[]> action, Database db) // newly 20120908
-        {
-            using (var trans = db.TransactionManager.StartTransaction())
+            using (var trans = id.Database.TransactionManager.StartTransaction())
             {
-                var list = ids.Select(x => trans.GetObject(x, OpenMode.ForWrite)).ToArray();
-                action(list);
+                action(trans.GetObject(id, OpenMode.ForWrite) as T);
                 trans.Commit();
             }
         }
@@ -276,21 +155,9 @@ namespace AutoCADCommands
         /// <param name="action">The action.</param>
         public static void QOpenForWrite(this IEnumerable<ObjectId> ids, Action<DBObject[]> action) // newly 20120908
         {
-            ids.QOpenForWrite(action, HostApplicationServices.WorkingDatabase);
-        }
-
-        /// <summary>
-        /// Opens objects for write.
-        /// </summary>
-        /// <typeparam name="T">The type of object.</typeparam>
-        /// <param name="ids">The object IDs.</param>
-        /// <param name="action">The action.</param>
-        /// <param name="db">The database.</param>
-        public static void QOpenForWrite<T>(this IEnumerable<ObjectId> ids, Action<T[]> action, Database db) where T : DBObject // newly 20130411
-        {
-            using (var trans = db.TransactionManager.StartTransaction())
+            using (var trans = DbHelper.GetDatabase(ids).TransactionManager.StartTransaction())
             {
-                var list = ids.Select(x => trans.GetObject(x, OpenMode.ForWrite) as T).ToArray();
+                var list = ids.Select(x => trans.GetObject(x, OpenMode.ForWrite)).ToArray();
                 action(list);
                 trans.Commit();
             }
@@ -304,20 +171,10 @@ namespace AutoCADCommands
         /// <param name="action">The action.</param>
         public static void QOpenForWrite<T>(this IEnumerable<ObjectId> ids, Action<T[]> action) where T : DBObject // newly 20130411
         {
-            ids.QOpenForWrite(action, HostApplicationServices.WorkingDatabase);
-        }
-
-        /// <summary>
-        /// Opens objects for write (for each).
-        /// </summary>
-        /// <param name="ids">The object IDs.</param>
-        /// <param name="action">The action.</param>
-        /// <param name="db">The database.</param>
-        public static void QForEach(this IEnumerable<ObjectId> ids, Action<DBObject> action, Database db)
-        {
-            using (var trans = db.TransactionManager.StartTransaction())
+            using (var trans = DbHelper.GetDatabase(ids).TransactionManager.StartTransaction())
             {
-                ids.Select(x => trans.GetObject(x, OpenMode.ForWrite)).ToList().ForEach(action);
+                var list = ids.Select(x => trans.GetObject(x, OpenMode.ForWrite) as T).ToArray();
+                action(list);
                 trans.Commit();
             }
         }
@@ -329,21 +186,9 @@ namespace AutoCADCommands
         /// <param name="action">The action.</param>
         public static void QForEach(this IEnumerable<ObjectId> ids, Action<DBObject> action)
         {
-            ids.QForEach(action, HostApplicationServices.WorkingDatabase);
-        }
-
-        /// <summary>
-        /// Opens objects for write (for each).
-        /// </summary>
-        /// <typeparam name="T">The type of object.</typeparam>
-        /// <param name="ids">The object IDs.</param>
-        /// <param name="action">The action.</param>
-        /// <param name="db">The database.</param>
-        public static void QForEach<T>(this IEnumerable<ObjectId> ids, Action<T> action, Database db) where T : DBObject // newly 20130520
-        {
-            using (var trans = db.TransactionManager.StartTransaction())
+            using (var trans = DbHelper.GetDatabase(ids).TransactionManager.StartTransaction())
             {
-                ids.Select(x => trans.GetObject(x, OpenMode.ForWrite) as T).ToList().ForEach(action);
+                ids.Select(x => trans.GetObject(x, OpenMode.ForWrite)).ToList().ForEach(action);
                 trans.Commit();
             }
         }
@@ -356,7 +201,11 @@ namespace AutoCADCommands
         /// <param name="action">The action.</param>
         public static void QForEach<T>(this IEnumerable<ObjectId> ids, Action<T> action) where T : DBObject // newly 20130520
         {
-            ids.QForEach(action, HostApplicationServices.WorkingDatabase);
+            using (var trans = DbHelper.GetDatabase(ids).TransactionManager.StartTransaction())
+            {
+                ids.Select(x => trans.GetObject(x, OpenMode.ForWrite) as T).ToList().ForEach(action);
+                trans.Commit();
+            }
         }
 
         #endregion
@@ -364,52 +213,34 @@ namespace AutoCADCommands
         #region Aggregation: QCount|QMin|QMax
 
         [Obsolete("Use QOpenForRead().")]
-        public static int QCount(this IEnumerable<ObjectId> ids, Func<Entity, bool> filter, Database db)
-        {
-            return ids
-                .QOpenForRead<Entity>(db)
-                .Count(filter);
-        }
-
-        [Obsolete("Use QOpenForRead().")]
         public static int QCount(this IEnumerable<ObjectId> ids, Func<Entity, bool> filter)
         {
-            return ids.QCount(filter, HostApplicationServices.WorkingDatabase);
-        }
-
-        [Obsolete("Use QOpenForRead().")]
-        public static double QMin(this IEnumerable<ObjectId> ids, Func<Entity, double> mapper, Database db)
-        {
             return ids
-                .QOpenForRead<Entity>(db)
-                .Min(mapper);
+                .QOpenForRead<Entity>()
+                .Count(filter);
         }
 
         [Obsolete("Use QOpenForRead().")]
         public static double QMin(this IEnumerable<ObjectId> ids, Func<Entity, double> mapper)
         {
-            return ids.QMin(mapper, HostApplicationServices.WorkingDatabase);
-        }
-
-        [Obsolete("Use QOpenForRead().")]
-        public static double QMax(this IEnumerable<ObjectId> ids, Func<Entity, double> mapper, Database db)
-        {
             return ids
-                .QOpenForRead<Entity>(db)
-                .Max(mapper);
+                .QOpenForRead<Entity>()
+                .Min(mapper);
         }
 
         [Obsolete("Use QOpenForRead().")]
         public static double QMax(this IEnumerable<ObjectId> ids, Func<Entity, double> mapper)
         {
-            return ids.QMax(mapper, HostApplicationServices.WorkingDatabase);
+            return ids
+                .QOpenForRead<Entity>()
+                .Max(mapper);
         }
 
         [Obsolete("Use QOpenForRead().")]
-        public static ObjectId QMinEntity(this IEnumerable<ObjectId> ids, Func<Entity, double> mapper, Database db)
+        public static ObjectId QMinEntity(this IEnumerable<ObjectId> ids, Func<Entity, double> mapper)
         {
             // Bad implementation.
-            using (var trans = db.TransactionManager.StartOpenCloseTransaction())
+            using (var trans = DbHelper.GetDatabase(ids).TransactionManager.StartOpenCloseTransaction())
             {
                 var ents = ids.Select(x => trans.GetObject(x, OpenMode.ForRead) as Entity).ToList();
                 double value = ents.Min(mapper);
@@ -418,27 +249,15 @@ namespace AutoCADCommands
         }
 
         [Obsolete("Use QOpenForRead().")]
-        public static ObjectId QMinEntity(this IEnumerable<ObjectId> ids, Func<Entity, double> mapper)
-        {
-            return ids.QMinEntity(mapper, HostApplicationServices.WorkingDatabase);
-        }
-
-        [Obsolete("Use QOpenForRead().")]
-        public static ObjectId QMaxEntity(this IEnumerable<ObjectId> ids, Func<Entity, double> mapper, Database db)
+        public static ObjectId QMaxEntity(this IEnumerable<ObjectId> ids, Func<Entity, double> mapper)
         {
             // Bad implementation.
-            using (var trans = db.TransactionManager.StartOpenCloseTransaction())
+            using (var trans = DbHelper.GetDatabase(ids).TransactionManager.StartOpenCloseTransaction())
             {
                 var ents = ids.Select(x => trans.GetObject(x, OpenMode.ForRead) as Entity).ToList();
                 double value = ents.Max(mapper);
                 return ents.First(x => mapper(x) == value).ObjectId;
             }
-        }
-
-        [Obsolete("Use QOpenForRead().")]
-        public static ObjectId QMaxEntity(this IEnumerable<ObjectId> ids, Func<Entity, double> mapper)
-        {
-            return ids.QMaxEntity(mapper, HostApplicationServices.WorkingDatabase);
         }
 
         #endregion

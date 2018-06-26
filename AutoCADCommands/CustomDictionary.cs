@@ -72,7 +72,7 @@ namespace AutoCADCommands
 
         internal static void SetEntry(ObjectId dictId, string key, string value)
         {
-            using (var trans = HostApplicationServices.WorkingDatabase.TransactionManager.StartTransaction())
+            using (var trans = dictId.Database.TransactionManager.StartTransaction())
             {
                 var dict = trans.GetObject(dictId, OpenMode.ForWrite) as DBDictionary;
                 if (dict.Contains(key))
@@ -91,7 +91,7 @@ namespace AutoCADCommands
 
         internal static string GetEntry(ObjectId dictId, string key)
         {
-            using (var trans = HostApplicationServices.WorkingDatabase.TransactionManager.StartTransaction())
+            using (var trans = dictId.Database.TransactionManager.StartTransaction())
             {
                 var dict = trans.GetObject(dictId, OpenMode.ForRead) as DBDictionary;
                 if (dict.Contains(key))
@@ -208,7 +208,7 @@ namespace AutoCADCommands
         /// <param name="key">The key.</param>
         public static void RemoveEntry(ObjectId id, string dictName, string key) // newly 20111206
         {
-            using (var trans = HostApplicationServices.WorkingDatabase.TransactionManager.StartTransaction())
+            using (var trans = id.Database.TransactionManager.StartTransaction())
             {
                 var dict = trans.GetObject(GetDictionaryId(id, dictName), OpenMode.ForWrite) as DBDictionary;
                 if (dict.Contains(key))
@@ -226,7 +226,7 @@ namespace AutoCADCommands
         /// <returns>The names.</returns>
         public static IEnumerable<string> GetDictionaryNames(ObjectId id)
         {
-            using (var trans = HostApplicationServices.WorkingDatabase.TransactionManager.StartTransaction())
+            using (var trans = id.Database.TransactionManager.StartTransaction())
             {
                 var dbo = trans.GetObject(id, OpenMode.ForRead);
                 var dictRoot = trans.GetObject(dbo.ExtensionDictionary, OpenMode.ForRead) as DBDictionary;
@@ -252,7 +252,7 @@ namespace AutoCADCommands
         {
             using (var doclock = Application.DocumentManager.MdiActiveDocument.LockDocument())
             {
-                using (var trans = HostApplicationServices.WorkingDatabase.TransactionManager.StartTransaction())
+                using (var trans = id.Database.TransactionManager.StartTransaction())
                 {
                     var dbo = trans.GetObject(id, OpenMode.ForRead);
                     if (dbo.ExtensionDictionary == ObjectId.Null)

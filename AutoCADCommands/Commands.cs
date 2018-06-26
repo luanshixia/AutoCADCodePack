@@ -1,9 +1,11 @@
 ﻿using Autodesk.AutoCAD.ApplicationServices;
 using Autodesk.AutoCAD.DatabaseServices;
 using Autodesk.AutoCAD.Geometry;
+using Autodesk.AutoCAD.GraphicsInterface;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Polyline = Autodesk.AutoCAD.DatabaseServices.Polyline;
 
 namespace AutoCADCommands
 {
@@ -414,7 +416,7 @@ namespace AutoCADCommands
         /// <returns>The object ID.</returns>
         public static ObjectId Hatch(ObjectId[] loopIds, string hatchName = "SOLID", double scale = 1, double angle = 0, bool associative = false)
         {
-            var db = HostApplicationServices.WorkingDatabase;
+            var db = DbHelper.GetDatabase(loopIds);
             using (Transaction trans = db.TransactionManager.StartTransaction())
             {
                 var hatch = new Hatch();
@@ -719,7 +721,7 @@ namespace AutoCADCommands
 
                 var sourceDb = new Database(false, false);
                 sourceDb.ReadDwgFile(sourceDwg, FileOpenMode.OpenForReadAndAllShare, true, string.Empty);
-                var blockId = DbHelper.GetBlockId(sourceDb, blockName);
+                var blockId = DbHelper.GetBlockId(blockName, sourceDb);
                 if (blockId == ObjectId.Null)
                 {
                     return ObjectId.Null;
@@ -1325,7 +1327,7 @@ namespace AutoCADCommands
         /// <param name="displacement">The displacement.</param>
         public static void Move(this ObjectId entityId, Vector3d displacement)
         {
-            using (var trans = HostApplicationServices.WorkingDatabase.TransactionManager.StartTransaction())
+            using (var trans = entityId.Database.TransactionManager.StartTransaction())
             {
                 var entity = trans.GetObject(entityId, OpenMode.ForWrite) as Entity;
                 entity.TransformBy(Matrix3d.Displacement(displacement));
@@ -1351,7 +1353,7 @@ namespace AutoCADCommands
         /// <returns>The object IDs.</returns>
         public static ObjectId[] Copy(this ObjectId entityId, IEnumerable<Vector3d> displacements)
         {
-            var db = HostApplicationServices.WorkingDatabase;
+            var db = entityId.Database;
             using (var trans = db.TransactionManager.StartTransaction())
             {
                 var entity = trans.GetObject(entityId, OpenMode.ForWrite) as Entity;
@@ -1393,7 +1395,7 @@ namespace AutoCADCommands
         /// <param name="axis">The axis. Default is the Z axis.</param>
         public static void Rotate(this ObjectId entityId, Point3d basePoint, double angle, Vector3d? axis = null)
         {
-            using (var trans = HostApplicationServices.WorkingDatabase.TransactionManager.StartTransaction())
+            using (var trans = entityId.Database.TransactionManager.StartTransaction())
             {
                 var entity = trans.GetObject(entityId, OpenMode.ForWrite) as Entity;
                 entity.TransformBy(Matrix3d.Rotation(angle, axis ?? Vector3d.ZAxis, basePoint));
@@ -1409,7 +1411,7 @@ namespace AutoCADCommands
         /// <param name="scale">The scale.</param>
         public static void Scale(this ObjectId entityId, Point3d basePoint, double scale)
         {
-            using (var trans = HostApplicationServices.WorkingDatabase.TransactionManager.StartTransaction())
+            using (var trans = entityId.Database.TransactionManager.StartTransaction())
             {
                 var entity = trans.GetObject(entityId, OpenMode.ForWrite) as Entity;
                 entity.TransformBy(Matrix3d.Scaling(scale, basePoint));
@@ -1463,7 +1465,7 @@ namespace AutoCADCommands
         /// <returns>The object IDs.</returns>
         public static ObjectId[] Break(this ObjectId curveId, Point3d point1, Point3d point2)
         {
-            using (var trans = HostApplicationServices.WorkingDatabase.TransactionManager.StartTransaction())
+            using (var trans = curveId.Database.TransactionManager.StartTransaction())
             {
                 var curve = trans.GetObject(curveId, OpenMode.ForRead) as Curve;
                 var param1 = curve.GetParamAtPointX(point1);
@@ -1512,7 +1514,7 @@ namespace AutoCADCommands
         /// <param name="entityId">The entity ID.</param>
         public static void Erase(this ObjectId entityId)
         {
-            using (var trans = HostApplicationServices.WorkingDatabase.TransactionManager.StartTransaction())
+            using (var trans = entityId.Database.TransactionManager.StartTransaction())
             {
                 var entity = trans.GetObject(entityId, OpenMode.ForWrite);
                 entity.Erase();
@@ -1543,7 +1545,7 @@ namespace AutoCADCommands
         /// <returns>The group ID.</returns>
         public static ObjectId Group(this IEnumerable<ObjectId> entityIds, string name = "*", bool selectable = true)
         {
-            var db = HostApplicationServices.WorkingDatabase;
+            var db = DbHelper.GetDatabase(entityIds);
             using (var trans = db.TransactionManager.StartTransaction())
             {
                 var groupDict = (DBDictionary)trans.GetObject(db.GroupDictionaryId, OpenMode.ForWrite);
@@ -1566,7 +1568,7 @@ namespace AutoCADCommands
         /// <param name="entityIds">The entity IDs.</param>
         public static void AppendToGroup(ObjectId groupId, params ObjectId[] entityIds)
         {
-            using (var trans = HostApplicationServices.WorkingDatabase.TransactionManager.StartTransaction())
+            using (var trans = DbHelper.GetDatabase(entityIds).TransactionManager.StartTransaction())
             {
                 var group = trans.GetObject(groupId, OpenMode.ForWrite) as Group;
                 if (group != null)
@@ -1583,7 +1585,7 @@ namespace AutoCADCommands
         /// <param name="groupId">The group ID.</param>
         public static void Ungroup(ObjectId groupId)
         {
-            var groupDictId = HostApplicationServices.WorkingDatabase.GroupDictionaryId;
+            var groupDictId = groupId.Database.GroupDictionaryId;
             groupDictId.QOpenForWrite<DBDictionary>(groupDict => groupDict.Remove(groupId));
             groupId.Erase();
         }
@@ -1595,7 +1597,7 @@ namespace AutoCADCommands
         /// <returns>The number of groups ungrouped.</returns>
         public static int Ungroup(IEnumerable<ObjectId> entityIds)
         {
-            var groupDict = HostApplicationServices.WorkingDatabase.GroupDictionaryId.QOpenForRead<DBDictionary>();
+            var groupDict = DbHelper.GetDatabase(entityIds).GroupDictionaryId.QOpenForRead<DBDictionary>();
             var count = 0;
             foreach (var entry in groupDict)
             {
@@ -1641,7 +1643,7 @@ namespace AutoCADCommands
         /// <param name="operation">The operation.</param>
         public static void Draworder(this ObjectId entityId, DraworderOperation operation)
         {
-            HostApplicationServices.WorkingDatabase.BlockTableId.QOpenForWrite<BlockTable>(blockTable =>
+            entityId.Database.BlockTableId.QOpenForWrite<BlockTable>(blockTable =>
             {
                 blockTable[BlockTableRecord.ModelSpace].QOpenForWrite<BlockTableRecord>(blockTableRecord =>
                 {
@@ -1670,26 +1672,29 @@ namespace AutoCADCommands
         /// <param name="operation">The operation.</param>
         public static void Draworder(this IEnumerable<ObjectId> entityIds, DraworderOperation operation)
         {
-            HostApplicationServices.WorkingDatabase.BlockTableId.QOpenForWrite<BlockTable>(blockTable =>
-            {
-                blockTable[BlockTableRecord.ModelSpace].QOpenForWrite<BlockTableRecord>(blockTableRecord =>
+            DbHelper
+                .GetDatabase(entityIds)
+                .BlockTableId
+                .QOpenForWrite<BlockTable>(blockTable =>
                 {
-                    blockTableRecord.DrawOrderTableId.QOpenForWrite<DrawOrderTable>(drawOrderTable =>
+                    blockTable[BlockTableRecord.ModelSpace].QOpenForWrite<BlockTableRecord>(blockTableRecord =>
                     {
-                        switch (operation)
+                        blockTableRecord.DrawOrderTableId.QOpenForWrite<DrawOrderTable>(drawOrderTable =>
                         {
-                            case DraworderOperation.MoveToTop:
-                                drawOrderTable.MoveToTop(new ObjectIdCollection(entityIds.ToArray()));
-                                break;
-                            case DraworderOperation.MoveToBottom:
-                                drawOrderTable.MoveToBottom(new ObjectIdCollection(entityIds.ToArray()));
-                                break;
-                            default:
-                                break;
-                        }
+                            switch (operation)
+                            {
+                                case DraworderOperation.MoveToTop:
+                                    drawOrderTable.MoveToTop(new ObjectIdCollection(entityIds.ToArray()));
+                                    break;
+                                case DraworderOperation.MoveToBottom:
+                                    drawOrderTable.MoveToBottom(new ObjectIdCollection(entityIds.ToArray()));
+                                    break;
+                                default:
+                                    break;
+                            }
+                        });
                     });
                 });
-            });
         }
 
         #endregion
@@ -1712,7 +1717,7 @@ namespace AutoCADCommands
             var result = DbHelper.GetTextStyleId(textStyleName, true);
             result.QOpenForWrite<TextStyleTableRecord>(tstr =>
             {
-                tstr.Font = new Autodesk.AutoCAD.GraphicsInterface.FontDescriptor(fontFamily, false, false, 0, 34);
+                tstr.Font = new FontDescriptor(fontFamily, false, false, 0, 34);
                 tstr.TextSize = textHeight;
                 tstr.ObliquingAngle = italicAngle;
                 tstr.XScale = xScale;
@@ -1759,7 +1764,7 @@ namespace AutoCADCommands
         public static void SetDimstyle(this ObjectId dimId, string dimstyle)
         {
             var dimstyleId = DbHelper.GetDimstyleId(dimstyle);
-            using (var trans = HostApplicationServices.WorkingDatabase.TransactionManager.StartTransaction())
+            using (var trans = dimId.Database.TransactionManager.StartTransaction())
             {
                 var dim = trans.GetObject(dimId, OpenMode.ForWrite) as Dimension;
                 dim.DimensionStyle = dimstyleId;
