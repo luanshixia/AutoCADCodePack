@@ -107,6 +107,7 @@
     <Compile Include="Algorithms.cs" />
     <Compile Include="App.cs" />
     <Compile Include="Commands.cs" />
+    <Compile Include="FlexDataStore.cs" />
     <Compile Include="CustomDictionary.cs" />
     <Compile Include="DbHelper.cs" />
     <Compile Include="GUIs\DictionaryViewer.xaml.cs">

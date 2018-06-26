@@ -149,6 +149,22 @@ namespace AutoCADCommands
         }
 
         /// <summary>
+        /// Opens object for write.
+        /// </summary>
+        /// <typeparam name="T">The type of object.</typeparam>
+        /// <param name="id">The object ID.</param>
+        /// <param name="action">The action.</param>
+        public static void QOpenForWrite<T>(this ObjectId id, Func<T, DBObject[]> action) where T : DBObject
+        {
+            using (var trans = id.Database.TransactionManager.StartTransaction())
+            {
+                var newObjects = action(trans.GetObject(id, OpenMode.ForWrite) as T).ToList();
+                newObjects.ForEach(newObject => trans.AddNewlyCreatedDBObject(newObject, true));
+                trans.Commit();
+            }
+        }
+
+        /// <summary>
         /// Opens objects for write.
         /// </summary>
         /// <param name="ids">The object IDs.</param>
@@ -175,6 +191,23 @@ namespace AutoCADCommands
             {
                 var list = ids.Select(x => trans.GetObject(x, OpenMode.ForWrite) as T).ToArray();
                 action(list);
+                trans.Commit();
+            }
+        }
+
+        /// <summary>
+        /// Opens objects for write.
+        /// </summary>
+        /// <typeparam name="T">The type of object.</typeparam>
+        /// <param name="ids">The object IDs.</param>
+        /// <param name="action">The action.</param>
+        public static void QOpenForWrite<T>(this IEnumerable<ObjectId> ids, Func<T[], DBObject[]> action) where T : DBObject
+        {
+            using (var trans = DbHelper.GetDatabase(ids).TransactionManager.StartTransaction())
+            {
+                var list = ids.Select(x => trans.GetObject(x, OpenMode.ForWrite) as T).ToArray();
+                var newObjects = action(list).ToList();
+                newObjects.ForEach(newObject => trans.AddNewlyCreatedDBObject(newObject, true));
                 trans.Commit();
             }
         }
