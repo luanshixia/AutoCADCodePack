@@ -14,10 +14,10 @@ namespace AutoCADCommands
         #region symbol tables & dictionaries
 
         /// <summary>
-        /// 
+        /// Gets all records of a symbol table.
         /// </summary>
-        /// <param name="symbolTableId"></param>
-        /// <returns></returns>
+        /// <param name="symbolTableId">The symbol table ID.</param>
+        /// <returns>The record IDs.</returns>
         public static ObjectId[] GetSymbolTableRecords(ObjectId symbolTableId)
         {
             using (var trans = symbolTableId.Database.TransactionManager.StartTransaction())
@@ -28,10 +28,10 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 
+        /// Gets all record names of a symbol table.
         /// </summary>
-        /// <param name="symbolTableId"></param>
-        /// <returns></returns>
+        /// <param name="symbolTableId">The symbol table ID.</param>
+        /// <returns>The record names.</returns>
         public static string[] GetSymbolTableRecordNames(ObjectId symbolTableId)
         {
             return DbHelper
@@ -42,13 +42,13 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 
+        /// Gets a symbol table record by name.
         /// </summary>
-        /// <param name="symbolTableId"></param>
-        /// <param name="name"></param>
-        /// <param name="defaultValue"></param>
-        /// <param name="create"></param>
-        /// <returns></returns>
+        /// <param name="symbolTableId">The symbol table ID.</param>
+        /// <param name="name">The record name.</param>
+        /// <param name="defaultValue">The default value if not found.</param>
+        /// <param name="create">The factory method if not found.</param>
+        /// <returns>The record ID.</returns>
         public static ObjectId GetSymbolTableRecord(ObjectId symbolTableId, string name, ObjectId? defaultValue = null, Func<SymbolTableRecord> create = null)
         {
             using (var trans = symbolTableId.Database.TransactionManager.StartTransaction())
@@ -204,13 +204,13 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 
+        /// Gets a dictionary object.
         /// </summary>
-        /// <param name="dictionaryId"></param>
-        /// <param name="name"></param>
-        /// <param name="defaultValue"></param>
-        /// <param name="create"></param>
-        /// <returns></returns>
+        /// <param name="dictionaryId">The dictionary ID.</param>
+        /// <param name="name">The entry name.</param>
+        /// <param name="defaultValue">The default value if not found.</param>
+        /// <param name="create">The factory method if not found.</param>
+        /// <returns>The object ID.</returns>
         public static ObjectId GetDictionaryObject(ObjectId dictionaryId, string name, ObjectId? defaultValue = null, Func<DBObject> create = null)
         {
             using (var trans = dictionaryId.Database.TransactionManager.StartTransaction())

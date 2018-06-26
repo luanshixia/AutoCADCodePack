@@ -986,14 +986,14 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 
+        /// Starts a FlexEntityJig drag.
         /// </summary>
-        /// <typeparam name="TOptions"></typeparam>
-        /// <typeparam name="TResult"></typeparam>
-        /// <param name="options"></param>
-        /// <param name="entity"></param>
-        /// <param name="updateAction"></param>
-        /// <returns></returns>
+        /// <typeparam name="TOptions">The type of JigPromptOptions.</typeparam>
+        /// <typeparam name="TResult">The type of jig PromptResult.</typeparam>
+        /// <param name="options">The options.</param>
+        /// <param name="entity">The entity.</param>
+        /// <param name="updateAction">The update action.</param>
+        /// <returns>The prompt result.</returns>
         public static PromptResult StartDrag<TOptions, TResult>(TOptions options, Entity entity, Func<Entity, TResult, bool> updateAction)
             where TOptions : JigPromptOptions
             where TResult : PromptResult
@@ -1004,12 +1004,12 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 
+        /// Starts a FlexEntityJig point drag.
         /// </summary>
-        /// <param name="message"></param>
-        /// <param name="entity"></param>
-        /// <param name="updateAction"></param>
-        /// <returns></returns>
+        /// <param name="message">The message.</param>
+        /// <param name="entity">The entity.</param>
+        /// <param name="updateAction">The update action.</param>
+        /// <returns>The prompt result.</returns>
         public static PromptResult StartDrag(string message, Entity entity, Func<Entity, PromptPointResult, bool> updateAction)
         {
             var ed = Application.DocumentManager.MdiActiveDocument.Editor;
@@ -1019,13 +1019,13 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 
+        /// Starts a FlexDrawJig drag.
         /// </summary>
-        /// <typeparam name="TOptions"></typeparam>
-        /// <typeparam name="TResult"></typeparam>
-        /// <param name="options"></param>
-        /// <param name="updateAction"></param>
-        /// <returns></returns>
+        /// <typeparam name="TOptions">The type of JigPromptOptions.</typeparam>
+        /// <typeparam name="TResult">The type of jig PromptResult.</typeparam>
+        /// <param name="options">The options.</param>
+        /// <param name="updateAction">The update action.</param>
+        /// <returns>The prompt result.</returns>
         public static PromptResult StartDrag<TOptions, TResult>(TOptions options, Func<TResult, Drawable> updateAction)
             where TOptions: JigPromptOptions
             where TResult: PromptResult
@@ -1036,11 +1036,11 @@ namespace AutoCADCommands
         }
 
         /// <summary>
-        /// 
+        /// Starts a FlexDrawJig point drag.
         /// </summary>
-        /// <param name="message"></param>
-        /// <param name="updateAction"></param>
-        /// <returns></returns>
+        /// <param name="message">The message.</param>
+        /// <param name="updateAction">The update action.</param>
+        /// <returns>The prompt result.</returns>
         public static PromptResult StartDrag(string message, Func<PromptPointResult, Drawable> updateAction)
         {
             var ed = Application.DocumentManager.MdiActiveDocument.Editor;
