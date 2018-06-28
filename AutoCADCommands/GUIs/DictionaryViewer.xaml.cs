@@ -29,7 +29,11 @@ namespace Dreambuild.AutoCAD
             InitializeComponent();
         }
 
-        public DictionaryViewer(Func<IEnumerable<string>> getDictNames, Func<string, IEnumerable<string>> getEntryNames, Func<string, string, string> getValue, Action<string, string, string> setValue)
+        public DictionaryViewer(
+            Func<IEnumerable<string>> getDictNames,
+            Func<string, IEnumerable<string>> getEntryNames,
+            Func<string, string, string> getValue,
+            Action<string, string, string> setValue)
         {
             InitializeComponent();
 
@@ -41,38 +45,47 @@ namespace Dreambuild.AutoCAD
 
         public void DictionaryViewer_Loaded(object sender, RoutedEventArgs e)
         {
-            _getDictNames().ToList().ForEach(x => lstDicts.Items.Add(x));
-            lstDicts.SelectedIndex = 0;
+            _getDictNames().ToList().ForEach(x => this.DictionaryList.Items.Add(x));
+            this.DictionaryList.SelectedIndex = 0;
         }
 
-        private void lstDicts_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void DictionaryList_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            lstEntries.Items.Clear();
-            string dict = lstDicts.SelectedItem.ToString();
-            _getEntryNames(dict).OrderBy(x => x).Select(x => new { Key = x, Value = _getValue(dict, x) }).ToList().ForEach(x => lstEntries.Items.Add(x));
+            this.EntryList.Items.Clear();
+            string dict = this.DictionaryList.SelectedItem.ToString();
+            _getEntryNames(dict)
+                .OrderBy(x => x)
+                .Select(x => new
+                {
+                    Key = x,
+                    Value = _getValue(dict, x)
+                })
+                .ToList().ForEach(x => this.EntryList.Items.Add(x));
         }
 
-        private void lstEntries_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        private void EntryList_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
-            if (lstDicts.SelectedIndex == -1 || lstEntries.SelectedIndex == -1)
+            if (this.DictionaryList.SelectedIndex == -1 || this.EntryList.SelectedIndex == -1)
             {
                 return;
             }
-            string dict = lstDicts.SelectedItem.ToString();
-            string key = _getEntryNames(dict).OrderBy(x => x).ToList()[lstEntries.SelectedIndex];
+
+            string dict = this.DictionaryList.SelectedItem.ToString();
+            string key = _getEntryNames(dict).OrderBy(x => x).ToList()[this.EntryList.SelectedIndex];
             string oldValue = _getValue(dict, key);
 
-            var ib = new InputBox(oldValue)
+            var inputBox = new InputBox(oldValue)
             {
                 Owner = this
-            }; // mod 20130201
-            if (ib.ShowDialog() == true)
+            };
+
+            if (inputBox.ShowDialog() == true)
             {
-                _setValue(dict, key, ib.Value);
+                _setValue(dict, key, inputBox.Value);
             }
 
             // Update ListView
-            lstDicts_SelectionChanged(null, null);
+            this.DictionaryList_SelectionChanged(null, null);
         }
     }
 }

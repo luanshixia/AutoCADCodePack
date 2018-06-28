@@ -28,7 +28,7 @@ namespace Dreambuild.AutoCAD
 
         public void Ready(Dictionary<string, string> entries, string title = "Inputs")
         {
-            Values = entries;
+            this.Values = entries;
             foreach (var entry in entries)
             {
                 var lable = new TextBlock
@@ -42,30 +42,30 @@ namespace Dreambuild.AutoCAD
                 {
                     Text = entry.Value
                 };
-                var dp = new DockPanel
+                var row = new DockPanel
                 {
                     Tag = entry
                 };
-                dp.Children.Add(lable);
-                dp.Children.Add(text);
+                row.Children.Add(lable);
+                row.Children.Add(text);
                 DockPanel.SetDock(lable, Dock.Left);
-                stack1.Children.Add(dp);
+                this.PropertyList.Children.Add(row);
             }
             this.Title = title;
         }
 
-        private void btnOk_Click(object sender, RoutedEventArgs e)
+        private void OkButton_Click(object sender, RoutedEventArgs e)
         {
-            foreach (DockPanel dp in stack1.Children)
+            foreach (DockPanel row in this.PropertyList.Children)
             {
-                var entry = (KeyValuePair<string, string>)dp.Tag;
-                var text = dp.Children[1] as TextBox;
-                Values[entry.Key] = text.Text;
+                var entry = (KeyValuePair<string, string>)row.Tag;
+                var text = row.Children[1] as TextBox;
+                this.Values[entry.Key] = text.Text;
             }
             this.DialogResult = true;
         }
 
-        private void btnCancel_Click(object sender, RoutedEventArgs e)
+        private void CancelButton_Click(object sender, RoutedEventArgs e)
         {
             this.DialogResult = false;
         }

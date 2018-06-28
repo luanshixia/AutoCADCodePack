@@ -180,7 +180,7 @@ namespace Dreambuild.AutoCAD
                 Height = height,
                 Title = title
             };
-            tr.txtContent.Text = content;
+            tr.ContentArea.Text = content;
             if (modal)
             {
                 AcadApplication.ShowModalWindow(tr);
