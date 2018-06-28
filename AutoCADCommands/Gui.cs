@@ -92,7 +92,7 @@ namespace Dreambuild.AutoCAD
             {
                 Height = 200
             };
-            choices.ToList().ForEach(x => list.Items.Add(new ListBoxItem
+            choices.ForEach(x => list.Items.Add(new ListBoxItem
             {
                 Content = x
             }));
@@ -142,7 +142,7 @@ namespace Dreambuild.AutoCAD
             {
                 Height = 200
             };
-            choices.ToList().ForEach(x => list.Items.Add(new CheckBox
+            choices.ForEach(x => list.Items.Add(new CheckBox
             {
                 Content = x
             }));

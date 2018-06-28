@@ -591,7 +591,6 @@ namespace Dreambuild.AutoCAD
                     .QSelect(x => x.Layer)
                     .Distinct()
                     .Select(x => $"{x}_Label")
-                    .ToList()
                     .ForEach(x => DbHelper.GetLayerId(x));
             }
             else

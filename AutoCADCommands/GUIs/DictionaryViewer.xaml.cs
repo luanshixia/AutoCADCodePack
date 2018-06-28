@@ -45,7 +45,7 @@ namespace Dreambuild.AutoCAD
 
         public void DictionaryViewer_Loaded(object sender, RoutedEventArgs e)
         {
-            _getDictNames().ToList().ForEach(x => this.DictionaryList.Items.Add(x));
+            _getDictNames().ForEach(x => this.DictionaryList.Items.Add(x));
             this.DictionaryList.SelectedIndex = 0;
         }
 
@@ -60,7 +60,7 @@ namespace Dreambuild.AutoCAD
                     Key = x,
                     Value = _getValue(dict, x)
                 })
-                .ToList().ForEach(x => this.EntryList.Items.Add(x));
+                .ForEach(x => this.EntryList.Items.Add(x));
         }
 
         private void EntryList_MouseDoubleClick(object sender, MouseButtonEventArgs e)

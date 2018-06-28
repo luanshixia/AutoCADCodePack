@@ -72,20 +72,20 @@ namespace Dreambuild.AutoCAD
             return lines.ToArray().AddToCurrentSpace();
         }
 
-        public static ObjectId[] LineBundle(Polyline alignment, LineBundleDefinition[] bundle)
+        public static ObjectId[] LineBundle(Polyline alignment, LineBundleElement[] bundle)
         {
             var ids = new List<ObjectId>();
-            bundle.ToList().ForEach(b =>
+            bundle.ForEach(bundleElement =>
             {
-                var poly = alignment.GetOffsetCurves(b.Offset)[0] as Polyline;
-                poly.ConstantWidth = b.Width;
-                if (b.DashArray == null || b.DashArray.Length == 0)
+                var poly = alignment.GetOffsetCurves(bundleElement.Offset)[0] as Polyline;
+                poly.ConstantWidth = bundleElement.Width;
+                if (bundleElement.DashArray == null || bundleElement.DashArray.Length == 0)
                 {
                     ids.Add(poly.AddToCurrentSpace());
                 }
                 else
                 {
-                    ids.AddRange(DashedLine(poly, b.DashArray));
+                    ids.AddRange(DashedLine(poly, bundleElement.DashArray));
                 }
             });
             return ids.ToArray();
@@ -113,9 +113,9 @@ namespace Dreambuild.AutoCAD
     }
 
     /// <summary>
-    /// The line bundle definition.
+    /// The line bundle element.
     /// </summary>
-    public class LineBundleDefinition
+    public class LineBundleElement
     {
         public double Width;
         public double[] DashArray;

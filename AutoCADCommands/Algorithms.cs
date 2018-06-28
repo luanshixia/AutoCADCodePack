@@ -431,22 +431,6 @@ namespace Dreambuild.AutoCAD
         }
 
         /// <summary>
-        /// Gets all vertices of a polyline.
-        /// </summary>
-        /// <remarks>
-        /// For a polyline, the difference between this method and `GetPoints()` is when `IsClosed=true`.
-        /// </remarks>
-        /// <param name="poly">The polyline.</param>
-        /// <returns>The points.</returns>
-        public static IEnumerable<Point3d> GetPolyPoints(this Polyline poly)
-        {
-            for (int i = 0; i < poly.NumberOfVertices; i++)
-            {
-                yield return poly.GetPoint3dAt(i);
-            }
-        }
-
-        /// <summary>
         /// Gets points that equally divide (parameter wise) a curve into `divs` (number of) segments.
         /// </summary>
         /// <param name="cv">The curve.</param>
@@ -850,26 +834,6 @@ namespace Dreambuild.AutoCAD
         }
 
         /// <summary>
-        /// Converts Vector2d to Vector3d.
-        /// </summary>
-        /// <param name="point">The Vector2d.</param>
-        /// <returns>A Vector3d.</returns>
-        public static Vector3d ToVector3d(this Vector2d point)
-        {
-            return new Vector3d(point.X, point.Y, 0);
-        }
-
-        /// <summary>
-        /// Converts Vector3d to Vector2d.
-        /// </summary>
-        /// <param name="point">The Vector3d.</param>
-        /// <returns>A Vector2d.</returns>
-        public static Vector2d ToVector2d(this Vector3d point)
-        {
-            return new Vector2d(point.X, point.Y);
-        }
-
-        /// <summary>
         /// Gets the convex hull of multiple points.
         /// </summary>
         /// <param name="source">The source collection.</param>
@@ -916,7 +880,115 @@ namespace Dreambuild.AutoCAD
 
         #endregion
 
+        #region Vector algorithms
+
+        /// <summary>
+        /// Converts Vector2d to Vector3d.
+        /// </summary>
+        /// <param name="point">The Vector2d.</param>
+        /// <returns>A Vector3d.</returns>
+        public static Vector3d ToVector3d(this Vector2d point)
+        {
+            return new Vector3d(point.X, point.Y, 0);
+        }
+
+        /// <summary>
+        /// Converts Vector3d to Vector2d.
+        /// </summary>
+        /// <param name="point">The Vector3d.</param>
+        /// <returns>A Vector2d.</returns>
+        public static Vector2d ToVector2d(this Vector3d point)
+        {
+            return new Vector2d(point.X, point.Y);
+        }
+
+        /// <summary>
+        /// Gets the pseudo cross product (a.k.a. 'kross') of two Vector2ds.
+        /// </summary>
+        /// <param name="v1">The vector 1.</param>
+        /// <param name="v2">The vector 2.</param>
+        /// <returns>The pseudo cross product (a.k.a. 'kross').</returns>
+        public static double Kross(this Vector2d v1, Vector2d v2)
+        {
+            return v1.X * v2.Y - v1.Y * v2.X;
+        }
+
+        /// <summary>
+        /// Gets the angle between two vectors within [0, Pi].
+        /// </summary>
+        /// <param name="v0">The vector 0.</param>
+        /// <param name="v1">The vector 1.</param>
+        /// <returns>The result.</returns>
+        public static double ZeroToPiAngleTo(this Vector2d v0, Vector2d v1)
+        {
+            return v0.GetAngleTo(v1);
+        }
+
+        /// <summary>
+        /// Gets the heading (direction) angle of a vector within [0, 2Pi].
+        /// </summary>
+        /// <param name="v0">The vector.</param>
+        /// <returns>The result.</returns>
+        public static double DirAngleZeroTo2Pi(this Vector2d v0)
+        {
+            double angle = v0.ZeroToPiAngleTo(Vector2d.XAxis);
+            if (v0.Y < 0)
+            {
+                angle = 2 * Math.PI - angle;
+            }
+            return angle;
+        }
+
+        /// <summary>
+        /// Gets the angle between two vectors within [0, 2Pi].
+        /// </summary>
+        /// <param name="v0">The vector 0.</param>
+        /// <param name="v1">The vector 1.</param>
+        /// <returns>The result.</returns>
+        public static double ZeroTo2PiAngleTo(this Vector2d v0, Vector2d v1)
+        {
+            double angle0 = v0.DirAngleZeroTo2Pi();
+            double angle1 = v1.DirAngleZeroTo2Pi();
+            double angleDelta = angle1 - angle0;
+            if (angleDelta < 0) angleDelta = angleDelta + 2 * Math.PI;
+            return angleDelta;
+        }
+
+        /// <summary>
+        /// Gets the angle between two vectors within [-Pi, Pi].
+        /// </summary>
+        /// <param name="v0">The vector 0.</param>
+        /// <param name="v1">The vector 1.</param>
+        /// <returns>The result.</returns>
+        public static double MinusPiToPiAngleTo(this Vector2d v0, Vector2d v1)
+        {
+            double angle0 = v0.DirAngleZeroTo2Pi();
+            double angle1 = v1.DirAngleZeroTo2Pi();
+            double angleDelta = angle1 - angle0;
+            if (angleDelta < -Math.PI) angleDelta = angleDelta + 2 * Math.PI;
+            else if (angleDelta > Math.PI) angleDelta = angleDelta - 2 * Math.PI;
+            return angleDelta;
+        }
+
+        #endregion
+
         #region Polyline algorithms
+
+        /// <summary>
+        /// Gets all vertices of a polyline.
+        /// </summary>
+        /// <remarks>
+        /// For a polyline, the difference between this method and `GetPoints()` is when `IsClosed=true`.
+        /// </remarks>
+        /// <param name="poly">The polyline.</param>
+        /// <returns>The points.</returns>
+        public static IEnumerable<Point3d> GetPolyPoints(this Polyline poly)
+        {
+            for (int i = 0; i < poly.NumberOfVertices; i++)
+            {
+                yield return poly.GetPoint3dAt(i);
+            }
+        }
 
         /// <summary>
         /// Determines if the polyline is self-intersecting.
@@ -950,17 +1022,6 @@ namespace Dreambuild.AutoCAD
                 }
             }
             return false;
-        }
-
-        /// <summary>
-        /// Gets the pseudo cross product (a.k.a. 'kross') of two Vector2ds.
-        /// </summary>
-        /// <param name="v1">The vector 1.</param>
-        /// <param name="v2">The vector 2.</param>
-        /// <returns>The pseudo cross product (a.k.a. 'kross').</returns>
-        public static double Kross(this Vector2d v1, Vector2d v2)
-        {
-            return v1.X * v2.Y - v1.Y * v2.X;
         }
 
         /// <summary>
@@ -1144,7 +1205,7 @@ namespace Dreambuild.AutoCAD
                 }
             }
             var points = new Point3dCollection();
-            Enumerable.Range(0, segs1.Count).ToList().ForEach(x =>
+            Enumerable.Range(0, segs1.Count).ForEach(x =>
             {
                 int count = points.Count;
                 int y = x + 1 < segs1.Count ? x + 1 : 0;
@@ -1166,7 +1227,7 @@ namespace Dreambuild.AutoCAD
             var result = new Polyline();
 
             int j = 0;
-            points.Cast<Point3d>().ToList().ForEach(x =>
+            points.Cast<Point3d>().ForEach(x =>
             {
                 double bulge = j + 1 < points.Count ? bulges[j + 1] : 0;
                 result.AddVertexAt(j, x.ToPoint2d(), bulge, 0, 0);
@@ -1393,7 +1454,7 @@ namespace Dreambuild.AutoCAD
         {
             int index = poly.GetPolyPoints().Count();
             int index1 = 0;
-            poly1.GetPoints().ToList().ForEach(x =>
+            poly1.GetPoints().ForEach(x =>
             {
                 poly.AddVertexAt(index, x.ToPoint2d(), poly1.GetBulgeAt(index1), 0, 0);
                 index++;
@@ -1513,7 +1574,7 @@ namespace Dreambuild.AutoCAD
 
         #endregion
 
-        #region Auxiliary algorithms
+        #region Miscellaneous algorithms
 
         /// <summary>
         /// Gets the transformation matrix of world coordinates to viewport coordinates
@@ -1564,101 +1625,12 @@ namespace Dreambuild.AutoCAD
         }
 
         /// <summary>
-        /// Converts string to double.
+        /// Double sequence generator.
         /// </summary>
-        /// <param name="s">The string.</param>
-        /// <param name="defaultValue">The default value.</param>
+        /// <param name="start">The start.</param>
+        /// <param name="end">The end.</param>
+        /// <param name="step">The step.</param>
         /// <returns>The result.</returns>
-        public static double ToDouble(this string s, double defaultValue)
-        {
-            try
-            {
-                return Convert.ToDouble(s);
-            }
-            catch
-            {
-                return defaultValue;
-            }
-        }
-
-        /// <summary>
-        /// Converts string to double with default 0.
-        /// </summary>
-        /// <param name="s">The string.</param>
-        /// <returns>The result.</returns>
-        public static double ToDouble(this string s)
-        {
-            return s.ToDouble(0);
-        }
-
-        /// <summary>
-        /// Gets remainder.
-        /// </summary>
-        /// <param name="n">The divident.</param>
-        /// <param name="m">The divisor.</param>
-        /// <returns>The remainder within [0, m).</returns>
-        public static int Mod(this int n, int m)
-        {
-            return (n > 0) ? (n % m) : (n % m + m);
-        }
-
-        /// <summary>
-        /// Gets the angle between two vectors within [0, Pi].
-        /// </summary>
-        /// <param name="v0">The vector 0.</param>
-        /// <param name="v1">The vector 1.</param>
-        /// <returns>The result.</returns>
-        public static double ZeroToPiAngleTo(this Vector2d v0, Vector2d v1)
-        {
-            return v0.GetAngleTo(v1);
-        }
-
-        /// <summary>
-        /// Gets the heading (direction) angle of a vector within [0, 2Pi].
-        /// </summary>
-        /// <param name="v0">The vector.</param>
-        /// <returns>The result.</returns>
-        public static double DirAngleZeroTo2Pi(this Vector2d v0)
-        {
-            double angle = v0.ZeroToPiAngleTo(Vector2d.XAxis);
-            if (v0.Y < 0)
-            {
-                angle = 2 * Math.PI - angle;
-            }
-            return angle;
-        }
-
-        /// <summary>
-        /// Gets the angle between two vectors within [0, 2Pi].
-        /// </summary>
-        /// <param name="v0">The vector 0.</param>
-        /// <param name="v1">The vector 1.</param>
-        /// <returns>The result.</returns>
-        public static double ZeroTo2PiAngleTo(this Vector2d v0, Vector2d v1)
-        {
-            double angle0 = v0.DirAngleZeroTo2Pi();
-            double angle1 = v1.DirAngleZeroTo2Pi();
-            double angleDelta = angle1 - angle0;
-            if (angleDelta < 0) angleDelta = angleDelta + 2 * Math.PI;
-            return angleDelta;
-        }
-
-        /// <summary>
-        /// Gets the angle between two vectors within [-Pi, Pi].
-        /// </summary>
-        /// <param name="v0">The vector 0.</param>
-        /// <param name="v1">The vector 1.</param>
-        /// <returns>The result.</returns>
-        public static double MinusPiToPiAngleTo(this Vector2d v0, Vector2d v1)
-        {
-            double angle0 = v0.DirAngleZeroTo2Pi();
-            double angle1 = v1.DirAngleZeroTo2Pi();
-            double angleDelta = angle1 - angle0;
-            if (angleDelta < -Math.PI) angleDelta = angleDelta + 2 * Math.PI;
-            else if (angleDelta > Math.PI) angleDelta = angleDelta - 2 * Math.PI;
-            return angleDelta;
-        }
-
         public static IEnumerable<double> Range(double start, double end, double step = 1)
         {
             for (double x = start; x <= end; x += step)
@@ -1667,31 +1639,40 @@ namespace Dreambuild.AutoCAD
             }
         }
 
-        public static IEnumerable<int> Range(int start, int end, int step = 1)
+        /// <summary>
+        /// For each loop.
+        /// </summary>
+        /// <typeparam name="T">The element type of source.</typeparam>
+        /// <param name="source">The source collection.</param>
+        /// <param name="action">The action.</param>
+        public static void ForEach<T>(this IEnumerable<T> source, Action<T> action)
         {
-            for (int x = start; x <= end; x += step)
+            foreach (var element in source)
             {
-                yield return x;
+                action(element);
             }
         }
 
-        public static IEnumerable<T> Every<T>(this IEnumerable<T> source, int step, int start = 0)
-        {
-            return Range(start, source.Count() - 1, step).Select(i => source.ElementAt(i));
-        }
-
-        #endregion
-
-        #region Miscellaneous algorithms
-
+        /// <summary>
+        /// Gets the total length of the part of curves within a polygon.
+        /// </summary>
+        /// <param name="curves">The curves.</param>
+        /// <param name="poly">The polygon.</param>
+        /// <returns>The result.</returns>
         public static double GetCurveTotalLengthInPolygon(IEnumerable<Curve> curves, Polyline poly) // newly 20130514
         {
-            return GetCurveTotalLength(curves, p => poly.IsPointIn(p));
+            return Algorithms.GetCurveTotalLength(curves, p => poly.IsPointIn(p));
         }
 
+        /// <summary>
+        /// Gets the total length of the part of curves within extents.
+        /// </summary>
+        /// <param name="curves">The curves.</param>
+        /// <param name="extents">The extents.</param>
+        /// <returns>The result.</returns>
         public static double GetCurveTotalLengthInExtents(IEnumerable<Curve> curves, Extents3d extents) // newly 20130514
         {
-            return GetCurveTotalLength(curves, p => extents.IsPointIn(p));
+            return Algorithms.GetCurveTotalLength(curves, p => extents.IsPointIn(p));
         }
 
         private static double GetCurveTotalLength(IEnumerable<Curve> curves, Func<Point3d, bool> isIn, int divs = 100) // newly 20130514
@@ -1713,19 +1694,24 @@ namespace Dreambuild.AutoCAD
             return totalLength;
         }
 
-        public static List<Polyline> HatchToPline(Hatch ht) // newly 20130729
+        /// <summary>
+        /// Converts hatch to polyline.
+        /// </summary>
+        /// <param name="hatch">The hatch.</param>
+        /// <returns>The result polylines.</returns>
+        public static List<Polyline> HatchToPline(Hatch hatch) // newly 20130729
         {
             var plines = new List<Polyline>();
-            int loopCount = ht.NumberOfLoops;
+            int loopCount = hatch.NumberOfLoops;
             //System.Diagnostics.Debug.Write(loopCount);
             for (int index = 0; index < loopCount;)
             {
-                if (ht.GetLoopAt(index).IsPolyline)
+                if (hatch.GetLoopAt(index).IsPolyline)
                 {
-                    var loop = ht.GetLoopAt(index).Polyline;
+                    var loop = hatch.GetLoopAt(index).Polyline;
                     var p = new Polyline();
                     int i = 0;
-                    loop.Cast<BulgeVertex>().ToList().ForEach(y =>
+                    loop.Cast<BulgeVertex>().ForEach(y =>
                     {
                         p.AddVertexAt(i, y.Vertex, y.Bulge, 0, 0);
                         i++;
@@ -1735,10 +1721,10 @@ namespace Dreambuild.AutoCAD
                 }
                 else
                 {
-                    var loop = ht.GetLoopAt(index).Curves;
+                    var loop = hatch.GetLoopAt(index).Curves;
                     var p = new Polyline();
                     int i = 0;
-                    loop.Cast<Curve2d>().ToList().ForEach(y =>
+                    loop.Cast<Curve2d>().ForEach(y =>
                     {
                         p.AddVertexAt(i, y.StartPoint, 0, 0, 0);
                         i++;
@@ -1765,24 +1751,25 @@ namespace Dreambuild.AutoCAD
         /// <summary>
         /// Merges adjacent boundaries.
         /// </summary>
-        /// <param name="ids">The boundary IDs to merge.</param>
+        /// <param name="sourceIds">The boundary IDs to merge.</param>
         /// <returns>The boundary IDs after merger.</returns>
-        public static List<ObjectId> MergeBoundary(IEnumerable<ObjectId> ids)
+        public static List<ObjectId> MergeBoundary(IEnumerable<ObjectId> sourceIds)
         {
-            if (ids.Count() < 2)
+            if (sourceIds.Count() < 2)
             {
-                return new List<ObjectId>(ids);
+                return new List<ObjectId>(sourceIds);
             }
 
             Region region = null;
             // Merge adjacent regions
-            foreach (var id in ids)
+            foreach (var id in sourceIds)
             {
-                var objArr = new DBObjectCollection
+                var sourceObjects = new DBObjectCollection
                 {
                     id.QOpenForRead()
                 };
-                var regionSub = Region.CreateFromCurves(objArr)[0] as Region;
+
+                var regionSub = Region.CreateFromCurves(sourceObjects)[0] as Region;
                 if (region == null)
                 {
                     region = regionSub;
@@ -1797,6 +1784,7 @@ namespace Dreambuild.AutoCAD
             {
                 return new List<ObjectId>();
             }
+
             // Outer loop
             var loops = region.GetLoops().Select(x => x.AddToCurrentSpace()).ToArray();
             return new List<ObjectId>(loops);
@@ -1930,16 +1918,32 @@ namespace Dreambuild.AutoCAD
     /// <summary>
     /// Interval.
     /// </summary>
-    public class Interv : Tuple<double, double>
+    public class Interv
     {
+        /// <summary>
+        /// The lower limit.
+        /// </summary>
+        public double Start { get; }
+
+        /// <summary>
+        /// The upper limit.
+        /// </summary>
+        public double End { get; }
+
+        /// <summary>
+        /// The length.
+        /// </summary>
+        public double Length => this.End - this.Start;
+
         /// <summary>
         /// Creates an interval by specifying start and end.
         /// </summary>
         /// <param name="start">The lower limit.</param>
         /// <param name="end">The uppper limit.</param>
         public Interv(double start, double end)
-            : base(start, end)
         {
+            this.Start = start;
+            this.End = end;
         }
 
         /// <summary>
@@ -1950,21 +1954,6 @@ namespace Dreambuild.AutoCAD
             : this(tuple.Item1, tuple.Item2)
         {
         }
-
-        /// <summary>
-        /// The lower limit.
-        /// </summary>
-        public double Start => Math.Min(base.Item1, base.Item2);
-
-        /// <summary>
-        /// The upper limit.
-        /// </summary>
-        public double End => Math.Max(base.Item1, base.Item2);
-
-        /// <summary>
-        /// The length.
-        /// </summary>
-        public double Length => this.End - this.Start;
 
         /// <summary>
         /// Adds point to interval.

@@ -19,7 +19,7 @@ namespace Dreambuild.AutoCAD
     /// <summary>
     /// Command-line user interactions.
     /// </summary>
-    public class Interaction
+    public static class Interaction
     {
         /// <summary>
         /// Gets the MDI active docutment's editor.
@@ -126,7 +126,7 @@ namespace Dreambuild.AutoCAD
                 AllowNone = true
             }; // mod 20140527
 
-            keywords.ToList().ForEach(key => opt.Keywords.Add(key));
+            keywords.ForEach(key => opt.Keywords.Add(key));
             opt.Keywords.Default = keywords[defaultIndex];
 
             var res = ed.GetKeywords(opt);
