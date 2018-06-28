@@ -3,7 +3,7 @@ using Autodesk.AutoCAD.EditorInput;
 using Autodesk.AutoCAD.GraphicsInterface;
 using System;
 
-namespace AutoCADCommands
+namespace Dreambuild.AutoCAD
 {
     internal class FlexEntityJig : EntityJig
     {

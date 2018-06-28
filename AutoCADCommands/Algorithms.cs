@@ -7,7 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace AutoCADCommands
+namespace Dreambuild.AutoCAD
 {
     using IniData = Dictionary<string, Dictionary<string, string>>;
 
@@ -42,6 +42,9 @@ namespace AutoCADCommands
         public const string AppNameForTags = "TongJiTags"; // like HTML class
     }
 
+    /// <summary>
+    /// Utilities.
+    /// </summary>
     public static class Utils
     {
         #region File algorithms

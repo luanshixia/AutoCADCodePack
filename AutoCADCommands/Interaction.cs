@@ -13,7 +13,7 @@ using Application = Autodesk.AutoCAD.ApplicationServices.Application;
 using ColorDialog = Autodesk.AutoCAD.Windows.ColorDialog;
 using Polyline = Autodesk.AutoCAD.DatabaseServices.Polyline;
 
-namespace AutoCADCommands
+namespace Dreambuild.AutoCAD
 {
     /// <summary>
     /// Command-line user interactions.

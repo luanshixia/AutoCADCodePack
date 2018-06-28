@@ -24,7 +24,7 @@
     <DefineConstants>TRACE;DEBUG;R18, net20</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <DocumentationFile>..\bin\AutoCADCommands.XML</DocumentationFile>
+    <DocumentationFile>..\bin\AutoCADCommands.xml</DocumentationFile>
     <Prefer32Bit>false</Prefer32Bit>
     <CodeAnalysisRuleSet>AutoCADCommands.ruleset</CodeAnalysisRuleSet>
     <RunCodeAnalysis>true</RunCodeAnalysis>
