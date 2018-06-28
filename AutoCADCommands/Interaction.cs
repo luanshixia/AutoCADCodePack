@@ -4,6 +4,7 @@ using Autodesk.AutoCAD.EditorInput;
 using Autodesk.AutoCAD.Geometry;
 using Autodesk.AutoCAD.GraphicsInterface;
 using Autodesk.Windows;
+using Dreambuild.AutoCAD.Internal;
 using System;
 using System.Collections.Generic;
 using System.Linq;

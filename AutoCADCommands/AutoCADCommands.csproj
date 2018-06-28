@@ -108,7 +108,7 @@
     <Compile Include="App.cs" />
     <Compile Include="Commands.cs" />
     <Compile Include="FlexDataStore.cs" />
-    <Compile Include="CustomDictionary.cs" />
+    <Compile Include="Internal\CustomDictionary.cs" />
     <Compile Include="DbHelper.cs" />
     <Compile Include="GUIs\DictionaryViewer.xaml.cs">
       <DependentUpon>DictionaryViewer.xaml</DependentUpon>
@@ -121,7 +121,7 @@
       <DependentUpon>TaskProgressWindow.xaml</DependentUpon>
     </Compile>
     <Compile Include="Interaction.cs" />
-    <Compile Include="JigDrag.cs" />
+    <Compile Include="Internal\JigDrag.cs" />
     <Compile Include="Layouts.cs" />
     <Compile Include="GUIs\MultiInputs.xaml.cs">
       <DependentUpon>MultiInputs.xaml</DependentUpon>
