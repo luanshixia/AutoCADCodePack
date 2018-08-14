@@ -559,13 +559,17 @@ namespace Dreambuild.AutoCAD
         [CommandMethod("SelectByLayer")]
         public static void SelectByLayer()
         {
-            var options = DbHelper.GetAllLayerNames();
-            var opt = Gui.GetChoices("Specify layers", options);
-            if (opt.Length < 1)
+            var availableLayerNames = DbHelper.GetAllLayerNames();
+            var selectedLayerNames = Gui.GetChoices("Specify layers", availableLayerNames);
+            if (selectedLayerNames.Length < 1)
             {
                 return;
             }
-            var ids = QuickSelection.SelectAll().QWhere(x => opt.Contains(x.Layer)).ToArray();
+
+            var ids = QuickSelection
+                .SelectAll(FilterList.Create().Layer(selectedLayerNames))
+                .ToArray();
+
             Interaction.SetPickSet(ids);
         }
 
@@ -597,7 +601,10 @@ namespace Dreambuild.AutoCAD
             {
                 var layers = DbHelper.GetAllLayerNames().Where(x => !x.Contains("_Label")).ToArray();
                 string layer = Gui.GetChoice("Select a layer", layers);
-                ids = QuickSelection.SelectAll().QWhere(x => x.Layer == layer).ToArray();
+                ids = QuickSelection
+                    .SelectAll(FilterList.Create().Layer(layer))
+                    .ToArray();
+
                 DbHelper.GetLayerId($"{layer}_Label");
             }
             var texts = new List<MText>();
