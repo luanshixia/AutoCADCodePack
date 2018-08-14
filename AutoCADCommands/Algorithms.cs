@@ -1968,21 +1968,16 @@ namespace Dreambuild.AutoCAD
         /// <returns>The result (new interval).</returns>
         public Interv AddPoint(double point)
         {
-            if (IsPointIn(point))
+            if (point > End)
             {
-                return this;
+                return new Interv(Start, point);
             }
-            else
+            else if (point < Start)
             {
-                if (point > End)
-                {
-                    return new Interv(Start, point);
-                }
-                else // point < Start
-                {
-                    return new Interv(point, End);
-                }
+                return new Interv(point, End);
             }
+
+            return this;
         }
 
         /// <summary>
