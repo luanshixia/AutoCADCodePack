@@ -45,9 +45,9 @@ namespace Dreambuild.AutoCAD
             }
             var dv = new DictionaryViewer(  // Currying
                 () => CustomObjectDictionary.GetDictionaryNames(id),
-                x => CustomObjectDictionary.GetEntryNames(id, x),
-                (x, y) => CustomObjectDictionary.GetValue(id, x, y),
-                (x, y, z) => CustomObjectDictionary.SetValue(id, x, y, z)
+                dict => CustomObjectDictionary.GetEntryNames(id, dict),
+                (dict, key) => CustomObjectDictionary.GetValue(id, dict, key),
+                (dict, key, value) => CustomObjectDictionary.SetValue(id, dict, key, value)
             );
             Application.ShowModalWindow(dv);
         }
@@ -248,7 +248,7 @@ namespace Dreambuild.AutoCAD
             if (newPolys.Count > 0)
             {
                 newPolys.ToArray().AddToCurrentSpace();
-                ids.QForEach(x => x.Erase());
+                ids.QForEach(entity => entity.Erase());
             }
             Interaction.WriteLine("Broke {0} to {1}.", ids.Length, newPolys.Count);
         }
@@ -271,13 +271,13 @@ namespace Dreambuild.AutoCAD
             var visibleLayers = DbHelper
                 .GetAllLayerIds()
                 .QOpenForRead<LayerTableRecord>()
-                .Where(x => !x.IsHidden && !x.IsFrozen && !x.IsOff)
-                .Select(x => x.Name)
+                .Where(layer => !layer.IsHidden && !layer.IsFrozen && !layer.IsOff)
+                .Select(layer => layer.Name)
                 .ToList();
 
             var ids = Interaction
                 .GetSelection("\nSelect polyline", "LWPOLYLINE")
-                .QWhere(x => visibleLayers.Contains(x.Layer) && x.Visible)
+                .QWhere(pline => visibleLayers.Contains(pline.Layer) && pline.Visible)
                 .ToArray(); // newly 20130729
 
             var pm = new ProgressMeter();
@@ -347,7 +347,7 @@ namespace Dreambuild.AutoCAD
                 Interaction.WriteLine("Selection with the same name already exists.");
                 return;
             }
-            var handles = ids.QSelect(x => x.Handle.Value.ToString()).ToArray();
+            var handles = ids.QSelect(entity => entity.Handle.Value.ToString()).ToArray();
             string dictValue = string.Join("|", handles);
             CustomDictionary.SetValue("Selections", name, dictValue);
         }
@@ -364,12 +364,12 @@ namespace Dreambuild.AutoCAD
                 return;
             }
             string dictValue = CustomDictionary.GetValue("Selections", name);
-            var handles = dictValue.Split('|').Select(x => new Handle(Convert.ToInt64(x))).ToList();
+            var handles = dictValue.Split('|').Select(value => new Handle(Convert.ToInt64(value))).ToList();
             var ids = new List<ObjectId>();
-            handles.ForEach(x =>
+            handles.ForEach(value =>
             {
                 var id = ObjectId.Null;
-                if (HostApplicationServices.WorkingDatabase.TryGetObjectId(x, out id))
+                if (HostApplicationServices.WorkingDatabase.TryGetObjectId(value, out id))
                 {
                     ids.Add(id);
                 }
@@ -390,7 +390,7 @@ namespace Dreambuild.AutoCAD
                 dt.Layer = mt.Layer;
                 return dt;
             }).ToArray();
-            ids.QForEach(x => x.Erase());
+            ids.QForEach(mt => mt.Erase());
             mts.AddToCurrentSpace();
         }
 
@@ -407,7 +407,7 @@ namespace Dreambuild.AutoCAD
                 mt.Layer = dt.Layer;
                 return mt;
             }).ToArray();
-            ids.QForEach(x => x.Erase());
+            ids.QForEach(dt => dt.Erase());
             dts.AddToCurrentSpace();
         }
 
@@ -421,7 +421,7 @@ namespace Dreambuild.AutoCAD
             var extents = ids.GetExtents();
             var rectId = Draw.Rectang(extents.MinPoint, extents.MaxPoint);
             Interaction.GetString("\nPress ENTER to exit...");
-            rectId.QOpenForWrite(x => x.Erase());
+            rectId.QOpenForWrite(rect => rect.Erase());
         }
 
         /// <summary>
@@ -444,7 +444,7 @@ namespace Dreambuild.AutoCAD
                 footer: "Abuse can mess up the drawing.",
                 expanded: "Commonly used before export."))
             {
-                //polys.QForEach(x => LogManager.Write((x as Polyline).Closed));
+                //polys.QForEach(poly => LogManager.Write((poly as Polyline).Closed));
                 ids.QForEach<Polyline>(poly =>
                 {
                     if (poly.StartPoint.DistanceTo(poly.EndPoint) > 0)
@@ -465,9 +465,9 @@ namespace Dreambuild.AutoCAD
             var meter = new ProgressMeter();
             meter.Start("Detecting...");
             meter.SetLimit(ids.Length);
-            var results = ids.QWhere(x =>
+            var results = ids.QWhere(pline =>
             {
-                bool result = (x as Polyline).IsSelfIntersecting();
+                bool result = (pline as Polyline).IsSelfIntersecting();
                 meter.MeterProgress();
                 System.Windows.Forms.Application.DoEvents();
                 return result;
@@ -518,13 +518,13 @@ namespace Dreambuild.AutoCAD
                 {
                     break;
                 }
-                var landings = ids.QSelect(x => (x as Curve).GetClosestPointTo(p, false)).ToArray();
-                double minDist = landings.Min(x => x.DistanceTo(p));
-                var landing = landings.First(x => x.DistanceTo(p) == minDist);
+                var landings = ids.QSelect(entity => (entity as Curve).GetClosestPointTo(p, false)).ToArray();
+                double minDist = landings.Min(point => point.DistanceTo(p));
+                var landing = landings.First(point => point.DistanceTo(p) == minDist);
                 Interaction.WriteLine("Shortest landing distance of point ({0:0.00},{1:0.00}) is {2:0.00}。", p.X, p.Y, minDist);
                 landingLineIds.Add(Draw.Line(p, landing));
             }
-            landingLineIds.QForEach(x => x.Erase());
+            landingLineIds.QForEach(entity => entity.Erase());
         }
 
         /// <summary>
@@ -550,7 +550,7 @@ namespace Dreambuild.AutoCAD
                 txtIds.Add(Draw.MText(i.ToString(), height, poly.GetPointAtParameter(i), 0, true));
             }
             Interaction.GetString("\nPress ENTER to exit");
-            txtIds.QForEach(x => x.Erase());
+            txtIds.QForEach(mt => mt.Erase());
         }
 
         /// <summary>
@@ -591,29 +591,29 @@ namespace Dreambuild.AutoCAD
             {
                 ids = Interaction.GetSelection("\nSelect entities");
                 ids
-                    .QWhere(x => !x.Layer.Contains("_Label"))
-                    .QSelect(x => x.Layer)
+                    .QWhere(entity => !entity.Layer.Contains("_Label"))
+                    .QSelect(entity => entity.Layer)
                     .Distinct()
-                    .Select(x => $"{x}_Label")
-                    .ForEach(x => DbHelper.GetLayerId(x));
+                    .Select(layer => $"{layer}_Label")
+                    .ForEach(labelLayer => DbHelper.GetLayerId(labelLayer));
             }
             else
             {
-                var layers = DbHelper.GetAllLayerNames().Where(x => !x.Contains("_Label")).ToArray();
-                string layer = Gui.GetChoice("Select a layer", layers);
+                var layers = DbHelper.GetAllLayerNames().Where(layer => !layer.Contains("_Label")).ToArray();
+                string layerName = Gui.GetChoice("Select a layer", layers);
                 ids = QuickSelection
-                    .SelectAll(FilterList.Create().Layer(layer))
+                    .SelectAll(FilterList.Create().Layer(layerName))
                     .ToArray();
 
-                DbHelper.GetLayerId($"{layer}_Label");
+                DbHelper.GetLayerId($"{layerName}_Label");
             }
             var texts = new List<MText>();
-            ids.QForEach<Entity>(ent =>
+            ids.QForEach<Entity>(entity =>
             {
-                string layerName = ent.Layer;
+                string layerName = entity.Layer;
                 if (!layerName.Contains("_Label"))
                 {
-                    var center = ent.GetCenter();
+                    var center = entity.GetCenter();
                     var text = NoDraw.MText(layerName, height, center, 0, true);
                     text.Layer = $"{layerName}_Label";
                     texts.Add(text);
@@ -723,7 +723,7 @@ namespace Dreambuild.AutoCAD
             var id = Interaction.GetEntity("\nPolyline");
             var poly = id.QOpenForRead<Polyline>();
             double value = Interaction.GetValue("\nOffset");
-            poly.OffsetPoly(Enumerable.Range(0, poly.NumberOfVertices).Select(x => value).ToArray()).AddToCurrentSpace();
+            poly.OffsetPoly(Enumerable.Range(0, poly.NumberOfVertices).Select(index => value).ToArray()).AddToCurrentSpace();
         }
 
         [CommandMethod("TestSelection")]
@@ -776,7 +776,7 @@ namespace Dreambuild.AutoCAD
         [CommandMethod("TestQOpen")]
         public void TestQOpen()
         {
-            var ids = QuickSelection.SelectAll("LWPOLYLINE").QWhere(x => x.GetCode() == "parcel").ToArray();
+            var ids = QuickSelection.SelectAll("LWPOLYLINE").QWhere(pline => pline.GetCode() == "parcel").ToArray();
             ids.QForEach<Polyline>(poly =>
             {
                 poly.ConstantWidth = 2;
@@ -983,7 +983,7 @@ namespace Dreambuild.AutoCAD
         public void TestHatch4()
         {
             var ids = Interaction.GetSelection("\nSelect entities");
-            var ents = ids.QSelect(x => x).ToArray();
+            var ents = ids.QSelect(entity => entity).ToArray();
             Draw.Hatch("SOLID", ents);
         }
 

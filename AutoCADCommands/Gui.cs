@@ -33,31 +33,37 @@ namespace Dreambuild.AutoCAD
                 WindowStyle = WindowStyle.ToolWindow,
                 Title = "Options"
             };
-            var sp = new StackPanel
+
+            var stackPanel = new StackPanel
             {
                 Margin = new Thickness(5)
             };
-            var tb = new TextBlock
+
+            var textBlock = new TextBlock
             {
                 Text = (tip == string.Empty ? "Please choose one..." : tip),
                 TextWrapping = TextWrapping.Wrap
             };
+
             int result = -1;
-            var btns = options
-                .Select((x, i) => new Button
+            var buttons = options
+                .Select((option, index) => new Button
                 {
-                    Content = x,
-                    Tag = i
+                    Content = option,
+                    Tag = index
                 })
                 .ToList();
-            btns.ForEach(x => x.Click += (s, args) =>
+
+            buttons.ForEach(button => button.Click += (s, args) =>
             {
-                result = (int)x.Tag;
+                result = (int)button.Tag;
                 window.DialogResult = true;
             });
-            sp.Children.Add(tb);
-            btns.ForEach(x => sp.Children.Add(x));
-            window.Content = sp;
+
+            stackPanel.Children.Add(textBlock);
+            buttons.ForEach(button => stackPanel.Children.Add(button));
+            window.Content = stackPanel;
+
             AcadApplication.ShowModalWindow(window);
             return result;
         }
@@ -79,37 +85,44 @@ namespace Dreambuild.AutoCAD
                 WindowStyle = WindowStyle.ToolWindow,
                 Title = "Choices"
             };
-            var sp = new StackPanel
+
+            var stackPanel = new StackPanel
             {
                 Margin = new Thickness(10)
             };
-            var tb = new TextBlock
+
+            var textBlock = new TextBlock
             {
                 Text = (tip == string.Empty ? "Please choose one..." : tip),
                 TextWrapping = TextWrapping.Wrap
             };
-            var list = new ListBox
+
+            var listBox = new ListBox
             {
                 Height = 200
             };
-            choices.ForEach(x => list.Items.Add(new ListBoxItem
+
+            choices.ForEach(choice => listBox.Items.Add(new ListBoxItem
             {
-                Content = x
+                Content = choice
             }));
-            var btnOk = new Button
+
+            var okButton = new Button
             {
                 Content = "OK",
                 Margin = new Thickness(5)
             };
-            btnOk.Click += (s, args) => window.DialogResult = true;
-            sp.Children.Add(tb);
-            sp.Children.Add(list);
-            sp.Children.Add(btnOk);
-            window.Content = sp;
+
+            okButton.Click += (s, args) => window.DialogResult = true;
+            stackPanel.Children.Add(textBlock);
+            stackPanel.Children.Add(listBox);
+            stackPanel.Children.Add(okButton);
+            window.Content = stackPanel;
+
             AcadApplication.ShowModalWindow(window);
-            return list.SelectedItem == null
+            return listBox.SelectedItem == null
                 ? string.Empty
-                : (list.SelectedItem as ListBoxItem).Content.ToString();
+                : (listBox.SelectedItem as ListBoxItem).Content.ToString();
         }
 
         /// <summary>
@@ -129,38 +142,45 @@ namespace Dreambuild.AutoCAD
                 WindowStyle = WindowStyle.ToolWindow,
                 Title = "Choices"
             };
-            var sp = new StackPanel
+
+            var stackPanel = new StackPanel
             {
                 Margin = new Thickness(10)
             };
-            var tb = new TextBlock
+
+            var textBlock = new TextBlock
             {
                 Text = (tip == string.Empty ? "Please check items..." : tip),
                 TextWrapping = TextWrapping.Wrap
             };
-            var list = new ListBox
+
+            var listBox = new ListBox
             {
                 Height = 200
             };
-            choices.ForEach(x => list.Items.Add(new CheckBox
+
+            choices.ForEach(choice => listBox.Items.Add(new CheckBox
             {
-                Content = x
+                Content = choice
             }));
-            var btnOk = new Button
+
+            var okButton = new Button
             {
                 Content = "OK",
                 Margin = new Thickness(5)
             };
-            btnOk.Click += (s, args) => window.DialogResult = true;
-            sp.Children.Add(tb);
-            sp.Children.Add(list);
-            sp.Children.Add(btnOk);
-            window.Content = sp;
+
+            okButton.Click += (s, args) => window.DialogResult = true;
+            stackPanel.Children.Add(textBlock);
+            stackPanel.Children.Add(listBox);
+            stackPanel.Children.Add(okButton);
+            window.Content = stackPanel;
+
             AcadApplication.ShowModalWindow(window);
-            return list.Items
+            return listBox.Items
                 .Cast<CheckBox>()
-                .Where(x => x.IsChecked == true)
-                .Select(x => x.Content.ToString())
+                .Where(checkBox => checkBox.IsChecked == true)
+                .Select(checkBox => checkBox.Content.ToString())
                 .ToArray();
         }
 

@@ -614,8 +614,8 @@ namespace Dreambuild.AutoCAD
         public static bool HasTag(this DBObject dbo, string tag)
         {
             var buffer = dbo.GetXDataForApplication(Consts.AppNameForTags);
-            return buffer.AsArray().Any(x => x.TypeCode == (int)DxfCode.ExtendedDataAsciiString
-                && x.Value == tag);
+            return buffer.AsArray().Any(typedValue => typedValue.TypeCode == (int)DxfCode.ExtendedDataAsciiString
+                && typedValue.Value == tag);
         }
 
         [Obsolete("Legacy data store mechanism. Use FlexDataStore instead.")]
@@ -651,8 +651,8 @@ namespace Dreambuild.AutoCAD
         public static void RemoveTag(this DBObject dbo, string tag)
         {
             var buffer = dbo.GetXDataForApplication(Consts.AppNameForTags);
-            var data = buffer.AsArray().Where(x => x.TypeCode == (int)DxfCode.ExtendedDataAsciiString
-                && x.Value != tag).ToArray();
+            var data = buffer.AsArray().Where(typedValue => typedValue.TypeCode == (int)DxfCode.ExtendedDataAsciiString
+                && typedValue.Value != tag).ToArray();
             dbo.XData = new ResultBuffer(data);
         }
 

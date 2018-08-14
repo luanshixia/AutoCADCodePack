@@ -97,7 +97,7 @@ namespace Dreambuild.AutoCAD
         {
             using (var trans = DbHelper.GetDatabase(ids).TransactionManager.StartTransaction())
             {
-                return ids.Select(x => trans.GetObject(x, OpenMode.ForRead)).ToArray();
+                return ids.Select(id => trans.GetObject(id, OpenMode.ForRead)).ToArray();
             }
         }
 
@@ -111,7 +111,7 @@ namespace Dreambuild.AutoCAD
         {
             using (var trans = DbHelper.GetDatabase(ids).TransactionManager.StartTransaction())
             {
-                return ids.Select(x => trans.GetObject(x, OpenMode.ForRead) as T).ToArray();
+                return ids.Select(id => trans.GetObject(id, OpenMode.ForRead) as T).ToArray();
             }
         }
 
@@ -173,7 +173,7 @@ namespace Dreambuild.AutoCAD
         {
             using (var trans = DbHelper.GetDatabase(ids).TransactionManager.StartTransaction())
             {
-                var list = ids.Select(x => trans.GetObject(x, OpenMode.ForWrite)).ToArray();
+                var list = ids.Select(id => trans.GetObject(id, OpenMode.ForWrite)).ToArray();
                 action(list);
                 trans.Commit();
             }
@@ -189,7 +189,7 @@ namespace Dreambuild.AutoCAD
         {
             using (var trans = DbHelper.GetDatabase(ids).TransactionManager.StartTransaction())
             {
-                var list = ids.Select(x => trans.GetObject(x, OpenMode.ForWrite) as T).ToArray();
+                var list = ids.Select(id => trans.GetObject(id, OpenMode.ForWrite) as T).ToArray();
                 action(list);
                 trans.Commit();
             }
@@ -205,7 +205,7 @@ namespace Dreambuild.AutoCAD
         {
             using (var trans = DbHelper.GetDatabase(ids).TransactionManager.StartTransaction())
             {
-                var list = ids.Select(x => trans.GetObject(x, OpenMode.ForWrite) as T).ToArray();
+                var list = ids.Select(id => trans.GetObject(id, OpenMode.ForWrite) as T).ToArray();
                 var newObjects = action(list).ToList();
                 newObjects.ForEach(newObject => trans.AddNewlyCreatedDBObject(newObject, true));
                 trans.Commit();
@@ -221,7 +221,7 @@ namespace Dreambuild.AutoCAD
         {
             using (var trans = DbHelper.GetDatabase(ids).TransactionManager.StartTransaction())
             {
-                ids.Select(x => trans.GetObject(x, OpenMode.ForWrite)).ToList().ForEach(action);
+                ids.Select(id => trans.GetObject(id, OpenMode.ForWrite)).ToList().ForEach(action);
                 trans.Commit();
             }
         }
@@ -236,7 +236,7 @@ namespace Dreambuild.AutoCAD
         {
             using (var trans = DbHelper.GetDatabase(ids).TransactionManager.StartTransaction())
             {
-                ids.Select(x => trans.GetObject(x, OpenMode.ForWrite) as T).ToList().ForEach(action);
+                ids.Select(id => trans.GetObject(id, OpenMode.ForWrite) as T).ToList().ForEach(action);
                 trans.Commit();
             }
         }
@@ -275,9 +275,9 @@ namespace Dreambuild.AutoCAD
             // Bad implementation.
             using (var trans = DbHelper.GetDatabase(ids).TransactionManager.StartOpenCloseTransaction())
             {
-                var ents = ids.Select(x => trans.GetObject(x, OpenMode.ForRead) as Entity).ToList();
-                double value = ents.Min(mapper);
-                return ents.First(x => mapper(x) == value).ObjectId;
+                var entities = ids.Select(id => trans.GetObject(id, OpenMode.ForRead) as Entity).ToList();
+                double value = entities.Min(mapper);
+                return entities.First(entity => mapper(entity) == value).ObjectId;
             }
         }
 
@@ -287,9 +287,9 @@ namespace Dreambuild.AutoCAD
             // Bad implementation.
             using (var trans = DbHelper.GetDatabase(ids).TransactionManager.StartOpenCloseTransaction())
             {
-                var ents = ids.Select(x => trans.GetObject(x, OpenMode.ForRead) as Entity).ToList();
-                double value = ents.Max(mapper);
-                return ents.First(x => mapper(x) == value).ObjectId;
+                var entities = ids.Select(id => trans.GetObject(id, OpenMode.ForRead) as Entity).ToList();
+                double value = entities.Max(mapper);
+                return entities.First(entity => mapper(entity) == value).ObjectId;
             }
         }
 

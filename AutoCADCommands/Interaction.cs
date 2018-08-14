@@ -359,14 +359,14 @@ namespace Dreambuild.AutoCAD
         /// Gets multiple entities.
         /// </summary>
         /// <param name="message">The message.</param>
-        /// <param name="filter">The filter.</param>
+        /// <param name="filterList">The filter list.</param>
         /// <returns>The entity IDs.</returns>
-        public static ObjectId[] GetSelection(string message, params (int, object)[] filter)
+        public static ObjectId[] GetSelection(string message, params (int, object)[] filterList)
         {
             var ed = Application.DocumentManager.MdiActiveDocument.Editor;
             var opt = new PromptSelectionOptions { MessageForAdding = message };
             ed.WriteMessage(message);
-            var res = ed.GetSelection(opt, new SelectionFilter(filter.Select(x => new TypedValue(x.Item1, x.Item2)).ToArray()));
+            var res = ed.GetSelection(opt, new SelectionFilter(filterList.Select(filter => new TypedValue(filter.Item1, filter.Item2)).ToArray()));
             if (res.Status == PromptStatus.OK)
             {
                 return res.Value.GetObjectIds();
@@ -587,7 +587,7 @@ namespace Dreambuild.AutoCAD
         /// <param name="entityIds">The entity IDs.</param>
         public static void HighlightObjects(IEnumerable<ObjectId> entityIds)
         {
-            entityIds.QForEach<Entity>(x => x.Highlight());
+            entityIds.QForEach<Entity>(entity => entity.Highlight());
         }
 
         /// <summary>
@@ -596,7 +596,7 @@ namespace Dreambuild.AutoCAD
         /// <param name="entityIds">The entity IDs.</param>
         public static void UnhighlightObjects(IEnumerable<ObjectId> entityIds)
         {
-            entityIds.QForEach<Entity>(x => x.Unhighlight());
+            entityIds.QForEach<Entity>(entity => entity.Unhighlight());
         }
 
         /// <summary>
@@ -949,7 +949,7 @@ namespace Dreambuild.AutoCAD
                 poly.AddVertexAt(poly.NumberOfVertices, point.ToPoint2d(), 0, 0, 0);
                 prev = point;
             }
-            tempIds.QForEach(x => x.Erase());
+            tempIds.QForEach(line => line.Erase());
             return poly;
         }
 

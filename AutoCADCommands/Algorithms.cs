@@ -96,8 +96,8 @@ namespace Dreambuild.AutoCAD
             var dataPattern = @"^[^=]+=[^=]+$";
 
             var lines = File.ReadAllLines(fileName)
-                .Select(x => x.Trim())
-                .Where(x => !string.IsNullOrEmpty(x))
+                .Select(line => line.Trim())
+                .Where(line => !string.IsNullOrEmpty(line))
                 .ToArray();
 
             var group = new Dictionary<string, string>();
@@ -119,7 +119,7 @@ namespace Dreambuild.AutoCAD
                     {
                         return false;
                     }
-                    var parts = line.Split('=').Select(x => x.Trim()).ToArray();
+                    var parts = line.Split('=').Select(part => part.Trim()).ToArray();
                     group.Add(parts[0], parts[1]);
                 }
             }
@@ -756,11 +756,11 @@ namespace Dreambuild.AutoCAD
         /// <summary>
         /// Gets the center of an entity.
         /// </summary>
-        /// <param name="ent">The entity.</param>
+        /// <param name="entity">The entity.</param>
         /// <returns>The center.</returns>
-        public static Point3d GetCenter(this Entity ent)
+        public static Point3d GetCenter(this Entity entity)
         {
-            return ent.GeometricExtents.GetCenter();
+            return entity.GeometricExtents.GetCenter();
         }
 
         /// <summary>
@@ -1204,6 +1204,7 @@ namespace Dreambuild.AutoCAD
                     bulges.Add(poly.GetBulgeAt(i));
                 }
             }
+
             var points = new Point3dCollection();
             Enumerable.Range(0, segs1.Count).ForEach(x =>
             {
@@ -1227,16 +1228,18 @@ namespace Dreambuild.AutoCAD
             var result = new Polyline();
 
             int j = 0;
-            points.Cast<Point3d>().ForEach(x =>
+            points.Cast<Point3d>().ForEach(point =>
             {
                 double bulge = j + 1 < points.Count ? bulges[j + 1] : 0;
-                result.AddVertexAt(j, x.ToPoint2d(), bulge, 0, 0);
+                result.AddVertexAt(j, point.ToPoint2d(), bulge, 0, 0);
                 j++;
             });
+
             if (poly.StartPoint == poly.EndPoint) // Closed polyline: add intersection to result.
             {
                 result.AddVertexAt(0, points[points.Count - 1].ToPoint2d(), bulges[0], 0, 0);
             }
+
             else // Open polyline: add 2 offset points rather than the intersection to result.
             {
                 result.AddVertexAt(0, segs1[0].StartPoint.ToPoint2d(), bulges[0], 0, 0);
@@ -1246,6 +1249,7 @@ namespace Dreambuild.AutoCAD
                     result.RemoveVertexAt(result.NumberOfVertices - 2); // Cannot be put before add - geometry will degrade.
                 }
             }
+
             return result;
         }
 
@@ -1320,7 +1324,7 @@ namespace Dreambuild.AutoCAD
                     dupIndices.Add(i);
                 }
             }
-            dupIndices.ForEach(x => poly.RemoveVertexAt(x));
+            dupIndices.ForEach(index => poly.RemoveVertexAt(index));
             return dupIndices.Count;
         }
 
@@ -1347,7 +1351,7 @@ namespace Dreambuild.AutoCAD
                 }
             }
             cleanList.Reverse();
-            cleanList.ForEach(x => poly.RemoveVertexAt(x));
+            cleanList.ForEach(index => poly.RemoveVertexAt(index));
             return cleanList.Count;
         }
 
@@ -1454,9 +1458,9 @@ namespace Dreambuild.AutoCAD
         {
             int index = poly.GetPolyPoints().Count();
             int index1 = 0;
-            poly1.GetPoints().ForEach(x =>
+            poly1.GetPoints().ForEach(point =>
             {
-                poly.AddVertexAt(index, x.ToPoint2d(), poly1.GetBulgeAt(index1), 0, 0);
+                poly.AddVertexAt(index, point.ToPoint2d(), poly1.GetBulgeAt(index1), 0, 0);
                 index++;
                 index1++;
             });
@@ -1786,7 +1790,7 @@ namespace Dreambuild.AutoCAD
             }
 
             // Outer loop
-            var loops = region.GetLoops().Select(x => x.AddToCurrentSpace()).ToArray();
+            var loops = region.GetLoops().Select(poly => poly.AddToCurrentSpace()).ToArray();
             return new List<ObjectId>(loops);
         }
 
@@ -1891,7 +1895,9 @@ namespace Dreambuild.AutoCAD
         // Gets next line.
         private static Curve NextLine(DBObjectCollection lines, Curve line, Point3d point)
         {
-            return lines.Cast<Curve>().First(x => (x.StartPoint == point || x.EndPoint == point) && x != line);
+            return lines
+                .Cast<Curve>()
+                .First(curve => (curve.StartPoint == point || curve.EndPoint == point) && curve != line);
         }
 
         // Gets lines that forms a ring that includes a specified line.

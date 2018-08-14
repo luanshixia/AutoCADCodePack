@@ -45,7 +45,7 @@ namespace Dreambuild.AutoCAD
 
         public void DictionaryViewer_Loaded(object sender, RoutedEventArgs e)
         {
-            _getDictNames().ForEach(x => this.DictionaryList.Items.Add(x));
+            _getDictNames().ForEach(name => this.DictionaryList.Items.Add(name));
             this.DictionaryList.SelectedIndex = 0;
         }
 
@@ -54,13 +54,13 @@ namespace Dreambuild.AutoCAD
             this.EntryList.Items.Clear();
             string dict = this.DictionaryList.SelectedItem.ToString();
             _getEntryNames(dict)
-                .OrderBy(x => x)
-                .Select(x => new
+                .OrderBy(name => name)
+                .Select(name => new
                 {
-                    Key = x,
-                    Value = _getValue(dict, x)
+                    Key = name,
+                    Value = _getValue(dict, name)
                 })
-                .ForEach(x => this.EntryList.Items.Add(x));
+                .ForEach(entry => this.EntryList.Items.Add(entry));
         }
 
         private void EntryList_MouseDoubleClick(object sender, MouseButtonEventArgs e)
@@ -71,7 +71,7 @@ namespace Dreambuild.AutoCAD
             }
 
             string dict = this.DictionaryList.SelectedItem.ToString();
-            string key = _getEntryNames(dict).OrderBy(x => x).ToList()[this.EntryList.SelectedIndex];
+            string key = _getEntryNames(dict).OrderBy(name => name).ToList()[this.EntryList.SelectedIndex];
             string oldValue = _getValue(dict, key);
 
             var inputBox = new InputBox(oldValue)

@@ -14,7 +14,7 @@ namespace Dreambuild.AutoCAD
         public static ObjectId Arrow(Point3d end, Point3d head, ArrowOption opt)
         {
             var body = Draw.Line(end, head);
-            body.QOpenForWrite<Entity>(x => x.ColorIndex = opt.ColorIndex);
+            body.QOpenForWrite<Entity>(line => line.ColorIndex = opt.ColorIndex);
             var arrow = Modify.Group(new[] { body });
 
             if (opt.HeadStyle == ArrowHeadStyle.ClockHand)
@@ -27,8 +27,8 @@ namespace Dreambuild.AutoCAD
                 var right = headBase + opt.HeadWidth / 2 * nor;
                 var leftLine = Draw.Line(head, left);
                 var rightLine = Draw.Line(head, right);
-                leftLine.QOpenForWrite<Entity>(x => x.ColorIndex = opt.ColorIndex);
-                rightLine.QOpenForWrite<Entity>(x => x.ColorIndex = opt.ColorIndex);
+                leftLine.QOpenForWrite<Entity>(line => line.ColorIndex = opt.ColorIndex);
+                rightLine.QOpenForWrite<Entity>(line => line.ColorIndex = opt.ColorIndex);
                 Modify.AppendToGroup(arrow, new[] { leftLine, rightLine });
             }
 
@@ -174,10 +174,10 @@ namespace Dreambuild.AutoCAD
 
         public void Plot(IEnumerable<Point2d> points, int color = -1)
         {
-            this.Curves.Add((points.OrderBy(x => x.X).ToArray(), color));
+            this.Curves.Add((points.OrderBy(point => point.X).ToArray(), color));
 
-            var xRange = new Interv(points.Min(x => x.X), points.Max(x => x.X));
-            var yRange = new Interv(points.Min(x => x.Y), points.Max(x => x.Y));
+            var xRange = new Interv(points.Min(point => point.X), points.Max(point => point.X));
+            var yRange = new Interv(points.Min(point => point.Y), points.Max(point => point.Y));
             if (this.XRange == null)
             {
                 this.XRange = xRange;
@@ -201,10 +201,10 @@ namespace Dreambuild.AutoCAD
             double delta = xRange.Length / this.Option.SampleCount;
             var points = Enumerable
                 .Range(0, this.Option.SampleCount + 1)
-                .Select(x =>
+                .Select(index =>
                 {
-                    double xx = xRange.Start + x * delta;
-                    return new Point2d(xx, function(xx));
+                    double coord = xRange.Start + index * delta;
+                    return new Point2d(coord, function(coord));
                 })
                 .ToArray();
 
@@ -244,7 +244,7 @@ namespace Dreambuild.AutoCAD
             {
                 gridLines.Add(Draw.Line(new Point3d(xStops.First(), this.RealRatio * yStop, 0), new Point3d(xStops.Last(), this.RealRatio * yStop, 0)));
             }
-            gridLines.QForEach<Entity>(x => x.ColorIndex = this.Option.GridColor);
+            gridLines.QForEach<Entity>(line => line.ColorIndex = this.Option.GridColor);
             entIds.AddRange(gridLines);
 
             // Labels
@@ -258,21 +258,21 @@ namespace Dreambuild.AutoCAD
             {
                 labels.Add(Draw.MText(yStop.ToString("0.###"), txtHeight, new Point3d(xStops.First() - 2 * txtHeight, this.RealRatio * yStop, 0), 0, true));
             }
-            labels.QForEach<Entity>(x => x.ColorIndex = this.Option.LabelColor);
+            labels.QForEach<Entity>(mt => mt.ColorIndex = this.Option.LabelColor);
             entIds.AddRange(labels);
 
             // Curves
             foreach (var curve in this.Curves)
             {
-                var plineId = Draw.Pline(curve.Item1.OrderBy(x => x.X).Select(x => new Point3d(x.X, this.RealRatio * x.Y, 0)));
+                var plineId = Draw.Pline(curve.Item1.OrderBy(point => point.X).Select(point => new Point3d(point.X, this.RealRatio * point.Y, 0)));
                 int color1 = curve.Item2 == -1 ? this.Option.CurveColor : curve.Item2;
-                plineId.QOpenForWrite<Entity>(x => x.ColorIndex = color1);
+                plineId.QOpenForWrite<Entity>(pline => pline.ColorIndex = color1);
                 entIds.Add(plineId);
             }
 
             // Returns a block.
             var result = Draw.Block(entIds, "tjGraph" + LogManager.GetTimeBasedName(), entIds.GetCenter());
-            entIds.QForEach(x => x.Erase());
+            entIds.QForEach(entity => entity.Erase());
             entIds.Clear();
             return result;
         }

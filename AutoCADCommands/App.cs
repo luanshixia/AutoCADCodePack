@@ -195,7 +195,7 @@ namespace Dreambuild.AutoCAD
         {
             return Application.DocumentManager
                 .Cast<Document>()
-                .FirstOrDefault(x => x.Name == file);
+                .FirstOrDefault(document => document.Name == file);
         }
 
         #endregion
@@ -280,8 +280,8 @@ namespace Dreambuild.AutoCAD
         /// <returns>The name.</returns>
         public static string GetTimeBasedName()
         {
-            string s = DateTime.Now.ToShortDateString() + "-" + DateTime.Now.ToLongTimeString();
-            return new string(s.Where(x => char.IsDigit(x)).ToArray());
+            string timeString = DateTime.Now.ToShortDateString() + "-" + DateTime.Now.ToLongTimeString();
+            return new string(timeString.Where(c => char.IsDigit(c)).ToArray());
         }
 
         /// <summary>
