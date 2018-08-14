@@ -276,7 +276,7 @@ namespace Dreambuild.AutoCAD
 
             var p2 = res.Value;
             return new Extents3d(
-                new Point3d(Math.Min(p1.X, p2.X), Math.Min(p1.Y, p2.Y), 0), 
+                new Point3d(Math.Min(p1.X, p2.X), Math.Min(p1.Y, p2.Y), 0),
                 new Point3d(Math.Max(p1.X, p2.X), Math.Max(p1.Y, p2.Y), 0));
         }
 
@@ -340,13 +340,17 @@ namespace Dreambuild.AutoCAD
         /// Gets multiple entities.
         /// </summary>
         /// <param name="message">The message.</param>
+        /// <param name="filterList">The filter list.</param>
         /// <returns>The entity IDs.</returns>
-        public static ObjectId[] GetSelection(string message)
+        public static ObjectId[] GetSelection(string message, params TypedValue[] filterList)
         {
             var ed = Application.DocumentManager.MdiActiveDocument.Editor;
             var opt = new PromptSelectionOptions { MessageForAdding = message };
             ed.WriteMessage(message);
-            var res = ed.GetSelection(opt);
+            var res = filterList != null && filterList.Any()
+                ? ed.GetSelection(opt, new SelectionFilter(filterList))
+                : ed.GetSelection(opt);
+
             if (res.Status == PromptStatus.OK)
             {
                 return res.Value.GetObjectIds();
@@ -361,18 +365,9 @@ namespace Dreambuild.AutoCAD
         /// <param name="message">The message.</param>
         /// <param name="filterList">The filter list.</param>
         /// <returns>The entity IDs.</returns>
-        public static ObjectId[] GetSelection(string message, params (int, object)[] filterList)
+        public static ObjectId[] GetSelection(string message, FilterList filterList)
         {
-            var ed = Application.DocumentManager.MdiActiveDocument.Editor;
-            var opt = new PromptSelectionOptions { MessageForAdding = message };
-            ed.WriteMessage(message);
-            var res = ed.GetSelection(opt, new SelectionFilter(filterList.Select(filter => new TypedValue(filter.Item1, filter.Item2)).ToArray()));
-            if (res.Status == PromptStatus.OK)
-            {
-                return res.Value.GetObjectIds();
-            }
-
-            return Array.Empty<ObjectId>();
+            return Interaction.GetSelection(message, filterList.ToArray());
         }
 
         /// <summary>
@@ -383,7 +378,7 @@ namespace Dreambuild.AutoCAD
         /// <returns>The entity IDs.</returns>
         public static ObjectId[] GetSelection(string message, string allowedType)
         {
-            return Interaction.GetSelection(message, ((int)DxfCode.Start, allowedType));
+            return Interaction.GetSelection(message, new TypedValue((int)DxfCode.Start, allowedType));
         }
 
         /// <summary>
@@ -1028,8 +1023,8 @@ namespace Dreambuild.AutoCAD
         /// <param name="updateAction">The update action.</param>
         /// <returns>The prompt result.</returns>
         public static PromptResult StartDrag<TOptions, TResult>(TOptions options, Func<TResult, Drawable> updateAction)
-            where TOptions: JigPromptOptions
-            where TResult: PromptResult
+            where TOptions : JigPromptOptions
+            where TResult : PromptResult
         {
             var ed = Application.DocumentManager.MdiActiveDocument.Editor;
             var jig = new FlexDrawJig(options, result => updateAction((TResult)result));
