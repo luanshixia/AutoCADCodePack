@@ -689,7 +689,7 @@ namespace Dreambuild.AutoCAD
 
         internal static Database GetDatabase(IEnumerable<ObjectId> objectIds)
         {
-            return objectIds.Select(id => id.Database).Single();
+            return objectIds.Select(id => id.Database).Distinct().Single();
         }
     }
 }
