@@ -4,7 +4,7 @@ Previously hosted on [CodePlex](https://acadcodepack.codeplex.com/).
 
 `AutoCAD Code Pack` is a powerful library that helps you to develop AutoCAD plugins using the AutoCAD .NET API. It re-encapsulates the over-designed and old-fashioned classes and methods into easy-to-use static modules and functions. It also brings modern C# syntax like LINQ and lambdas (functional programming) to AutoCAD development. With all the features it provides, you can save over half the lines of your code.
 
-The library was originally developed for AutoCAD R18 (2010, 2011, 2012) and .NET 3.5. We recently updated it to target AutoCAD R23 (2019) and .NET 4.7.1, thanks to the contribution from @lavantgarde. You can target other versions with the source files and build yourself.
+The library was originally developed for AutoCAD R18 (2010, 2011, 2012) and .NET 3.5. We recently updated it to target AutoCAD R23 (2019) and .NET 4.7.1, thanks to the contribution from [@lavantgarde](https://github.com/lavantgarde). You can target other versions with the source files and build yourself.
 
 View [Test.cs](https://github.com/luanshixia/AutoCADCodePack/blob/master/AutoCADCommands/Test.cs) for API usage examples.
 
