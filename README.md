@@ -36,7 +36,7 @@ You may write this elegant code with the code pack:
 [CommandMethod("PolyClean0", CommandFlags.UsePickSet)]
 public static void PolyClean0()
 {
-    ObjectId[] ids = Interaction.GetSelection("\nSelect polyline", "LWPOLYLINE");
+    var ids = Interaction.GetSelection("\nSelect polyline", "LWPOLYLINE");
     int n = 0;
     ids.QForEach<Polyline>(poly =>
     {
