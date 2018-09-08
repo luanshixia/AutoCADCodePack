@@ -1048,8 +1048,8 @@ namespace Dreambuild.AutoCAD
 
     internal class LineJig : EntityJig
     {
-        private Point3d _startPoint;
-        private string _message;
+        private readonly Point3d _startPoint;
+        private readonly string _message;
 
         public Point3d EndPoint { get; private set; }
 
@@ -1062,33 +1062,32 @@ namespace Dreambuild.AutoCAD
 
         protected override SamplerStatus Sampler(JigPrompts prompts)
         {
-            JigPromptPointOptions jppo = new JigPromptPointOptions(_message);
+            var jppo = new JigPromptPointOptions(_message)
+            {
+                Cursor = CursorType.RubberBand,
+                BasePoint = _startPoint,
+                UseBasePoint = true
+            };
             jppo.Keywords.Add(""); // mod 20140527
-            jppo.Cursor = CursorType.RubberBand;
-            jppo.BasePoint = _startPoint;
-            jppo.UseBasePoint = true;
-            Point3d endPoint = prompts.AcquirePoint(jppo).Value;
+            var endPoint = prompts.AcquirePoint(jppo).Value;
             if (endPoint.IsNull())
             {
                 return SamplerStatus.Cancel;
             }
-            else if (endPoint != EndPoint)
+            else if (endPoint != this.EndPoint)
             {
-                EndPoint = endPoint;
+                this.EndPoint = endPoint;
                 return SamplerStatus.OK;
             }
-            else
-            {
-                return SamplerStatus.NoChange;
-            }
+
+            return SamplerStatus.NoChange;
         }
 
         protected override bool Update()
         {
             try
             {
-                Line line = Entity as Line;
-                line.EndPoint = EndPoint;
+                (base.Entity as Line).EndPoint = this.EndPoint;
             }
             catch
             {
@@ -1101,14 +1100,13 @@ namespace Dreambuild.AutoCAD
     {
         private Point3d _pos = Point3d.Origin;
         private Vector3d _move;
-        private string _message;
+        private readonly string _message;
 
-        public Entity Ent { get; }
+        public Entity Ent => base.Entity;
 
         public PositionJig(Entity entity, string message)
             : base(entity)
         {
-            this.Ent = entity;
             this._message = message;
         }
 
@@ -1132,18 +1130,15 @@ namespace Dreambuild.AutoCAD
                 _pos = pos;
                 return SamplerStatus.OK;
             }
-            else
-            {
-                _move = pos - _pos;
-                return SamplerStatus.NoChange;
-            }
+
+            return SamplerStatus.NoChange;
         }
 
         protected override bool Update()
         {
             try
             {
-                Ent.TransformBy(Matrix3d.Displacement(_move));
+                base.Entity.TransformBy(Matrix3d.Displacement(_move));
             }
             catch
             {
@@ -1156,22 +1151,17 @@ namespace Dreambuild.AutoCAD
     {
         private Point3d _pos = Point3d.Origin;
         private Vector3d _move;
-        private Point3d _basePoint;
-        private string _message;
-        private Extents3d _extents;
-        //private double _scale;
         private double _mag;
+        private readonly Point3d _basePoint;
+        private readonly string _message;
 
-        public Entity Ent { get; }
+        public Entity Ent => base.Entity;
 
         public ScaleJig(Entity entity, Point3d basePoint, string message)
             : base(entity)
         {
-            this.Ent = entity;
             this._basePoint = basePoint;
             this._message = message;
-            this._extents = Ent.GeometricExtents;
-            // this._scale = 1;
             this._mag = 1;
         }
 
@@ -1186,7 +1176,7 @@ namespace Dreambuild.AutoCAD
             jppo.Keywords.Add(""); // mod 20140527
             var corner = prompts.AcquirePoint(jppo).Value;
             var pos = Point3d.Origin + 0.5 * (_basePoint.GetAsVector() + corner.GetAsVector());
-            var extents = Ent.GeometricExtents;
+            var extents = base.Entity.GeometricExtents;
             double scale = Math.Min(
                 Math.Abs(corner.X - _basePoint.X) / (extents.MaxPoint.X - extents.MinPoint.X),
                 Math.Abs(corner.Y - _basePoint.Y) / (extents.MaxPoint.Y - extents.MinPoint.Y));
@@ -1204,16 +1194,11 @@ namespace Dreambuild.AutoCAD
             {
                 _move = pos - _pos;
                 _pos = pos;
-                //_mag = scale / _scale;
-                //_scale = scale;
                 _mag = scale;
                 return SamplerStatus.OK;
             }
-            else
-            {
-                _move = pos - _pos;
-                return SamplerStatus.NoChange;
-            }
+
+            return SamplerStatus.NoChange;
         }
 
         protected override bool Update()
@@ -1221,8 +1206,8 @@ namespace Dreambuild.AutoCAD
             try
             {
                 // NOTE: mind the order.
-                Ent.TransformBy(Matrix3d.Displacement(_move));
-                Ent.TransformBy(Matrix3d.Scaling(_mag, _pos));
+                base.Entity.TransformBy(Matrix3d.Displacement(_move));
+                base.Entity.TransformBy(Matrix3d.Scaling(_mag, _pos));
             }
             catch
             {
@@ -1233,10 +1218,10 @@ namespace Dreambuild.AutoCAD
 
     internal class RotationJig : EntityJig
     {
-        private Point3d _center;
         private Point3d _end;
-        private string _message;
         private double _angle;
+        private readonly Point3d _center;
+        private readonly string _message;
 
         public Entity Ent => base.Entity;
 
@@ -1281,7 +1266,7 @@ namespace Dreambuild.AutoCAD
                 {
                     angle = Math.PI * 2 - angle;
                 }
-                Entity.TransformBy(Matrix3d.Rotation(angle - this._angle, Vector3d.ZAxis, this._center));
+                base.Entity.TransformBy(Matrix3d.Rotation(angle - this._angle, Vector3d.ZAxis, this._center));
                 this._angle = angle;
                 return true;
             }
