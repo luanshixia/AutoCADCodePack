@@ -417,7 +417,7 @@ namespace Dreambuild.AutoCAD
         public static ObjectId Hatch(ObjectId[] loopIds, string hatchName = "SOLID", double scale = 1, double angle = 0, bool associative = false)
         {
             var db = DbHelper.GetDatabase(loopIds);
-            using (Transaction trans = db.TransactionManager.StartTransaction())
+            using (var trans = db.TransactionManager.StartTransaction())
             {
                 var hatch = new Hatch();
                 var space = trans.GetObject(db.CurrentSpaceId, OpenMode.ForWrite) as BlockTableRecord;
@@ -841,7 +841,7 @@ namespace Dreambuild.AutoCAD
         {
             ObjectId id;
             Database db = HostApplicationServices.WorkingDatabase;
-            using (Transaction trans = db.TransactionManager.StartTransaction())
+            using (var trans = db.TransactionManager.StartTransaction())
             {
                 id = ((BlockTableRecord)trans.GetObject(SymbolUtilityServices.GetBlockModelSpaceId(db), OpenMode.ForWrite, false)).AppendEntity(ent);
                 trans.AddNewlyCreatedDBObject(ent, true);
