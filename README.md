@@ -29,12 +29,9 @@ The library consists of the following modules:
 
 ## A Quick Look
 
-You may write this elegant code with the code pack:
+You may write this elegant code with the code pack. Let's say you want a command to clean up all 0-length polylines.
 
 ```csharp
-/// <summary>
-/// Eliminate zero-length polylines
-/// </summary>
 [CommandMethod("PolyClean0", CommandFlags.UsePickSet)]
 public static void PolyClean0()
 {
@@ -52,7 +49,7 @@ public static void PolyClean0()
 }
 ```
 
-instead of the verbose version using original API:
+Crazy simple, right? Can you imagine how much extra code you would have to write using the original API:
 
 ```csharp
 [CommandMethod("PolyClean0_Old", CommandFlags.UsePickSet)]
@@ -61,9 +58,16 @@ public static void PolyClean0_Old()
     string message = "\nSelect polyline";
     string allowedType = "LWPOLYLINE";
     Editor ed = Application.DocumentManager.MdiActiveDocument.Editor;
-    PromptSelectionOptions opt = new PromptSelectionOptions { MessageForAdding = message };
+    PromptSelectionOptions opt = new PromptSelectionOptions
+    {
+        MessageForAdding = message
+    };
     ed.WriteMessage(message);
-    SelectionFilter filter = new SelectionFilter(new TypedValue[] { new TypedValue(0, allowedType) });
+    SelectionFilter filter = new SelectionFilter(
+        new TypedValue[] 
+        {
+            new TypedValue(0, allowedType) 
+        });
     PromptSelectionResult res = ed.GetSelection(opt, filter);
     if (res.Status != PromptStatus.OK)
     {
