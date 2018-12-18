@@ -8,7 +8,7 @@ The library was originally developed for AutoCAD R18 (2010, 2011, 2012) and .NET
 
 View [Test.cs](https://github.com/luanshixia/AutoCADCodePack/blob/master/AutoCADCommands/Test.cs) for API usage examples.
 
-If you think this library is helpful, please tell others to have a try too. We can't wait to hear all your feedbacks.
+Don't forget to star us! If you think this library is helpful, please tell others to have a try too. We can't wait to hear all your feedbacks.
 
 ## Modules
 
