@@ -96,3 +96,7 @@ public static void PolyClean0_Old()
 ## Examples
 
 View [Test.cs](https://github.com/luanshixia/AutoCADCodePack/blob/master/AutoCADCommands/Test.cs) for detailed API usage examples.
+
+## PS: A useful tool for those who have a lot of huge DWGs and VS projects on disk
+
+[SharpDiskSweeper](https://github.com/luanshixia/SharpDiskSweeper) can help you find the point in disk to start cleaning up.
