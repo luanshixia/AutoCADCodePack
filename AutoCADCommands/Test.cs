@@ -521,7 +521,7 @@ namespace Dreambuild.AutoCAD
                 var landings = ids.QSelect(entity => (entity as Curve).GetClosestPointTo(p, false)).ToArray();
                 double minDist = landings.Min(point => point.DistanceTo(p));
                 var landing = landings.First(point => point.DistanceTo(p) == minDist);
-                Interaction.WriteLine("Shortest landing distance of point ({0:0.00},{1:0.00}) is {2:0.00}。", p.X, p.Y, minDist);
+                Interaction.WriteLine("Shortest landing distance of point ({0:0.00},{1:0.00}) is {2:0.00}.", p.X, p.Y, minDist);
                 landingLineIds.Add(Draw.Line(p, landing));
             }
             landingLineIds.QForEach(entity => entity.Erase());

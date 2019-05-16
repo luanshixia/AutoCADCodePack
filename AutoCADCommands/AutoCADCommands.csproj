@@ -13,18 +13,16 @@
     <TargetFrameworkVersion>v4.7.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Utf8Output>true</Utf8Output>
-    <ExpressionBlendVersion>4.0.20621.0</ExpressionBlendVersion>
-    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>..\bin\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;R18, net20</DefineConstants>
+    <OutputPath>..\bin\r23\</OutputPath>
+    <DefineConstants>TRACE;DEBUG;R23</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <DocumentationFile>..\bin\AutoCADCommands.xml</DocumentationFile>
+    <DocumentationFile>..\bin\r23\AutoCADCommands.xml</DocumentationFile>
     <Prefer32Bit>false</Prefer32Bit>
     <CodeAnalysisRuleSet>AutoCADCommands.ruleset</CodeAnalysisRuleSet>
     <RunCodeAnalysis>true</RunCodeAnalysis>
@@ -32,8 +30,8 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
+    <OutputPath>..\bin\Release\r23\</OutputPath>
+    <DefineConstants>TRACE;R23</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>

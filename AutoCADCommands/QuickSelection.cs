@@ -334,7 +334,7 @@ namespace Dreambuild.AutoCAD
                 return selRes.Value.GetObjectIds();
             }
 
-            return Array.Empty<ObjectId>();
+            return new ObjectId[0];
         }
 
         private static IEnumerable<ObjectId> SelectAllInternal(this Database db, string block)

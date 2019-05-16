@@ -1,7 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2013
+# Visual Studio 15
+VisualStudioVersion = 15.0.28307.572
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AutoCADCommands", "AutoCADCommands\AutoCADCommands.csproj", "{C5F6C326-952B-43E8-9830-311F190BAB11}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AutoCADCommands.R18", "AutoCADCommands\AutoCADCommands.R18.csproj", "{EDA1D1A6-3204-4B82-8D5F-4F59815F072E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -13,8 +17,15 @@ Global
 		{C5F6C326-952B-43E8-9830-311F190BAB11}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C5F6C326-952B-43E8-9830-311F190BAB11}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C5F6C326-952B-43E8-9830-311F190BAB11}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EDA1D1A6-3204-4B82-8D5F-4F59815F072E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EDA1D1A6-3204-4B82-8D5F-4F59815F072E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EDA1D1A6-3204-4B82-8D5F-4F59815F072E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EDA1D1A6-3204-4B82-8D5F-4F59815F072E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {9516FD57-86E1-498D-BC03-D6EFC30A7DE6}
 	EndGlobalSection
 EndGlobal

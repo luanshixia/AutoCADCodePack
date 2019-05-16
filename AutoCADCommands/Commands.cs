@@ -202,7 +202,7 @@ namespace Dreambuild.AutoCAD
         /// <param name="vertices">The vertices.</param>
         /// <param name="globalWidth">The global width. Default is 0.</param>
         /// <returns>The object ID.</returns>
-        public static ObjectId Pline(List<(Point3d, double)> vertices, double globalWidth = 0)
+        public static ObjectId Pline(List<Tuple<Point3d, double>> vertices, double globalWidth = 0)
         {
             return NoDraw.Pline(vertices, globalWidth).AddToCurrentSpace();
         }
@@ -1122,7 +1122,7 @@ namespace Dreambuild.AutoCAD
         public static Polyline Pline(IEnumerable<Point3d> points, double globalWidth = 0)
         {
             return NoDraw.Pline(
-                vertices: points.Select(point => (point, 0d)).ToList(),
+                vertices: points.Select(point => Tuple.Create(point, 0d)).ToList(),
                 globalWidth: globalWidth);
         }
 
@@ -1132,7 +1132,7 @@ namespace Dreambuild.AutoCAD
         /// <param name="vertices">The vertices.</param>
         /// <param name="globalWidth">The global width. Default is 0.</param>
         /// <returns>The result.</returns>
-        public static Polyline Pline(List<(Point3d, double)> vertices, double globalWidth = 0)
+        public static Polyline Pline(List<Tuple<Point3d, double>> vertices, double globalWidth = 0)
         {
             var poly = new Polyline();
             Enumerable

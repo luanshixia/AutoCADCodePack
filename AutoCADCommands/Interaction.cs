@@ -324,13 +324,13 @@ namespace Dreambuild.AutoCAD
         /// </summary>
         /// <param name="message">The message.</param>
         /// <returns>The entity ID and the pick position.</returns>
-        public static (ObjectId, Point3d)? GetPick(string message)
+        public static Tuple<ObjectId, Point3d> GetPick(string message)
         {
             var ed = Application.DocumentManager.MdiActiveDocument.Editor;
             var res = ed.GetEntity(message);
             if (res.Status == PromptStatus.OK)
             {
-                return (res.ObjectId, res.PickedPoint);
+                return Tuple.Create(res.ObjectId, res.PickedPoint);
             }
 
             return null;
@@ -356,7 +356,7 @@ namespace Dreambuild.AutoCAD
                 return res.Value.GetObjectIds();
             }
 
-            return Array.Empty<ObjectId>();
+            return new ObjectId[0];
         }
 
         /// <summary>
@@ -397,7 +397,7 @@ namespace Dreambuild.AutoCAD
                 return res.Value.GetObjectIds();
             }
 
-            return Array.Empty<ObjectId>();
+            return new ObjectId[0];
         }
 
         /// <summary>
@@ -416,7 +416,7 @@ namespace Dreambuild.AutoCAD
                 return res.Value.GetObjectIds();
             }
 
-            return Array.Empty<ObjectId>();
+            return new ObjectId[0];
         }
 
         /// <summary>
@@ -435,7 +435,7 @@ namespace Dreambuild.AutoCAD
                 return res.Value.GetObjectIds();
             }
 
-            return Array.Empty<ObjectId>();
+            return new ObjectId[0];
         }
 
         /// <summary>
@@ -477,7 +477,7 @@ namespace Dreambuild.AutoCAD
                 return res.Value.GetObjectIds();
             }
 
-            return Array.Empty<ObjectId>();
+            return new ObjectId[0];
         }
 
         [DllImport("user32.dll")]
@@ -520,7 +520,7 @@ namespace Dreambuild.AutoCAD
         {
             var existingCommands = Application.GetSystemVariable("CMDNAMES").ToString();
             var escapes = existingCommands.Length > 0
-                ? string.Join(string.Empty, Enumerable.Repeat('\x03', existingCommands.Split('\'').Length))
+                ? string.Join(string.Empty, Enumerable.Repeat("\x03", existingCommands.Split('\'').Length).ToArray())
                 : string.Empty;
 
             Application.DocumentManager.MdiActiveDocument.SendStringToExecute(escapes + command, true, false, true);

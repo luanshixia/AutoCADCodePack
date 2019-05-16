@@ -156,7 +156,7 @@ namespace Dreambuild.AutoCAD
 
         private Interv YRange { get; set; } // Original, without ratio applied.
 
-        private List<(IEnumerable<Point2d>, int)> Curves { get; } = new List<(IEnumerable<Point2d>, int)>();
+        private List<Tuple<Point2d[], int>> Curves { get; } = new List<Tuple<Point2d[], int>>();
 
         private double RealRatio => this.Option.yRatio * (this.XRange.Length * this.Option.xRedundanceFactor) / (this.YRange.Length * this.Option.yRedundanceFactor);
 
@@ -174,7 +174,7 @@ namespace Dreambuild.AutoCAD
 
         public void Plot(IEnumerable<Point2d> points, int color = -1)
         {
-            this.Curves.Add((points.OrderBy(point => point.X).ToArray(), color));
+            this.Curves.Add(Tuple.Create(points.OrderBy(point => point.X).ToArray(), color));
 
             var xRange = new Interv(points.Min(point => point.X), points.Max(point => point.X));
             var yRange = new Interv(points.Min(point => point.Y), points.Max(point => point.Y));

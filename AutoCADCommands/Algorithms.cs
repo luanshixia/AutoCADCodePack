@@ -309,10 +309,23 @@ namespace Dreambuild.AutoCAD
         /// <param name="curve">The curve.</param>
         /// <param name="interval">The subcurve interval in distance.</param>
         /// <returns>The subcurve.</returns>
+        public static Curve GetSubCurve(this Curve curve, Tuple<double, double> interval)
+        {
+            return Algorithms.GetSubCurve(curve, new Interv(interval.Item1, interval.Item2));
+        }
+
+#if R23
+        /// <summary>
+        /// Gets subcurve from curve by distance interval.
+        /// </summary>
+        /// <param name="curve">The curve.</param>
+        /// <param name="interval">The subcurve interval in distance.</param>
+        /// <returns>The subcurve.</returns>
         public static Curve GetSubCurve(this Curve curve, (double, double) interval)
         {
             return Algorithms.GetSubCurve(curve, new Interv(interval));
         }
+#endif
 
         /// <summary>
         /// Gets subcurve from curve by parameter interval.
@@ -397,10 +410,23 @@ namespace Dreambuild.AutoCAD
         /// <param name="curve">The curve.</param>
         /// <param name="interval">The subcurve interval in parameter.</param>
         /// <returns>The subcurve.</returns>
+        public static Curve GetSubCurveByParams(this Curve curve, Tuple<double, double> interval)
+        {
+            return Algorithms.GetSubCurveByParams(curve, new Interv(interval.Item1, interval.Item2));
+        }
+
+#if R23
+        /// <summary>
+        /// Gets subcurve from curve by parameter interval.
+        /// </summary>
+        /// <param name="curve">The curve.</param>
+        /// <param name="interval">The subcurve interval in parameter.</param>
+        /// <returns>The subcurve.</returns>
         public static Curve GetSubCurveByParams(this Curve curve, (double, double) interval)
         {
             return Algorithms.GetSubCurveByParams(curve, new Interv(interval));
         }
+#endif
 
         /// <summary>
         /// Gets all points on curve whose parameters are an arithmetic sequence starting from 0.
@@ -505,7 +531,7 @@ namespace Dreambuild.AutoCAD
         {
             for (var param = 0d; param < cv.EndParam; param += paramDelta)
             {
-                yield return cv.GetSubCurveByParams((param, param + paramDelta));
+                yield return cv.GetSubCurveByParams(Tuple.Create(param, param + paramDelta));
             }
         }
 
@@ -519,7 +545,7 @@ namespace Dreambuild.AutoCAD
         {
             for (var dist = 0d; dist < cv.GetDistAtParam(cv.EndParam); dist += distDelta)
             {
-                yield return cv.GetSubCurve((dist, dist + distDelta)); // TODO: unify patterns of using "Param" and "Dist".
+                yield return cv.GetSubCurve(Tuple.Create(dist, dist + distDelta)); // TODO: unify patterns of using "Param" and "Dist".
             }
         }
 
@@ -538,9 +564,9 @@ namespace Dreambuild.AutoCAD
             return pts1.Min(p1 => pts2.Min(p2 => p1.DistanceTo(p2)));
         }
 
-        #endregion
+#endregion
 
-        #region Range algorithms
+#region Range algorithms
 
         /// <summary>
         /// Gets entity extents.
@@ -794,9 +820,9 @@ namespace Dreambuild.AutoCAD
             return (extents.MaxPoint.X - extents.MinPoint.X) * (extents.MaxPoint.Y - extents.MinPoint.Y);
         }
 
-        #endregion
+#endregion
 
-        #region Point algorithms
+#region Point algorithms
 
         /// <summary>
         /// Gets an empty Point3d
@@ -878,9 +904,9 @@ namespace Dreambuild.AutoCAD
             return (num < 0f);
         }
 
-        #endregion
+#endregion
 
-        #region Vector algorithms
+#region Vector algorithms
 
         /// <summary>
         /// Converts Vector2d to Vector3d.
@@ -970,9 +996,9 @@ namespace Dreambuild.AutoCAD
             return angleDelta;
         }
 
-        #endregion
+#endregion
 
-        #region Polyline algorithms
+#region Polyline algorithms
 
         /// <summary>
         /// Gets all vertices of a polyline.
@@ -1576,9 +1602,9 @@ namespace Dreambuild.AutoCAD
             }
         }
 
-        #endregion
+#endregion
 
-        #region Miscellaneous algorithms
+#region Miscellaneous algorithms
 
         /// <summary>
         /// Gets the transformation matrix of world coordinates to viewport coordinates
@@ -1744,7 +1770,7 @@ namespace Dreambuild.AutoCAD
             return plines;
         }
 
-        #endregion
+#endregion
     }
 
     /// <summary>
@@ -1820,7 +1846,7 @@ namespace Dreambuild.AutoCAD
             }
         }
 
-        #region Private...
+#region Private...
 
         // Gets a loop from lines.
         private static Polyline GetLoop(DBObjectCollection lines)
@@ -1918,7 +1944,7 @@ namespace Dreambuild.AutoCAD
             return ring;
         }
 
-        #endregion
+#endregion
     }
 
     /// <summary>
@@ -1952,6 +1978,7 @@ namespace Dreambuild.AutoCAD
             this.End = end;
         }
 
+#if R23
         /// <summary>
         /// Creates an interval from a C# 7.0 tuple.
         /// </summary>
@@ -1960,6 +1987,7 @@ namespace Dreambuild.AutoCAD
             : this(tuple.Item1, tuple.Item2)
         {
         }
+#endif
 
         /// <summary>
         /// Adds point to interval.
