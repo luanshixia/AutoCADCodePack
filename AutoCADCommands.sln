@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AutoCADCommands", "AutoCADC
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AutoCADCommands.R18", "AutoCADCommands\AutoCADCommands.R18.csproj", "{EDA1D1A6-3204-4B82-8D5F-4F59815F072E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AutoCADCommands.R19", "AutoCADCommands\AutoCADCommands.R19.csproj", "{77B9F8FE-F75B-48C8-8249-6859E8D347E1}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{EDA1D1A6-3204-4B82-8D5F-4F59815F072E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EDA1D1A6-3204-4B82-8D5F-4F59815F072E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EDA1D1A6-3204-4B82-8D5F-4F59815F072E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{77B9F8FE-F75B-48C8-8249-6859E8D347E1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{77B9F8FE-F75B-48C8-8249-6859E8D347E1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{77B9F8FE-F75B-48C8-8249-6859E8D347E1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{77B9F8FE-F75B-48C8-8249-6859E8D347E1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
